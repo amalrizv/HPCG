@@ -9,7 +9,7 @@ include("hpcg.jl")
 
 
 function CheckAspectRatio(smallest_ratio, x, y, z, what, DoIo) 
-  current_ratio = Statistics.min(Statistics.min(x, y), z) / (Statistics.max(std::max(x, y), z))
+  current_ratio = Statistics.min(Statistics.min(x, y), z) / (Statistics.max(Statistics.max(x, y), z))
 
   if current_ratio < smallest_ratio #ratio of the smallest to the largest
     if DoIo 

@@ -46,8 +46,8 @@ function GenerateProblem_ref(A, b,x, xexact)
 
   # Allocate arrays that are of length localNumberOfRows
   nonzerosInRow = Array{Any}(undef,localNumberOfRows)
-  mtxIndG = Array{Any}(undef, localNumberOfRows)
-  mtxIndL =Array{Any}(localNumberOfRows)
+  mtxIndG = Array{Int64}(undef, localNumberOfRows)
+  mtxIndL =Array{Int64}(localNumberOfRows)
   matrixValues = Array{Float64}(undef,localNumberOfRows)
   matrixDiagonal = Array{Float64}(undef,localNumberOfRows)
 
@@ -73,7 +73,7 @@ function GenerateProblem_ref(A, b,x, xexact)
 	 xexactv = xexact # Only compute exact solution if requested
   end
 
-  A.localToGlobalMap.resize(localNumberOfRows)
+  resize!(A.localToGlobalMap, localNumberOfRows)
 
   #Use a parallel loop to do initial assignment:
   #distributes the physical placement of arrays of pointers across the memory system
@@ -83,7 +83,7 @@ function GenerateProblem_ref(A, b,x, xexact)
     mtxIndG[i] = 0
     mtxIndL[i] = 0
   end
-
+#  if HPCG_CONTIGUOUS_ARRAYS==1	#Consider making HPCG_CONTIGUOS_ARRAYS A Bool 
   for i=1:localNumberOfRows 
     mtxIndL[i] = Array{FLoat64}(undef,numberOfNonzerosPerRow)
   end
@@ -93,17 +93,17 @@ function GenerateProblem_ref(A, b,x, xexact)
   for i=1:localNumberOfRows
    mtxIndG[i] = Array{Float64}(undef,numberOfNonzerosPerRow)
   end
-
+#else
   mtxIndL[1] = Arrya{Float64}(undef,localNumberOfRows * numberOfNonzerosPerRow)
   matrixValues[1] = Array{FLoat64}(undef,localNumberOfRows * numberOfNonzerosPerRow)
   mtxIndG[1] = Array{Float64}(undef,localNumberOfRows * numberOfNonzerosPerRow)
 
   for i=1:localNumberOfRows
-	  mtxIndL[i] = mtxIndL[0] + i * numberOfNonzerosPerRow
-	  matrixValues[i] = matrixValues[0] + i * numberOfNonzerosPerRow
-	  mtxIndG[i] = mtxIndG[0] + i * numberOfNonzerosPerRow
+	  mtxIndL[i] = mtxIndL[1] + i * numberOfNonzerosPerRow
+	  matrixValues[i] = matrixValues[1] + i * numberOfNonzerosPerRow
+	  mtxIndG[i] = mtxIndG[1 + i * numberOfNonzerosPerRow
   end
-
+#endif
    localNumberOfNonzeros = 0
   # TODO:  This triply nested loop could be flattened or use nested parallelism
   for iz=1:nz
@@ -121,6 +121,8 @@ function GenerateProblem_ref(A, b,x, xexact)
          numberOfNonzerosInRow = 0
          currentValuePointer = matrixValues[currentLocalRow]  #Pointer to current value in current row
          currentIndexPointerG = mtxIndG[currentLocalRow] # Pointer to current index in current row
+	 cvp = 1
+	 cipg = 1
          for sz=-1:1 
           if giz+sz>-1 && giz+sz<gn
             for sy=-1:1 
@@ -130,11 +132,14 @@ function GenerateProblem_ref(A, b,x, xexact)
                      curcol = currentGlobalRow+sz*gnx*gny+sy*gnx+sx
                     if curcol==currentGlobalRow
                       matrixDiagonal[currentLocalRow] = currentValuePointer
-                      currentValuePointer++ = 26.0
+                      currentValuePointer[cvp]++ = 26.0
+		      cvp+=1
                     else 
-                      currentValuePointer++ = -1.0
+                      currentValuePointeri[cvp]++ = -1.0
+		      cvp+=1
                     end
-                    currentIndexPointerG++ = curcol
+                    currentIndexPointerG[cipg]++ = curcol
+		    cipg+=1
                     numberOfNonzerosInRow++
                   end #  end x bounds test
                 end # end sx loop
@@ -163,11 +168,11 @@ function GenerateProblem_ref(A, b,x, xexact)
   lnnz = localNumberOfNonzeros 
   gnnz = 0 # convert to 64 bit for MPI call
   MPI.Allreduce(&lnnz, &gnnz, 1, MPI_LONG_LONG_INT, MPI_SUM, MPI_COMM_WORLD)
-  totalNumberOfNonzeros = gnnz // Copy back
+  totalNumberOfNonzeros = gnnz # Copy back
   totalNumberOfNonzeros = localNumberOfNonzeros
   # If this assert fails, it most likely means that the global_int_t is set to int and should be set to long long
   # This assert is usually the first to fail as problem size increases beyond the 32-bit integer range.
-  @assert(totalNumberOfNonzeros>0) // Throw an exception of the number of nonzeros is less than zero (can happen if int overflow)
+  @assert(totalNumberOfNonzeros>0) # Throw an exception of the number of nonzeros is less than zero (can happen if int overflow)
 
   A.title = 0
   A.totalNumberOfRows = totalNumberOfRows
