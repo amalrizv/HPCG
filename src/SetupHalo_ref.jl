@@ -49,10 +49,9 @@ function SetupHalo_ref(A)
     for j=1:nonzerosInRow[i]
       curIndex = mtxIndG[i][j]
       rankIdOfColumnEntry = ComputeRankOfMatrixRow(*(A.geom), curIndex)
-      HPCG_fout << "rank, row , col, globalToLocalMap[col] = " << A.geom->rank << " " << currentGlobalRow << " "
-          << curIndex << " " << A.globalToLocalMap[curIndex] << endl
+      @debug("rank, row , col, globalToLocalMap[col] = $A.geom->rank $currentGlobalRow $curIndex $A.globalToLocalMap[curIndex]\n")
       if A.geom->rank!=rankIdOfColumnEntry #If column index is not a row index, then it comes from another processor
-        receiveList[rankIdOfColumnEntry].insert(curIndex)
+        receiveList[rankIdOfColumnEntry].insert(curIndex)  
         sendList[rankIdOfColumnEntry].insert(currentGlobalRow) # Matrix symmetry means we know the neighbor process wants my value
       end
     end
@@ -69,7 +68,7 @@ function SetupHalo_ref(A)
   end
 
   # These are all attributes that should be true, due to symmetry
-  HPCG_fout << "totalToBeSent = " << totalToBeSent << " totalToBeReceived = " << totalToBeReceived << endl
+  @debug("totalToBeSent = $totalToBeSent totalToBeReceived = $totalToBeReceived")
   @assert(totalToBeSent==totalToBeReceived) # Number of sent entry should equal number of received
   @assert(sendList.size()==receiveList.size()) # Number of send-to neighbors should equal number of receive-from
   # Each receive-from neighbor should be a send-to neighbor, and send the same number of entries
@@ -79,11 +78,11 @@ function SetupHalo_ref(A)
   end
 
   #Build the arrays and lists needed by the ExchangeHalo function.
-  double * sendBuffer = new double[totalToBeSent]
-  local_int_t * elementsToSend = new local_int_t[totalToBeSent]
-  int * neighbors = new int[sendList.size()]
-  local_int_t * receiveLength = new local_int_t[receiveList.size()]
-  local_int_t * sendLength = new local_int_t[sendList.size()]
+  sendBuffer = Array{FLoat64}(undef,totalToBeSent)
+  elementsToSend = Array{Int64}(undef,totalToBeSent)
+  neighbors = new int[sendList.size()]
+  receiveLength = new local_int_t[receiveList.size()]
+  sendLength = new local_int_t[sendList.size()]
   neighborCount = 0
   receiveEntryCount = 0
   sendEntryCount = 0
@@ -125,11 +124,11 @@ function SetupHalo_ref(A)
   A.sendLength = sendLength
   A.sendBuffer = sendBuffer
 
-  HPCG_fout << " For rank " << A.geom->rank << " of " << A.geom->size << ", number of neighbors = " << A.numberOfSendNeighbors << endl
+  @debug(" For rank $A.geom.rank of $A.geom->size number of neighbors $A.numberOfSendNeighbors")
   for i = 1: A.numberOfSendNeighbors
-    HPCG_fout << "     rank " << A.geom->rank << " neighbor " << neighbors[i] << " send/recv length = " << sendLength[i] << "/" << receiveLength[i] << endl
+    @debug("     rank $A.geom.rank neighbor $neighbors[i] send/recv length = $sendLength[i]/$receiveLength[i]")
     for j = 1: j<sendLength[i]
-      HPCG_fout << "       rank " << A.geom->rank << " elementsToSend[" << j << "] = " << elementsToSend[j] << endl
+      @debug("       rank $A.geom.rank elementsToSend[$j] = $elementsToSend[j]")
     end
   end
 

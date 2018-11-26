@@ -5,11 +5,11 @@
 
 
 mutable struct TestNormsData
-	values  #!< sample values
-	mean    #!< mean of all sampes
-	variance  #!< variance of mean
-	samples   #!< number of samples
-	pass      #!< pass/fail indicator
+	values::Array{Float64}  #!< sample values
+	mean::{Float64}    #!< mean of all sampes
+	variance::Float64  #!< variance of mean
+	samples::Int64   #!< number of samples
+	pass::Bool      #!< pass/fail indicator
 end
 
 
