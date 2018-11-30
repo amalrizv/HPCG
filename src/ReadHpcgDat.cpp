@@ -1,73 +1,32 @@
+function ReadHpcgDat(localDimensions, secondsPerRun, localProcDimensions) 
+  hpcgStream = open("hpcg.dat", "r")
+  readuntil(hpcgStream, '\n')
+  readuntil(hpcgStream, '\n')
 
-//@HEADER
-// ***************************************************
-//
-// HPCG: High Performance Conjugate Gradient Benchmark
-//
-// Contact:
-// Michael A. Heroux ( maherou@sandia.gov)
-// Jack Dongarra     (dongarra@eecs.utk.edu)
-// Piotr Luszczek    (luszczek@eecs.utk.edu)
-//
-// ***************************************************
-//@HEADER
 
-#include <cstdio>
+  for i=1:3
+    localDImensions[i] =  strip(readuntil(hpcgStream, ' '))
+    if localDimensions[i] < 16
+      localDimensions[i] = 16
+    end
+  end
+  readuntil(hpcgStream, '\n') # skip the rest of the second line
 
-#include "ReadHpcgDat.hpp"
+  secondsPerRun  = strip(readuntil(hpcgStream,' ' ))
 
-static int
-SkipUntilEol(FILE *stream) {
-  int chOrEof;
-  bool finished;
+  if secondsPerRun[1] < 0
+    secondsPerRun[1] = 30 * 60 # 30 minutes
+  end
 
-  do {
-    chOrEof = fgetc( stream );
-    finished = (chOrEof == EOF) || (chOrEof == '\n') || (chOrEof == '\r');
-  } while (! finished);
+  readuntil(hpcgStream, '\n') #skip the rest of the third line
 
-  if ('\r' == chOrEof) { // on Windows, \r might be followed by \n
-    int chOrEofExtra = fgetc( stream );
+  for i= 1:3
+    # the user didn't specify (or values are invalid) process dimensions
+    localProcDimensions[i] = strip(readuntil(hpcgStream, ' '))
+    if localProcDimensions[i] < 1
+      localProcDimensions[i] = 0 # value 0 means: "not specified" and it will be fixed later
+    end
+  close(hpcgStream)
 
-    if ('\n' == chOrEofExtra || EOF == chOrEofExtra)
-      chOrEof = chOrEofExtra;
-    else
-      ungetc(chOrEofExtra, stream);
-  }
-
-  return chOrEof;
-}
-
-int
-ReadHpcgDat(int *localDimensions, int *secondsPerRun, int *localProcDimensions) {
-  FILE * hpcgStream = fopen("hpcg.dat", "r");
-
-  if (! hpcgStream)
-    return -1;
-
-  SkipUntilEol(hpcgStream); // skip the first line
-
-  SkipUntilEol(hpcgStream); // skip the second line
-
-  for (int i = 0; i < 3; ++i)
-    if (fscanf(hpcgStream, "%d", localDimensions+i) != 1 || localDimensions[i] < 16)
-      localDimensions[i] = 16;
-
-  SkipUntilEol( hpcgStream ); // skip the rest of the second line
-
-  if (secondsPerRun!=0) { // Only read number of seconds if the pointer is non-zero
-    if (fscanf(hpcgStream, "%d", secondsPerRun) != 1 || secondsPerRun[0] < 0)
-      secondsPerRun[0] = 30 * 60; // 30 minutes
-  }
-
-  SkipUntilEol( hpcgStream ); // skip the rest of the third line
-
-  for (int i = 0; i < 3; ++i)
-    // the user didn't specify (or values are invalid) process dimensions
-    if (fscanf(hpcgStream, "%d", localProcDimensions+i) != 1 || localProcDimensions[i] < 1)
-      localProcDimensions[i] = 0; // value 0 means: "not specified" and it will be fixed later
-
-  fclose(hpcgStream);
-
-  return 0;
-}
+  return 0
+end

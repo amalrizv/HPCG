@@ -1,29 +1,7 @@
 
-//@HEADER
-// ***************************************************
-//
-// HPCG: High Performance Conjugate Gradient Benchmark
-//
-// Contact:
-// Michael A. Heroux ( maherou@sandia.gov)
-// Jack Dongarra     (dongarra@eecs.utk.edu)
-// Piotr Luszczek    (luszczek@eecs.utk.edu)
-//
-// ***************************************************
-//@HEADER
 
+include("OutputFile_header.jl")
 
-#include <fstream>
-#include <list>
-#include <sstream>
-#include <string>
-
-#include "OutputFile.hpp"
-
-using std::string;
-using std::stringstream;
-using std::list;
-using std::ofstream;
 
 OutputFile::OutputFile(const string & name_arg, const string & version_arg)
   : name(name_arg), version(version_arg), eol("\n"), keySeparator("::") {}

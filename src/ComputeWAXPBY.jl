@@ -16,8 +16,8 @@ include("ComputeWAXPBY_ref.jl")
   @param[in] n the number of vector elements (on this processor)
   @param[in] alpha, beta the scalars applied to x and y respectively.
   @param[in] x, y the input vectors
-  @param[out] w the output vector
-  @param[out] isOptimized should be set to false if this routine uses the reference implementation (is not optimized); otherwise leave it unchanged
+  @param[out] w the output vector 
+  @param[out] isOptimized should be set to false if this routine uses the reference implementation (is not optimized) otherwise leave it unchanged
 
   @return returns 0 upon success and non-zero otherwise
 

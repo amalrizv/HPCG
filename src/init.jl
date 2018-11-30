@@ -77,16 +77,16 @@ function HPCG_Init(int * argc_p, char ** *argv_p, params)
   if ! iparams[3]
 	 rt = 0 #If --rt was specified, we already have the runtime, so don't read it from file
   end
-  if ! iparams[0] && ! iparams[1] && ! iparams[2] # no geometry arguments on the command line */
+  if ! iparams[0] && ! iparams[1] && ! iparams[2] # no geometry arguments on the command line 
     ReadHpcgDat(iparams, rt, iparams+7)
     broadcastParams = true
   end
 
-  // Check for small or unspecified nx, ny, nz values
-  // If any dimension is less than 16, make it the max over the other two dimensions, or 16, whichever is largest
+  #Check for small or unspecified nx, ny, nz values
+  #If any dimension is less than 16, make it the max over the other two dimensions, or 16, whichever is largest
   for i =1:3 
-    if (iparams[i] < 16)
-      for (j = 1:2 ++j)
+    if iparams[i] < 16
+      for j = 1:2 
         if iparams[(i+j)%3] > iparams[i]
           iparams[i] = iparams[(i+j)%3]
 	end
@@ -97,7 +97,7 @@ function HPCG_Init(int * argc_p, char ** *argv_p, params)
     end
   end
 
-// Broadcast values of iparams to all MPI processes
+#Broadcast values of iparams to all MPI processes
 #ifndef HPCG_NO_MPI
   if (broadcastParams) 
     MPI.Bcast( iparams, nparams, MPI_INT, 0, MPI.COMM_WORLD )

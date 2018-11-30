@@ -1,6 +1,6 @@
 
 
-include("MixedBaseCounter_header.jl)"
+#include("MixedBaseCounter_header.jl)"
 
 function MixedBaseCounter(counts::Array{Int64}, length::Int64) 
   this = MixedBaseCounter
@@ -13,8 +13,10 @@ function MixedBaseCounter(counts::Array{Int64}, length::Int64)
     this.cur_counts[i] = 0
   end
   #terminate with 0's
-  this.max_counts[i]      = this.cur_counts[i]      = 0
-  this.max_counts[length] = this.cur_counts[length] = 0
+  this.cur_counts[i]   = 0
+  this.max_counts[i]      = this.cur_counts[i]
+  this.cur_counts[length] = 0
+  this.max_counts[length] = this.cur_counts[length] 
 end
 
 function MixedBaseCounter(left::MixedBaseCounter , right::MixedBaseCounter) 
@@ -27,7 +29,7 @@ function MixedBaseCounter(left::MixedBaseCounter , right::MixedBaseCounter)
 end
 
 
-function next() 
+function next(this) 
   for  i =1:this.length
     this.cur_counts[i]++
     if this.cur_counts[i] > this.max_counts[i]) 
@@ -39,7 +41,7 @@ function next()
 end
 
 
-function is_zero() 
+function is_zero(this) 
   for i = 1:this.length
     if this.cur_counts[i]==1
       return 0
@@ -47,7 +49,7 @@ function is_zero()
   return 1
 end
 
-function product(multipliers) 
+function product(this, multipliers) 
   k=0
   x=1
 

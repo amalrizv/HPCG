@@ -164,10 +164,10 @@ function GenerateProblem_ref(A, b,x, xexact)
 
   totalNumberOfNonzeros = 0
   # Use MPI's reduce function to sum all nonzeros
-  MPI.Allreduce(&localNumberOfNonzeros, &totalNumberOfNonzeros, 1, MPI_INT, MPI_SUM, MPI_COMM_WORLD)
+  MPI.Allreduce(localNumberOfNonzeros, totalNumberOfNonzeros, MPI.SUM, MPI.COMM_WORLD)
   lnnz = localNumberOfNonzeros 
   gnnz = 0 # convert to 64 bit for MPI call
-  MPI.Allreduce(&lnnz, &gnnz, 1, MPI_LONG_LONG_INT, MPI_SUM, MPI_COMM_WORLD)
+  MPI.Allreduce(lnnz, gnnz, MPI.SUM, MPI.COMM_WORLD)
   totalNumberOfNonzeros = gnnz # Copy back
   totalNumberOfNonzeros = localNumberOfNonzeros
   # If this assert fails, it most likely means that the global_int_t is set to int and should be set to long long

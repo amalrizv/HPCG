@@ -7,7 +7,6 @@ using MPI
 # Compile this routine only if running with MPI
 
 include("Geometry.jl")
-include("ExchangeHalo.jl")
 
 
 #=
@@ -55,7 +54,7 @@ function ExchangeHalo(A, x)
   # TODO: Thread this loop
   for i = 1 : num_neighbors
     n_recv = receiveLength[i]
-    MPI.Irecv(x_external, n_recv, MPI_DOUBLE, neighbors[i], MPI_MY_TAG, MPI.COMM_WORLD, request+i)
+    request+i = MPI.Irecv!(x_external, neighbors[i], MPI.MY_TAG, MPI.COMM_WORLD)
     x_external += n_recv
   end
 
@@ -76,7 +75,7 @@ function ExchangeHalo(A, x)
   # TODO: Thread this loop
   for i = 1:num_neighbors
     n_send = sendLength[i]
-    MPI.Send(sendBuffer, n_send, MPI_DOUBLE, neighbors[i], MPI_MY_TAG, MPI.COMM_WORLD)
+    MPI.Send(sendBuffer, neighbours[i], MPI.MY_TAG, MPI.COMM_WORLD)
     sendBuffer += n_send
   end
 
@@ -87,12 +86,12 @@ function ExchangeHalo(A, x)
   status = MPI.Status
   # TODO: Thread this loop
   for i = 1: num_neighbors
-    if MPI.Wait(request+i, status) 
-      std::exit(-1) #TODO: have better error exit
+    if MPI.Wait(request+i) 
+      exit(-1) #TODO: have better error exit
     end
   end
 
-  delete [] request
+  free(request)
 
   return
 end

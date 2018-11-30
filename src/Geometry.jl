@@ -33,7 +33,7 @@ mutable struct Geometry
 
 end
 
-/*!
+#=
   Returns the rank of the MPI process that is assigned the global row index
   given as the input argument.
 
@@ -41,7 +41,7 @@ end
   @param[in] index The global row index
 
   @return Returns the MPI rank of the process assigned the row
-*/
+=#
 @inline function ComputeRankOfMatrixRow(geom, index) 
   gnx = geom.gnx
   gny = geom.gny
@@ -49,12 +49,12 @@ end
   iz = index/(gny*gnx)
   iy = (index-iz*gny*gnx)/gnx
   ix = index%gnx
-  // We now permit varying values for nz for any nx-by-ny plane of MPI processes.
-  // npartz is the number of different groups of nx-by-ny groups of processes.
-  // partz_ids is an array of length npartz where each value indicates the z process of the last process in the ith nx-by-ny group.
-  // partz_nz is an array of length npartz containing the value of nz for the ith group.
+  # We now permit varying values for nz for any nx-by-ny plane of MPI processes.
+  # npartz is the number of different groups of nx-by-ny groups of processes.
+  # partz_ids is an array of length npartz where each value indicates the z process of the last process in the ith nx-by-ny group.
+  # partz_nz is an array of length npartz containing the value of nz for the ith group.
 
-  //        With no variation, npartz = 1, partz_ids[0] = npz, partz_nz[0] = nz
+  #        With no variation, npartz = 1, partz_ids[0] = npz, partz_nz[0] = nz
 
   ipz = 0
   ipartz_ids = 0
@@ -70,7 +70,7 @@ end
     end #if loop
 
   end #for loop
-//  ipz = iz/geom.nz
+#  ipz = iz/geom.nz
   ipy = iy/geom.ny
   ipx = ix/geom.nx
   rank = ipx+ipy*geom.npx+ipz*geom.npy*geom.npx
@@ -78,15 +78,16 @@ end
 end
 
 
-/*!
+
+#=
  Destructor for geometry data.
 
  @param[inout] data the geometry data structure whose storage is deallocated
- */
+=#
 @inline function DeleteGeometry(geom) 
 
-  delete [] geom.partz_nz
-  delete [] geom.partz_ids
+  free(geom.partz_nz)
+  free(geom.partz_ids)
 
   return
 end

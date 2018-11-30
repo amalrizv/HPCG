@@ -7,7 +7,7 @@
 
 include("ComputeSPMV_ref.jl")
 
-/*!
+#=
   Routine to compute sparse matrix vector product y = Ax where:
   Precondition: First call exchange_externals to get off-processor values of x
 
@@ -22,7 +22,7 @@ include("ComputeSPMV_ref.jl")
   @return returns 0 upon success and non-zero otherwise
 
   @see ComputeSPMV_ref
-*/
+=#
 function ComputeSPMV(A, x,y) 
 
   # This line and the next two lines should be removed and your version of ComputeSPMV should be used.

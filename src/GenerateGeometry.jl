@@ -64,18 +64,18 @@ function GenerateGeometry(size, rank, numThreads,pz, zl, zu,
   ipx = rank%npx
 
   if rank==0
-    HPCG_fout   << "size = "<< size << endl
-        << "nx  = " << nx << endl
-        << "ny  = " << ny << endl
-        << "nz  = " << nz << endl
-        << "npx = " << npx << endl
-        << "npy = " << npy << endl
-        << "npz = " << npz << endl
+    @debug("size = $size\n
+        nx  = $nx\n
+        ny  = $ny\n
+        nz  = $nz\n
+        npx = $npx\n
+        npy = $npy\n
+        npz = $npz\n")
 
-  HPCG_fout    << "For rank = " << rank << endl
-      << "ipx = " << ipx << endl
-      << "ipy = " << ipy << endl
-      << "ipz = " << ipz << endl
+     @debug("For rank = $rank\n
+      ipx = $ipx\n
+      ipy = $ipy\n
+      ipz = $ipz\n")
 
   end
   @assert(size>=npx*npy*npz)

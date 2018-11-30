@@ -34,7 +34,7 @@ function ComputeWAXPBY_ref(n,alpha, x, beta, y, w)
     for i=1:n
 	wv[i] = xv[i] + beta * yv[i]
     end
-  elseif beta==1.0
+  elif beta==1.0
     for i=1:n 
 	wv[i] = alpha * xv[i] + yv[i]
     end

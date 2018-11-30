@@ -51,7 +51,7 @@ function ComputeSYMGS_ref(A, r, x)
     currentDiagonal = matrixDiagonal[i][0] # Current diagonal value
     sum = rv[i] # RHS value
 
-    for (int j=0 j< currentNumberOfNonzeros j++) 
+    for j=1:currentNumberOfNonzeros 
       curCol = currentColIndices[j]
       sum -= currentValues[j] * xv[curCol]
     end
