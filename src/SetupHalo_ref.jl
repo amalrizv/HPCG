@@ -85,10 +85,10 @@ function SetupHalo_ref(A)
   neighborCount = 0
   receiveEntryCount = 0
   sendEntryCount = 0
-  for (map_iter curNeighbor = receiveList.begin() curNeighbor != receiveList.end() ++curNeighbor, ++neighborCount) 
-    neighborId = curNeighbor->first #rank of current neighbor we are processing
+  for kv in sendList 
+    neighborId = k #rank of current neighbor we are processing
     neighbors[neighborCount] = neighborId # store rank ID of current neighbor
-    receiveLength[neighborCount] = receiveList[neighborId].size()
+    receiveLength[neighborCount] = length(receiveList[neighborId])
     sendLength[neighborCount] = sendList[neighborId].size() # Get count if sends/receives
     for (set_iter i = receiveList[neighborId].begin() i != receiveList[neighborId].end() ++i, ++receiveEntryCount) 
       externalToLocalMap[*i] = localNumberOfRows + receiveEntryCount # The remote columns are indexed at end of internals
