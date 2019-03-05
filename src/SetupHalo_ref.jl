@@ -5,8 +5,8 @@
 =#
 
 using MPI
-#include "SetupHalo_ref.hpp"
-#include "mytimer.hpp"
+include("SetupHalo.jl")
+include("mytimer.jl")
 
 #=
   Reference version of SetupHalo that prepares system matrix data structure and creates data necessary
@@ -69,33 +69,36 @@ function SetupHalo_ref(A)
   # These are all attributes that should be true, due to symmetry
   @debug("totalToBeSent = $totalToBeSent totalToBeReceived = $totalToBeReceived")
   @assert(totalToBeSent==totalToBeReceived) # Number of sent entry should equal number of received
-  @assert(sendList.size()==receiveList.size()) # Number of send-to neighbors should equal number of receive-from
+  @assert(sendList.length()==receiveList.length()) # Number of send-to neighbors should equal number of receive-from
   # Each receive-from neighbor should be a send-to neighbor, and send the same number of entries
-  for kv in sendList
-    @assert(sendList.find(curNeighbor->first)!=sendList.end())
-    @assert(sendList[curNeighbor->first].size()==receiveList[curNeighbor->first].size())
+  for kv in receiveList
+    @assert haskey(sendlist,k)
+    @assert length(sendList[k])==length(receiveList[k]))
   end
 
   #Build the arrays and lists needed by the ExchangeHalo function.
   sendBuffer = Array{Float64}(undef,totalToBeSent)
   elementsToSend = Array{Int64}(undef,totalToBeSent)
-  neighbors = new int[sendList.size()]
-  receiveLength = new local_int_t[receiveList.size()]
-  sendLength = new local_int_t[sendList.size()]
-  neighborCount = 0
+  neighbors = Array{Int64}(undef,length(collect(keys(sendList))))
+  receiveLength = Array{Int64}(undef, length(collect(keys(receiveList))))
+  sendLength = Array{Int64}(undef, collect(keys(receiveList))))
+  neighborCount = 1
   receiveEntryCount = 0
   sendEntryCount = 0
   for kv in sendList 
     neighborId = k #rank of current neighbor we are processing
     neighbors[neighborCount] = neighborId # store rank ID of current neighbor
     receiveLength[neighborCount] = length(receiveList[neighborId])
-    sendLength[neighborCount] = sendList[neighborId].size() # Get count if sends/receives
-    for (set_iter i = receiveList[neighborId].begin() i != receiveList[neighborId].end() ++i, ++receiveEntryCount) 
-      externalToLocalMap[*i] = localNumberOfRows + receiveEntryCount # The remote columns are indexed at end of internals
+    sendLength[neighborCount] = length(sendList[neighborId]) # Get count if sends/receives    
+    neighbourCount +=1
+    
+    for i in receiveList[neighborId]
+      externalToLocalMap[i] = localNumberOfRows + receiveEntryCount # The remote columns are indexed at end of internals
+      receiveCount += 1
     end
-    for (set_iter i = sendList[neighborId].begin() i != sendList[neighborId].end() ++i, ++sendEntryCount) 
-      # if (geom.rank==1) HPCG_fout << "*i, globalToLocalMap[*i], sendEntryCount = " << *i << " " << A.globalToLocalMap[*i] << " " << sendEntryCount << endl
+    for i in sendList[neighborId] 
       elementsToSend[sendEntryCount] = A.globalToLocalMap[*i] // store local ids of entry to send
+      sendEntryCount +=1
     end
   end
 

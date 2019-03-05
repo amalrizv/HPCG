@@ -6,7 +6,7 @@ function ComputePrimeFactors(n, factors)
 
   # remove 2 as a factor with shifts instead "/" and "%"
   while n > 1 & (n & 1) == 0  
-    factors[2]++
+    factors[2] = factors[2] +1
     n>>=1
   end
 
@@ -15,8 +15,8 @@ function ComputePrimeFactors(n, factors)
     while 1 
       r = div(n, d)
       rr = rem(n,d)
-      if rr == 0 {
-        factors[d]++
+      if rr == 0 
+        factors[d] = facctors[d] +1
         n = r
         continue
       end
@@ -25,7 +25,8 @@ function ComputePrimeFactors(n, factors)
   d = d+1
   end
   if n > 1 || factors.size() == 0  # left with a prime or x==1
-    factors[n]++
+    factors[n] = factors[n]+1
+  end
 end
 
 function pow_i(x,p) 
@@ -90,7 +91,7 @@ function ComputeOptimalShapeXYZ(xyz, x, y, z)
 
     c1.next() 
 	while ! c1.is_zero() 
-     	   MixedBaseCounter c2(c_main, c1) # "c2" gets the factors remaining in "c_main" that "c1" doesn't have
+     	   c2 = MixedBaseCounter(c_main, c1) # "c2" gets the factors remaining in "c_main" that "c1" doesn't have
            c2.next() 
 	   while ! c2.is_zero()
         	tf1 = Int64(c1.product(distinct_factors))

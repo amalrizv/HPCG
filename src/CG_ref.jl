@@ -14,9 +14,6 @@ include("ComputeDotProduct_ref.jl")
 include("ComputeWAXPBY_ref.jl")
 
 
-# Use TICK and TOCK to time a code section in MATLAB-like fashion
-#define TICK()  t0 = mytimer() #!< record current time in 't0'
-#define TOCK(t) t += mytimer() - t0 #!< store time difference in 't' using time in 't0'
 
 #=
   Reference routine to compute an approximate solution to Ax = b
@@ -36,7 +33,7 @@ include("ComputeWAXPBY_ref.jl")
 =#
 function CG_ref(const A, data, const b, x, const max_iter, const tolerance, niters, normr, normr0, times, doPreconditioning) 
 
-  t_begin = mytimer()  # Start timing right away
+  t_begin = time_ns()  # Start timing right away
   normr = 0.0
   double rtz = 0.0
   oldrtz = 0.0
@@ -75,15 +72,15 @@ function CG_ref(const A, data, const b, x, const max_iter, const tolerance, nite
 #endif
   # p is of length ncols, copy x to p for sparse MV operation
   CopyVector(x, p)
-  TICK() 
+  tic() 
 	ComputeSPMV_ref(A, p, Ap)  
-  TOCK(t3) # Ap = A*p
-  TICK() 
+  t3 = toc() # Ap = A*p
+  tic() 
   ComputeWAXPBY_ref(nrow, 1.0, b, -1.0, Ap, r) 
-  TOCK(t2) # r = b - Ax (x stored in p)
-  TICK() 
+  t2 = toc() # r = b - Ax (x stored in p)
+  tic() 
   ComputeDotProduct_ref(nrow, r, r, normr, t4)  
-  TOCK(t1)
+  t1 = toc()
   normr = sqrt(normr)
 #ifdef HPCG_DEBUG
   if A.geom.rank==0 
@@ -97,43 +94,43 @@ function CG_ref(const A, data, const b, x, const max_iter, const tolerance, nite
   # Start iterations
   while nomr/nomr0 > tolerance
     for (k=1:max_iter 
-    	TICK()
+    	tic()
     	if doPreconditioning
       		ComputeMG_ref(A, r, z) # Apply preconditioner
     	else
       		ComputeWAXPBY_ref(nrow, 1.0, r, 0.0, r, z) # copy r to z (no preconditioning)
-    	TOCK(t5) # Preconditioner apply time
+    	toc(t5) # Preconditioner apply time
 
     	if k == 1
-      		CopyVector(z, p) TOCK(t2) # Copy Mr to p
-      		TICK() 
+      		CopyVector(z, p) toc(t2) # Copy Mr to p
+      		tic() 
       		ComputeDotProduct_ref(nrow, r, z, rtz, t4) 
-      		TOCK(t1) # rtz = r'*z
+      		t1 = toc() # rtz = r'*z
     	else 
       		oldrtz = rtz
-      		TICK() 
+      		tic() 
       		ComputeDotProduct_ref(nrow, r, z, rtz, t4) 
-      		TOCK(t1) # rtz = r'*z
+      		t1 = toc() # rtz = r'*z
       		beta = rtz/oldrtz
-      		TICK() 
+      		tic() 
       		ComputeWAXPBY_ref(nrow, 1.0, z, beta, p, p)  
-      		TOCK(t2) # p = beta*p + z
+      		t2 = toc() # p = beta*p + z
     	end
 
-    	TICK() 
+    	tic() 
     	ComputeSPMV_ref(A, p, Ap) 
-    	TOCK(t3) # Ap = A*p
-    	TICK() 
+    	t3 = toc() # Ap = A*p
+    	tic() 
     	ComputeDotProduct_ref(nrow, p, Ap, pAp, t4) 
-    	TOCK(t1) # alpha = p'*Ap
+    	t1 = toc() # alpha = p'*Ap
     	alpha = rtz/pAp
-    	TICK() 
+    	tic() 
     	ComputeWAXPBY_ref(nrow, 1.0, x, alpha, p, x)# x = x + alpha*p
     	ComputeWAXPBY_ref(nrow, 1.0, r, -alpha, Ap, r)  
-    	TOCK(t2)# r = r - alpha*Ap
-    	TICK() 
+    	t2 = toc()# r = r - alpha*Ap
+    	tic() 
     	ComputeDotProduct_ref(nrow, r, r, normr, t4) 
-    	TOCK(t1)
+    	t1 = toc()
     	normr = sqrt(normr)
 #ifdef HPCG_DEBUG
     	if A.geom.rank==0 & k%print_freq == 0 || k == max_iter

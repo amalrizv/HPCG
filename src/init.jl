@@ -44,31 +44,26 @@ function HPCG_Init(int * argc_p, char ** *argv_p, params)
   const int nparams = (sizeof cparams) / (sizeof cparams[0])
   bool broadcastParams = false # Make true if parameters read from file.
 
-  iparams = (int *)malloc(sizeof(int) * nparams)
+  iparams = Array{Int64}(nparams)
 
-  # Initialize iparams
-  for i =1:nparams 
-	iparams[i] = 0
-  end
   
   # for sequential and some MPI implementations it's OK to read first three args */
-  for i = 1:nparams 
-    if argc <= i+1 || sscanf(argv[i+1], "%d", iparams+i) != 1 || iparams[i] < 10
+  for i = 1:4
+    if  ARGS[i]< 10
+	 iparams = Int64(ARGS[1])
 	 iparams[i] = 0
     end
   end
   # for some MPI environments, command line arguments may get complicated so we need a prefix */
   i = 1 
-  while i <= argc && argv[i] 
+  while i <= length[ARGS] 
     for j =1:nparams 
-      if startswith(argv[i], cparams[j])
+      if startswith(ARGS[i], cparams[j])
 	#startswith(s::AbstractString, prefix::AbstractString)
 	#Returns true if s starts with prefix. If prefix is a vector or set of characters, tests whether the first character of s belongs to that set.
 
-        if sscanf(argv[i]+strlen(cparams[j]), "%d", iparams+j) != 1
+        ARGS[i]+strlen(cparams[j]) = iparams[j]
           iparams[j] = 0
-	end
-      end
     end 
    i = i+1
   end

@@ -20,19 +20,16 @@
 
 #include <cmath>
 
-#include "hpcg.hpp"
+include("hpcg.jl")
 
-#include "CG.hpp"
-#include "mytimer.hpp"
-#include "ComputeSPMV.hpp"
-#include "ComputeMG.hpp"
-#include "ComputeDotProduct.hpp"
-#include "ComputeWAXPBY.hpp"
+include("CG.jl")
+include("mytimer.jl")
+include("ComputeSPMV.jl")
+include("ComputeMG.jl")
+include("ComputeDotProduct.jl")
+include("ComputeWAXPBY.jl")
 
 
-# Use TICK and TOCK to time a code section in MATLAB-like fashion
-#define TICK()  t0 = mytimer() #!< record current time in 't0'
-#define TOCK(t) t += mytimer() - t0 #!< store time difference in 't' using time in 't0'
 
 #=
   Routine to compute an approximate solution to Ax = b
@@ -77,7 +74,7 @@ function  CG(const A, data, const b, x, const max_iter, const tolerance, niters,
   Ap = data.Ap
 
   if !doPreconditioning && A.geom->rank==0
-	 HPCG_fout << "WARNING: PERFORMING UNPRECONDITIONED ITERATIONS" << std::endl
+	 @debug("WARNING: PERFORMING UNPRECONDITIONED ITERATIONS")
   end
 #ifdef HPCG_DEBUG
   print_freq = 1
@@ -89,18 +86,18 @@ function  CG(const A, data, const b, x, const max_iter, const tolerance, niters,
   end
 #endif
   # p is of length ncols, copy x to p for sparse MV operation
-  CopyVector(x, p)
-  TICK() 
+  x = p
+  tic() 
   ComputeSPMV(A, p, Ap) 
-  TOCK(t3) 
+  t3 = toc() 
   #Ap = A*p
-  TICK() 
+  tic() 
   ComputeWAXPBY(nrow, 1.0, b, -1.0, Ap, r, A.isWaxpbyOptimized)
-  TOCK(t2) 
+  t2 = toc(t2) 
   # r = b - Ax (x stored in p)
-  TICK() 
+  tic() 
   ComputeDotProduct(nrow, r, r, normr, t4, A.isDotProductOptimized)
-  TOCK(t1)
+  t1 = toc()
   normr = sqrt(normr)
 #ifdef HPCG_DEBUG
   if A.geom->rank==0 
@@ -113,49 +110,49 @@ function  CG(const A, data, const b, x, const max_iter, const tolerance, niters,
   # Start iterations
   while normr/normr0 > tolerance
   for k=1:max_iter+1
-    TICK()
+    tic()
     if doPreconditioning
       ComputeMG(A, r, z) # Apply preconditioner
     else
       CopyVector (r, z) # copy r to z (no preconditioning)
-    TOCK(t5) # Preconditioner apply time
+    toc(t5) # Preconditioner apply time
 
     if k == 1
-      TICK() 
+      tic() 
       ComputeWAXPBY(nrow, 1.0, z, 0.0, z, p, A.isWaxpbyOptimized)
-      TOCK(t2) # Copy Mr to p
-      TICK()
+      t2 = toc() # Copy Mr to p
+      tic()
       ComputeDotProduct (nrow, r, z, rtz, t4, A.isDotProductOptimized)
-      TOCK(t1) # rtz = r'*z
-      else 
+      t1 = toc() # rtz = r'*z
+   else 
       oldrtz = rtz
-      TICK() 
+      tic() 
       ComputeDotProduct (nrow, r, z, rtz, t4, A.isDotProductOptimized) 
-      TOCK(t1) # rtz = r'*z
+      t1 = toc() # rtz = r'*z
       beta = rtz/oldrtz
-      TICK() 
+      tic() 
       ComputeWAXPBY (nrow, 1.0, z, beta, p, p, A.isWaxpbyOptimized)  
-      TOCK(t2) # p = beta*p + z
+      t2 = toc() # p = beta*p + z
     end
 
-    TICK() 
+    tic() 
     ComputeSPMV(A, p, Ap) 
-    TOCK(t3) # Ap = A*p
-    TICK() 
+    t3 = toc() # Ap = A*p
+    tic() 
     ComputeDotProduct(nrow, p, Ap, pAp, t4, A.isDotProductOptimized) 
-    TOCK(t1) # alpha = p'*Ap
+    t1 = toc() # alpha = p'*Ap
     alpha = rtz/pAp
-    TICK() 
+    tic() 
     ComputeWAXPBY(nrow, 1.0, x, alpha, p, x, A.isWaxpbyOptimized)# x = x + alpha*p
     ComputeWAXPBY(nrow, 1.0, r, -alpha, Ap, r, A.isWaxpbyOptimized)
-    TOCK(t2)# r = r - alpha*Ap
-    TICK() 
+    t2 = toc()# r = r - alpha*Ap
+    tic() 
     ComputeDotProduct(nrow, r, r, normr, t4, A.isDotProductOptimized)
-    TOCK(t1)
+    t1 = toc()
     normr = sqrt(normr)
 #ifdef HPCG_DEBUG
     if A.geom->rank==0 && (k%print_freq == 0 || k == max_iter)
-      HPCG_fout << "Iteration = "<< k << "   Scaled Residual = "<< normr/normr0 << std::endl
+      @debug("Iteration = ",k,"   Scaled Residual = ",normr/normr0, "\n")
 #endif
     niters = k
   end

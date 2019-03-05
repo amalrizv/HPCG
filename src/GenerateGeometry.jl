@@ -5,7 +5,6 @@
 =#
 
 include("ComputeOptimalShapeXYZ.jl")
-include("GenerateGeometry.jl")
 
 include("hpcg.jl")
 
@@ -37,17 +36,17 @@ function GenerateGeometry(size, rank, numThreads,pz, zl, zu,
   npartz = 0
   if pz==0 # No variation in nz sizes
     npartz = 1
-    partz_ids = new int[1] # WHAT
-    partz_nz = new local_int_t[1] #WHAT
+    partz_ids = Array{Int64,1}(undef,1) # WHAT
+    partz_nz = Array{Int64,1}(undef,1) #WHAT
     partz_ids[0] = npz  #CHECK INDICES HERE
     partz_nz[0] = nz
   
   else 
     npartz = 2
-    partz_ids = new int[2]
+    partz_ids = Array{Int64}(undef,1)
     partz_ids[0] = pz
     partz_ids[1] = npz
-    partz_nz = new local_int_t[2]
+    partz_nz = Array{Int64}(undef,1)
     partz_nz[0] = zl
     partz_nz[1] = zu
   end
