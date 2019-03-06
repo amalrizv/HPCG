@@ -43,7 +43,6 @@ include("TestNorms.jl")
 
 =#
 function main() 
-
   MPI.Init()
 
   params=HPCG_Params
@@ -63,7 +62,6 @@ function main()
   end 
 
   if rank==0 
-    println("Press key to continue")
     c = readline()
   end
   MPI.Barrier(MPI.COMM_WORLD)
@@ -366,3 +364,4 @@ function main()
   MPI.Finalize()
   return 0
 end
+main()

@@ -1,4 +1,3 @@
-include("GenerateCoarseProblem.jl")
 include("GenerateGeometry.jl")
 include("GenerateProblem.jl")
 include("SetupHalo.jl")
@@ -13,7 +12,6 @@ include("SetupHalo.jl")
 =#
 
 function GenerateCoarseProblem(const Af) 
-
   # Make local copies of geometry information.  Use global_int_t since the RHS products in the calculations
   # below may result in global range values.
    nxf = Af.geom.nx
@@ -23,16 +21,17 @@ function GenerateCoarseProblem(const Af)
   nxc = Int64
   nyc = Int64
   nzc = Int64 #Coarse nx, ny, nz
+  #Need fine grid dimensions to be divisible by 2
   @assert(nxf%2==0) 
   @assert(nyf%2==0) 
-  @assert(nzf%2==0) # Need fine grid dimensions to be divisible by 2
+  @assert(nzf%2==0) 
   nxc = nxf/2 nyc = nyf/2 nzc = nzf/2
   f2cOperator = Array{Int64}(undef,Af.localNumberOfRows)
    localNumberOfRows = nxc*nyc*nzc # This is the size of our subblock
   # If this @assert fails, it most likely means that the local_int_t is set to int and should be set to long long
   @assert(localNumberOfRows>0) # Throw an exception of the number of rows is less than zero (can happen if "int" overflows)
 
-  # Use a parallel loop to do initial assignment:
+  # Use a parallel loop to do initial assignment:")
   # distributes the physical placement of arrays of pointers across the memory system
   for  i=1:localNumberOfRows 
     f2cOperator[i] = 0
@@ -52,15 +51,14 @@ function GenerateCoarseProblem(const Af)
       end # end iy loop
     end # end even iz if statement
   end # end iz loop
-
-  # Construct the geometry and linear system
+  # Construct the geometry and linear system")
   geomc = Geometry
   zlc = 0 # Coarsen nz for the lower block in the z processor dimension
   zuc = 0 # Coarsen nz for the upper block in the z processor dimension
   pz = Af.geom.pz
   if pz>0
-    zlc = Af.geom.partz_nz[0]/2 # Coarsen nz for the lower block in the z processor dimension
-    zuc = Af.geom.partz_nz[1]/2 # Coarsen nz for the upper block in the z processor dimension
+    zlc = Af.geom.partz_nz[1]/2 # Coarsen nz for the lower block in the z processor dimension
+    zuc = Af.geom.partz_nz[2]/2 # Coarsen nz for the upper block in the z processor dimension
   end
   GenerateGeometry(Af.geom.size, Af.geom.rank, Af.geom.numThreads, Af.geom.pz, zlc, zuc, nxc, nyc, nzc, Af.geom.npx, Af.geom.npy, Af.geom.npz, geomc)
 
@@ -81,3 +79,4 @@ function GenerateCoarseProblem(const Af)
 
   return
 end
+

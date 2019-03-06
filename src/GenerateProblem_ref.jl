@@ -47,7 +47,7 @@ function GenerateProblem_ref(A, b,x, xexact)
   # Allocate arrays that are of length localNumberOfRows
   nonzerosInRow = Array{Any}(undef,localNumberOfRows)
   mtxIndG = Array{Int64}(undef, localNumberOfRows)
-  mtxIndL =Array{Int64}(localNumberOfRows)
+  mtxIndL =Array{Int64}(undef,localNumberOfRows)
   matrixValues = Array{Float64}(undef,localNumberOfRows)
   matrixDiagonal = Array{Float64}(undef,localNumberOfRows)
 
@@ -57,7 +57,7 @@ function GenerateProblem_ref(A, b,x, xexact)
   if x!=0
 	x =  Vector(localNumberOfRows)
   end
-  if (xexact!=0) 
+  if xexact!=0
 	xexact = Vector(localNumberOfRows)
   end
   bv = zeros(localNumberOfRows)
@@ -77,15 +77,16 @@ function GenerateProblem_ref(A, b,x, xexact)
 
   #Use a parallel loop to do initial assignment:
   #distributes the physical placement of arrays of pointers across the memory system
+
   for i=1:localNumberOfRows 
     matrixValues[i] = 0
     matrixDiagonal[i] = 0
     mtxIndG[i] = 0
     mtxIndL[i] = 0
   end
-#  if HPCG_CONTIGUOUS_ARRAYS==1	#Consider making HPCG_CONTIGUOS_ARRAYS A Bool 
+#  if HPCG_CONTIGUOUS_ARRAYS==1	Consider making HPCG_CONTIGUOS_ARRAYS A Bool 
   for i=1:localNumberOfRows 
-    mtxIndL[i] = Array{FLoat64}(undef,numberOfNonzerosPerRow)
+    mtxIndL[i] = Array{Float64}(undef,numberOfNonzerosPerRow)
   end
   for i=1:localNumberOfRows 
     matrixValues[i] = Array{Float64}(undef,numberOfNonzerosPerRow)
@@ -94,16 +95,15 @@ function GenerateProblem_ref(A, b,x, xexact)
    mtxIndG[i] = Array{Float64}(undef,numberOfNonzerosPerRow)
   end
 #else
-  mtxIndL[1] = Arrya{Float64}(undef,localNumberOfRows * numberOfNonzerosPerRow)
-  matrixValues[1] = Array{FLoat64}(undef,localNumberOfRows * numberOfNonzerosPerRow)
+  mtxIndL[1] = Array{Float64}(undef,localNumberOfRows * numberOfNonzerosPerRow)
+  matrixValues[1] = Array{Float64}(undef,localNumberOfRows * numberOfNonzerosPerRow)
   mtxIndG[1] = Array{Float64}(undef,localNumberOfRows * numberOfNonzerosPerRow)
 
   for i=1:localNumberOfRows
 	  mtxIndL[i] = mtxIndL[1] + i * numberOfNonzerosPerRow
 	  matrixValues[i] = matrixValues[1] + i * numberOfNonzerosPerRow
-	  mtxIndG[i] = mtxIndG[1 + i * numberOfNonzerosPerRow
+	  mtxIndG[i] = mtxIndG[1] + i * numberOfNonzerosPerRow
   end
-#endif
    localNumberOfNonzeros = 0
   # TODO:  This triply nested loop could be flattened or use nested parallelism
   for iz=1:nz
@@ -117,7 +117,7 @@ function GenerateProblem_ref(A, b,x, xexact)
          A.globalToLocalMap[currentGlobalRow] = currentLocalRow
 
          A.localToGlobalMap[currentLocalRow] = currentGlobalRow
-         @debug(" rank, globalRow, localRow = $A.geom.rank $currentGlobalRow $(A.globalToLocalMap[$currentGlobalRow]))")
+         @debug(" rank, globalRow, localRow = $A.geom.rank $currentGlobalRow ",A.globalToLocalMap[currentGlobalRow])
          numberOfNonzerosInRow = 0
          currentValuePointer = matrixValues[currentLocalRow]  #Pointer to current value in current row
          currentIndexPointerG = mtxIndG[currentLocalRow] # Pointer to current index in current row
@@ -132,21 +132,24 @@ function GenerateProblem_ref(A, b,x, xexact)
                      curcol = currentGlobalRow+sz*gnx*gny+sy*gnx+sx
                     if curcol==currentGlobalRow
                       matrixDiagonal[currentLocalRow] = currentValuePointer
-                      currentValuePointer[cvp]++ = 26.0
-		      cvp+=1
+                      currentValuePointer[cvp] = currentValuePointer[cvp]+1
+		      currentValuePointer[cvp]  = 26.0
+		      cvp = cvp + 1
                     else 
-                      currentValuePointeri[cvp]++ = -1.0
-		      cvp+=1
+                      currentValuePointer[cvp] = currentValuePointer[cvp]+1
+                      currentValuePointer[cvp] = -1.0
+		      cvp = cvp + 1
                     end
-                    currentIndexPointerG[cipg]++ = curcol
-		    cipg+=1
-                    numberOfNonzerosInRow++
-                  end #  end x bounds test
-                end # end sx loop
-              end # end y bounds test
-            end # end sy loop
-           end #end z bounds test
-        end # end sz loop
+		    currentIndexPointerG[cpg] = currentIndexPointerG[cpg]+1
+                    currentIndexPointerG[cpg] = curcol
+		    cipg = cipg + 1
+                    numberOfNonzerosInRow = numberOfNonzerosInRow +1
+                  end #  stop x bounds test
+                end # stop sx loop
+              end # stop y bounds test
+            end # stop sy loop
+           end #stop z bounds test
+        end # stop sz loop
         nonzerosInRow[currentLocalRow] = numberOfNonzerosInRow
         if b!=0
 	      bv[currentLocalRow] = 26.0 - (numberOfNonzerosInRow-1)
@@ -157,10 +160,10 @@ function GenerateProblem_ref(A, b,x, xexact)
         if xexact!=0 
 		xexactv[currentLocalRow] = 1.0
 	end
-      end #  end ix loop
-    end # end iy loop
-  end #  end iz loop
-  @debug("Process $A.geom.rank of $A.geom.size has $localNumberOfRows rows.\n Process $A.geom.rank of $A.geom.size has $localNumberOfNonzeros nonzeros.\n" 
+      end #  stop ix loop
+    end # stop iy loop
+  end # stop iz loop
+  @debug("Process $A.geom.rank of $A.geom.size has $localNumberOfRows rows.\n Process $A.geom.rank of $A.geom.size has $localNumberOfNonzeros nonzeros.\n") 
 
   totalNumberOfNonzeros = 0
   # Use MPI's reduce function to sum all nonzeros
