@@ -3,9 +3,6 @@
  HPCG data structure
 =#
 
-include("hpcg.jl")
-include("SpMatrix.jl")
-include("Vector.jl")
 include("CGData.jl")
 
 

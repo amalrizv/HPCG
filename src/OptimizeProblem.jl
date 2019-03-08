@@ -26,48 +26,47 @@ function OptimizeProblem(A, data, b, x, xexact)
   # Right now it does nothing, so compiling with a check for unused variables results in complaints
 
 #if defined(HPCG_USE_MULTICOLORING)
-  const nrow = A.localNumberOfRows
-  colors = Vector((nrow, nrow) # value `nrow' means `uninitialized' initialized colors go from 0 to nrow-1
+  nrow = A.localNumberOfRows
+  colors = Vector(nrow, nrow) # value `nrow' means `uninitialized' initialized colors go from 0 to nrow-1
   totalColors = 1
   colors[1] = 0 # first point gets color 0
 
   # Finds colors in a greedy (a likely non-optimal) fashion.
 
   for i=1:nrow 
-    if colors[i] == nrow # if color not assigned
-      assigned = Vector(totalColors, 0)
-      currentlyAssigned = 0
-      const currentColIndices = A.mtxIndL[i]
-      const currentNumberOfNonzeros = A.nonzerosInRow[i]
+	if colors[i] == nrow # if color not assigned
+      		assigned = Vector(totalColors, 0)
+      		currentlyAssigned = 0
+      		currentColIndices = A.mtxIndL[i]
+      		currentNumberOfNonzeros = A.nonzerosInRow[i]
 
-      for j=1:currentNumberOfNonzeros # scan neighbors
-        curCol = currentColIndices[j]
-        if curCol < i # if this point has an assigned color (points beyond `i' are unassigned)
-          if assigned[colors[curCol]] == 0
-            currentlyAssigned += 1
-          end
-          assigned[colors[curCol]] = 1 # this color has been used before by `curCol' point
-        end # else  could take advantage of indices being sorted
-      end # end scanning neighbours
+      		for j=1:currentNumberOfNonzeros # scan neighbors
+        		curCol = currentColIndices[j]
+        		if curCol < i # if this point has an assigned color (points beyond `i' are unassigned)
+          			if assigned[colors[curCol]] == 0
+            				currentlyAssigned += 1
+				end
+          		assigned[colors[curCol]] = 1 # this color has been used before by `curCol' point
+        		end # else  could take advantage of indices being sorted
+      		end # end scanning neighbours
 
-      if currentlyAssigned < totalColors # if there is at least one color left to use
-        for j=1:totalColors  # try all current colors
-          if assigned[j] == 0 # if no neighbor with this color
-            colors[i] = j
-            break
-          else 
-            if colors[i] == nrow 
-               colors[i] = totalColors
-               totalColors += 1
-	  end
-        end # all colors tried
-      end # no more color left to use
+      		if currentlyAssigned < totalColors # if there is at least one color left to use
+        		for j=1:totalColors  # try all current colors
+          			if assigned[j] == 0 # if no neighbor with this color
+            				colors[i] = j
+            				break
+          			elseif colors[i] == nrow 
+               				colors[i] = totalColors
+               				totalColors += 1
+				end
+	  		end
+        	end # all colors tried
+      	end # no more color left to use
     end #if loop for if color not assigned 
-  
 
     counters = Vector(totalColors)
     for i=1:nrow
-      counters[colors[i]]++
+      counters[colors[i]]+=1
     end
     old = Int64 
     old0 = Int64
@@ -80,10 +79,9 @@ function OptimizeProblem(A, data, b, x, xexact)
 
   # translate `colors' into a permutation
     for i=1:nrow # for each color `c'
-      colors[i] = counters[colors[i]]++
+      colors[i] = counters[colors[i]]+1
     end
 #endif
-
   return 0
 end
 

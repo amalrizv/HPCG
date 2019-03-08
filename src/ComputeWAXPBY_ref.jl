@@ -4,7 +4,6 @@
  HPCG routine
 =#
 
-include("ComputeWAXPBY_ref.jl")
 #=
   Routine to compute the update of a vector with the sum of two
   scaled vectors where: w = alpha*x + beta*y
@@ -34,7 +33,7 @@ function ComputeWAXPBY_ref(n,alpha, x, beta, y, w)
     for i=1:n
 	wv[i] = xv[i] + beta * yv[i]
     end
-  elif beta==1.0
+  elseif beta==1.0
     for i=1:n 
 	wv[i] = alpha * xv[i] + yv[i]
     end

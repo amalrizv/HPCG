@@ -23,7 +23,7 @@ function ComputeRestriction_ref(A, rf)
   f2c = A.mgData.f2cOperator
   nc = length(A.mgData.rc)
 
-  for 1  = 1:nc
+  for i  = 1:nc
 	rcv[i] = rfv[f2c[i]] - Axfv[f2c[i]]
   end
   return 0

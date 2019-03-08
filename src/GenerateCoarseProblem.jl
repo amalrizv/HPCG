@@ -11,7 +11,7 @@ include("SetupHalo.jl")
   Note that the matrix Af is considered const because the attributes we are modifying are declared as mutable.
 =#
 
-function GenerateCoarseProblem(const Af) 
+function GenerateCoarseProblem(Af) 
   # Make local copies of geometry information.  Use global_int_t since the RHS products in the calculations
   # below may result in global range values.
    nxf = Af.geom.nx
@@ -25,7 +25,9 @@ function GenerateCoarseProblem(const Af)
   @assert(nxf%2==0) 
   @assert(nyf%2==0) 
   @assert(nzf%2==0) 
-  nxc = nxf/2 nyc = nyf/2 nzc = nzf/2
+  nxc = nxf/2 
+  nyc = nyf/2 
+  nzc = nzf/2
   f2cOperator = Array{Int64}(undef,Af.localNumberOfRows)
    localNumberOfRows = nxc*nyc*nzc # This is the size of our subblock
   # If this @assert fails, it most likely means that the local_int_t is set to int and should be set to long long
@@ -66,12 +68,9 @@ function GenerateCoarseProblem(const Af)
   InitializeSparseMatrix(Ac, geomc)
   GenerateProblem(Ac, 0, 0, 0)
   SetupHalo(Ac)
-  rc = new Vector
-  xc = new Vector
-  Axf = new Vector
-  InitializeVector(rc, Ac.localNumberOfRows)
-  InitializeVector(xc, Ac.localNumberOfColumns)
-  InitializeVector(Axf, Af.localNumberOfColumns)
+  rc = Vector(undef, Ac.localNumberOfRows)
+  xc = Vector(undef, Ac.localNumberOfColumns)
+  Axf = Vector(undef, Af.localNumberOfColumns)
   Af.Ac = Ac
   mgData = MGData
   InitializeMGData(f2cOperator, rc, xc, Axf, mgData)

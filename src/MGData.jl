@@ -4,12 +4,12 @@
  HPCG data structure
 =#
 
-include("SpMatrix.jl")
+#include("SpMatrix.jl")
 
 mutable struct MGData
   numberOfPresmootherSteps::Int64 # Call ComputeSYMGS this many times prior to coarsening
   numberOfPostsmootherSteps::Int64 #Call ComputeSYMGS this many times after coarsening
-  f2cOperator::Array{Int64,1} 1D array containing the fine operator local IDs that will be injected into coarse space.
+  f2cOperator::Array{Int64,1} #1D array containing the fine operator local IDs that will be injected into coarse space.
   rc # coarse grid residual vector
   xc # coarse grid solution vector
   Axf # fine grid residual vector

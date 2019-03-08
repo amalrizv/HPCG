@@ -1,26 +1,11 @@
-
-//@HEADER
-// ***************************************************
-//
-// HPCG: High Performance Conjugate Gradient Benchmark
-//
-// Contact:
-// Michael A. Heroux ( maherou@sandia.gov)
-// Jack Dongarra     (dongarra@eecs.utk.edu)
-// Piotr Luszczek    (luszczek@eecs.utk.edu)
-//
-// ***************************************************
-//@HEADER
-
-/*!
+#=
  @file SparseMatrix.hpp
 
  HPCG data structures for the sparse matrix
- */
+=#
 
 
 include("Geometry.jl")
-include("Vector.jl")
 include("MGData.jl")
 
 mutable struct SpMatrix
@@ -136,61 +121,60 @@ end
 @inline function  DeleteMatrix(A) 
 
   for i = 1:A.localNumberOfRows 
-    delete [] A.matrixValues[i]
-    delete [] A.mtxIndG[i]
-    delete [] A.mtxIndL[i]
+    A.matrixValues[i] = nothing
+    A.mtxIndG[i] = nothing
+    A.mtxIndL[i] = nothing
   end
 
-  delete [] A.matrixValues[1]
-  delete [] A.mtxIndG[1]
-  delete [] A.mtxIndL[1]
+  A.matrixValues[1] = nothing
+  A.mtxIndG[1] = nothing
+  A.mtxIndL[1] = nothing
 
   if (A.title)
-    delete [] A.title
+    A.titl = nothing
   end
   if (A.nonzerosInRow)             
-    delete [] A.nonzerosInRow
+    A.nonzerosInRow = nothing
   end
   if (A.mtxIndG) 
-    delete [] A.mtxIndG
+    A.mtxIndG = nothing
   end
   if (A.mtxIndL) 
-    delete [] A.mtxIndL
+    A.mtxIndL = nothing
   end
   if (A.matrixValues) 
-    delete [] A.matrixValues
+    A.matrixValues = nothing
   end
   if (A.matrixDiagonal)           
-    delete [] A.matrixDiagonal
+    A.matrixDiagonal = nothing
   end
   if (A.elementsToSend)       
-    delete [] A.elementsToSend
+    A.elementsToSend = nothing
   end
   if (A.neighbors)              
-    delete [] A.neighbors
+    A.neighbors = nothing
   end
   if (A.receiveLength)            
-    delete [] A.receiveLength
+    A.receiveLength = nothing
   end
   if (A.sendLength)            
-    delete [] A.sendLength
+    A.sendLength = nothing
   end
   if (A.sendBuffer)            
-    delete [] A.sendBuffer
+    A.sendBuffer = nothing
   end
   if (A.geom!=0)  
-    DeleteGeometry(*A.geom) 
-    delete A.geom 
-    A.geom = 0
+    DeleteGeometry(A.geom) 
+    A.geom  = nothing
   end
   if (A.Ac!=0) 
-    DeleteMatrix(*A.Ac) 
-    delete A.Ac A.Ac = 0 # Delete coarse matrix
+    DeleteMatrix(A.Ac) 
+    A.Ac = nothing # Delete coarse matrix
   end
   if (A.mgData!=0) 
-    DeleteMGData(*A.mgData) 
-    delete A.mgData 
-    A.mgData = 0} # Delete MG data
+    DeleteMGData(A.mgData) 
+    A.mgData = nothing 
+    # Delete MG data
   end
   return
 end

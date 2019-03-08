@@ -17,17 +17,17 @@ include("SetupHalo.jl")
 include("CheckProblem.jl")
 include("ExchangeHalo.jl")
 include("OptimizeProblem.jl")
-include("WriteProblem.jl")
-include("ReportResults.jl")
-include("mytimer.jl")
+#include("WriteProblem.jl")
+#include("ReportResults.jl")
+#include("mytimer.jl")
 include("ComputeSPMV_ref.jl")
-include("ComputeMG_ref.jl")
+include("ComputeMG.jl")
 include("ComputeResidual.jl")
 include("CG.jl")
 include("CG_ref.jl")
 include("Geometry.jl")
 include("SpMatrix.jl")
-include("Vector.jl")
+#include("Vector.jl")
 include("CGData.jl")
 include("TestCG.jl")
 include("TestSymmetry.jl")
@@ -58,12 +58,13 @@ function main()
   rank = params.comm_rank # Number of MPI processes, My process ID
 
   if size < 100 && rank==0 
-	@debug"Process ",rank, " of ",size," is alive with " , params.numThreads , " threads." 
+	@debug("Process ",rank, " of ",size," is alive with " , params.numThreads , " threads.") 
   end 
 
   if rank==0 
     c = readline()
   end
+
   MPI.Barrier(MPI.COMM_WORLD)
 
   nx = Int64
@@ -75,6 +76,7 @@ function main()
   ierr = 0  #Used to check return codes on function calls
 
   ierr = CheckAspectRatio(0.125, nx, ny, nz, "local problem", rank==0)
+
   if ierr
     return ierr
   end
@@ -83,25 +85,24 @@ function main()
    ## Problem setup Phase ##
    #########################
 
-  double t1 = mytimer() #INCLUDE CORRECT TIMER 
+  t1 = mytimer() #INCLUDE CORRECT TIMER 
 
   #Construct the geometry and linear system
   geom = Geometry
   GenerateGeometry(size, rank, params.numThreads, params.pz, params.zl, params.zu, nx, ny, nz, params.npx, params.npy, params.npz, geom)
 
-  ierr = CheckAspectRatio(0.125, geom->npx, geom->npy, geom->npz, "process grid", rank==0)
+  ierr = CheckAspectRatio(0.125, geom.npx, geom.npy, geom.npz, "process grid", rank==0)
+
   if (ierr)
     return ierr
   end
+
   # Use this array for collecting timing information
   times =  zeros(10)
-
   setup_time = mytimer() #INCLUDE CORRECT TIMER 
-
   A = SpMatrix
   InitializeSparseMatrix(A, geom)
-
-  # b x and xexact -> Array{T,1}
+  # b x and xexact . Array{T,1}
   b =  Vector 
   x =  Vector 
   xexact =  Vector
@@ -110,6 +111,7 @@ function main()
   SetupHalo(A)
   numberOfMgLevels = 4 #Number of levels including first
   curLevelMatrix = A
+
   for level = 1:numberOfMgLevels
     GenerateCoarseProblem(curLevelMatrix)
     curLevelMatrix = curLevelMatrix.Ac #  Make the just-constructed coarse grid the next level
@@ -117,7 +119,6 @@ function main()
 
   setup_time = mytimer() - setup_time #Capture total time of setup
   times[9] = setup_time #Save it for reporting
-
   curLevelMatrix = A
   curb = b
   curx = x
@@ -167,12 +168,12 @@ function main()
     if ierr 
 	@debug ("Error in call to SpMV: $ierr .\n")
     end
-    ierr = ComputeMG_ref(A, b_computed, x_overlap) # b_computed = Minv*y_overlap
+    ierr = ComputeMG(A, b_computed, x_overlap) # b_computed = Minv*y_overlap
     if (ierr) 
 	@debug ("Error in call to MG: $ierr .\n") 
     end
   end 
-  times[8] = (mytimer() - t_begin)/( numberOfCalls)  Total time divided by number of calls.
+  times[8] = (mytimer() - t_begin)/( numberOfCalls) # Total time divided by number of calls.
   if rank==0
 	 @debug("Total SpMV+MG timing phase execution time in main (sec) = $(mytimer()-t1)\n")
   end 
@@ -199,12 +200,13 @@ function main()
     x = zeros(length(x))
     ierr = CG_ref( A, data, b, x, refMaxIters, tolerance, niters, normr, normr0, ref_times[0], true)
     if ierr
-	 ++err_count # count the number of errors in CG
+	 err_count+=1 # count the number of errors in CG
     end
     totalNiters_ref += niters
   end
   if rank == 0 && err_count
 	 @debug("$err_count error(s) in call(s) to reference CG.")
+  end
   refTolerancei:Float64 = normr / normr0
 
   #Call user-tunable set up function.
@@ -215,7 +217,7 @@ function main()
   if rank==0
 	 @debug("Total problem setup time in main (sec) = $(mytimer()-t1)") 
   end
-  if geom->size == 1
+  if geom.size == 1
 	 WriteProblem(geom, A, b, x, xexact)
   end
 
@@ -229,7 +231,7 @@ function main()
   testcg_data.count_pass = testcg_data.count_fail = 0
   TestCG(A, data, b, x, testcg_data)
 
-  TestSymmetryData testsymmetry_data
+  testsymmetry_data = TestSymmetryData 
   TestSymmetry(A, b, xexact, testsymmetry_data)
 
   if (rank==0) 
@@ -260,10 +262,10 @@ function main()
     last_cummulative_time = opt_times[0]
     ierr = CG( A, data, b, x, optMaxIters, refTolerance, niters, normr, normr0, opt_times[0], true)
     if ierr 
-	++err_count # count the number of errors in CG
+	err_count +=1 # count the number of errors in CG
     end
     if normr / normr0 > refTolerance
-	 ++tolerance_failures 3 the number of failures to reduce residual
+	 tolerance_failures+=1 # the number of failures to reduce residual
     end
     # pick the largest number of iterations to guarantee convergence
     if niters > optNiters
@@ -298,7 +300,7 @@ function main()
   ## The variable total_runtime is the target benchmark execution time in seconds
 
   total_runtime = params.runningTime
-   numberOfCgSets = int(total_runtime / opt_worst_time) + 1 # Run at least once, account for rounding
+  numberOfCgSets = int(total_runtime / opt_worst_time) + 1 # Run at least once, account for rounding
 
   if rank==0 
     @debug("Projected running time: $total_runtime seconds") 
@@ -317,10 +319,10 @@ function main()
     x = zeros(length(x)) # Zero out x
     ierr = CG( A, data, b, x, optMaxIters, optTolerance, niters, normr, normr0, times[0], true)
     if ierr 
-	@debug("Error in call to CG: $ierr.\n" 
+	@debug("Error in call to CG: $ierr.\n") 
     end
     if rank==0 
-	@debug("Call [$i] Scaled Residual [$(normr/normr0)])" 
+	@debug("Call [$i] Scaled Residual [$(normr/normr0)]") 
     end
     testnorms_data.values[i] = normr/normr0 # Record scaled residual from this run
   end
@@ -364,4 +366,3 @@ function main()
   MPI.Finalize()
   return 0
 end
-main()

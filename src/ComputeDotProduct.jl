@@ -4,7 +4,7 @@
  HPCG routine
 =#
 using MPI
-include("mytimer.jl")
+#include("mytimer.jl")
 
 #=
   Routine to compute the dot product of two vectors where:
@@ -41,7 +41,7 @@ function ComputeDotProduct_ref(n, x, y, result, time_allreduce)
   #Use MPI's reduce function to collect all partial sums
   t0 = mytimer()
   global_result = 0.0
-  MPI.Allreduce(&local_result, &global_result, 1, MPI_DOUBLE, MPI_SUM, MPI.COMM_WORLD)
+  MPI.Allreduce(local_result, global_result, 1, MPI_DOUBLE, MPI_SUM, MPI.COMM_WORLD)
   result = global_result
   time_allreduce += mytimer() - t0
   time_allreduce += 0.0

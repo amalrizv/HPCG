@@ -5,8 +5,10 @@
 =#
 
 using MPI
-include("SetupHalo.jl")
-include("mytimer.jl")
+include("SpMatrix.jl")
+include("Geometry.jl")
+#include("SetupHalo.jl")
+#include("mytimer.jl")
 
 #=
   Reference version of SetupHalo that prepares system matrix data structure and creates data necessary
@@ -48,7 +50,7 @@ function SetupHalo_ref(A)
     for j=1:nonzerosInRow[i]
       curIndex = mtxIndG[i][j]
       rankIdOfColumnEntry = ComputeRankOfMatrixRow(A.geom, curIndex)
-      @debug("rank, row , col, globalToLocalMap[col] = $A.geom.rank $currentGlobalRow $curIndex $A.globalToLocalMap[curIndex]\n")
+      @debug("rank, row , col, globalToLocalMap[col] = ",A.geom.rank, currentGlobalRow, curIndex ,A.globalToLocalMap[curIndex],"\n")
       if A.geom.rank!=rankIdOfColumnEntry #If column index is not a row index, then it comes from another processor
         receiveList[rankIdOfColumnEntry]=curIndex 
         sendList[rankIdOfColumnEntry]=currentGlobalRow # Matrix symmetry means we know the neighbor process wants my value
@@ -73,7 +75,7 @@ function SetupHalo_ref(A)
   # Each receive-from neighbor should be a send-to neighbor, and send the same number of entries
   for kv in receiveList
     @assert haskey(sendlist,k)
-    @assert length(sendList[k])==length(receiveList[k]))
+    @assert length(sendList[k])==length(receiveList[k])
   end
 
   #Build the arrays and lists needed by the ExchangeHalo function.
@@ -81,11 +83,11 @@ function SetupHalo_ref(A)
   elementsToSend = Array{Int64}(undef,totalToBeSent)
   neighbors = Array{Int64}(undef,length(collect(keys(sendList))))
   receiveLength = Array{Int64}(undef, length(collect(keys(receiveList))))
-  sendLength = Array{Int64}(undef, collect(keys(receiveList))))
+  sendLength = Array{Int64}(undef, collect(keys(receiveList)))
   neighborCount = 1
   receiveEntryCount = 0
   sendEntryCount = 0
-  for kv in sendList 
+  for kv in receiveList 
     neighborId = k #rank of current neighbor we are processing
     neighbors[neighborCount] = neighborId # store rank ID of current neighbor
     receiveLength[neighborCount] = length(receiveList[neighborId])
@@ -97,7 +99,7 @@ function SetupHalo_ref(A)
       receiveCount += 1
     end
     for i in sendList[neighborId] 
-      elementsToSend[sendEntryCount] = A.globalToLocalMap[*i] // store local ids of entry to send
+      elementsToSend[sendEntryCount] = A.globalToLocalMap[i] # store local ids of entry to send
       sendEntryCount +=1
     end
   end
@@ -106,8 +108,8 @@ function SetupHalo_ref(A)
   for i=1:localNumberOfRows
     for j=1:nonzerosInRow[i]
       curIndex = mtxIndG[i][j]
-      rankIdOfColumnEntry = ComputeRankOfMatrixRow(*(A.geom), curIndex)
-      if A.geom->rank==rankIdOfColumnEntry # My column index, so convert to local index
+      rankIdOfColumnEntry = ComputeRankOfMatrixRow(A.geom, curIndex)
+      if A.geom.rank==rankIdOfColumnEntry # My column index, so convert to local index
         mtxIndL[i][j] = A.globalToLocalMap[curIndex]
       else # If column index is not a row index, then it comes from another processor
         mtxIndL[i][j] = externalToLocalMap[curIndex]
@@ -126,11 +128,11 @@ function SetupHalo_ref(A)
   A.sendLength = sendLength
   A.sendBuffer = sendBuffer
 
-  @debug(" For rank $A.geom.rank of $A.geom->size number of neighbors $A.numberOfSendNeighbors")
+  @debug(" For rank $A.geom.rank of $A.geom.size number of neighbors $A.numberOfSendNeighbors")
   for i = 1: A.numberOfSendNeighbors
-    @debug("     rank $A.geom.rank neighbor $neighbors[i] send/recv length = $sendLength[i]/$receiveLength[i]")
-    for j = 1: j<sendLength[i]
-      @debug("       rank $A.geom.rank elementsToSend[$j] = $elementsToSend[j]")
+    @debug("     rank = ",A.geom.rank," neighbor = ",neighbors[i]," send/recv length = ", sendLength[i]/receiveLength[i],".")
+    for j = 1:sendLength[i]
+      @debug("       rank = ",A.geom.rank," elementsToSend[$j] =", elementsToSend[j],".")
     end
   end
 

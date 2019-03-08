@@ -22,8 +22,8 @@
 
 include("hpcg.jl")
 
-include("CG.jl")
-include("mytimer.jl")
+
+#include("mytimer.jl")
 include("ComputeSPMV.jl")
 include("ComputeMG.jl")
 include("ComputeDotProduct.jl")
@@ -48,11 +48,11 @@ include("ComputeWAXPBY.jl")
   @return Returns zero on success and a non-zero value otherwise.
   @see CG_ref()
 =#
-function  CG(const A, data, const b, x, const max_iter, const tolerance, niters, normr, normr0, times, doPreconditioning) 
+function  CG(A, data, b, x, max_iter, tolerance, niters, normr, normr0, times, doPreconditioning) 
 
   t_begin = time_ns()  # Start timing right away
   normr = 0.0
-  double rtz = 0.0
+  rtz = 0.0
   oldrtz = 0.0 
   alpha = 0.0
   beta = 0.0
@@ -66,14 +66,14 @@ function  CG(const A, data, const b, x, const max_iter, const tolerance, niters,
   t4 = 0.0
   t5 = 0.0
 ##ifndef HPCG_NO_MPI
-#  double t6 = 0.0
+# t6 = 0.0
 ##endif
   nrow = A.localNumberOfRow 
   r = data.r # Residual vector
   p = data.p # Direction vector (in MPI mode ncol>=nrow)
   Ap = data.Ap
 
-  if !doPreconditioning && A.geom->rank==0
+  if !doPreconditioning && A.geom.rank==0
 	 @debug("WARNING: PERFORMING UNPRECONDITIONED ITERATIONS")
   end
 #ifdef HPCG_DEBUG
@@ -100,8 +100,9 @@ function  CG(const A, data, const b, x, const max_iter, const tolerance, niters,
   t1 = toc()
   normr = sqrt(normr)
 #ifdef HPCG_DEBUG
-  if A.geom->rank==0 
-  HPCG_fout << "Initial Residual = "<< normr << std::endl
+  if A.geom.rank==0 
+  	@debug("Initial Residual = ",normr,"\n")
+  end
 #endif
 
   # Record initial residual for convergence testing
@@ -109,54 +110,56 @@ function  CG(const A, data, const b, x, const max_iter, const tolerance, niters,
 
   # Start iterations
   while normr/normr0 > tolerance
-  for k=1:max_iter+1
-    tic()
-    if doPreconditioning
-      ComputeMG(A, r, z) # Apply preconditioner
-    else
-      CopyVector (r, z) # copy r to z (no preconditioning)
-    toc(t5) # Preconditioner apply time
+  	for k=1:max_iter+1
+    		tic()
+    		if doPreconditioning
+      			ComputeMG(A, r, z) # Apply preconditioner
+    		else
+      			z = r # copy r to z (no preconditioning)
+    		end
+    		toc(t5) # Preconditioner apply time
 
-    if k == 1
-      tic() 
-      ComputeWAXPBY(nrow, 1.0, z, 0.0, z, p, A.isWaxpbyOptimized)
-      t2 = toc() # Copy Mr to p
-      tic()
-      ComputeDotProduct (nrow, r, z, rtz, t4, A.isDotProductOptimized)
-      t1 = toc() # rtz = r'*z
-   else 
-      oldrtz = rtz
-      tic() 
-      ComputeDotProduct (nrow, r, z, rtz, t4, A.isDotProductOptimized) 
-      t1 = toc() # rtz = r'*z
-      beta = rtz/oldrtz
-      tic() 
-      ComputeWAXPBY (nrow, 1.0, z, beta, p, p, A.isWaxpbyOptimized)  
-      t2 = toc() # p = beta*p + z
-    end
+    		if k == 1
+      			tic() 
+      			ComputeWAXPBY(nrow, 1.0, z, 0.0, z, p, A.isWaxpbyOptimized)
+      			t2 = toc() # Copy Mr to p
+      			tic()
+      			ComputeDotProduct(nrow, r, z, rtz, t4, A.isDotProductOptimized)
+      			t1 = toc() # rtz = r'*z
+   		else 
+      			oldrtz = rtz
+      			tic() 
+      			ComputeDotProduct(nrow, r, z, rtz, t4, A.isDotProductOptimized) 
+      			t1 = toc() # rtz = r'*z
+      			beta = rtz/oldrtz
+      			tic() 
+      			ComputeWAXPBY(nrow, 1.0, z, beta, p, p, A.isWaxpbyOptimized)  
+      			t2 = toc() # p = beta*p + z
+   		end
 
-    tic() 
-    ComputeSPMV(A, p, Ap) 
-    t3 = toc() # Ap = A*p
-    tic() 
-    ComputeDotProduct(nrow, p, Ap, pAp, t4, A.isDotProductOptimized) 
-    t1 = toc() # alpha = p'*Ap
-    alpha = rtz/pAp
-    tic() 
-    ComputeWAXPBY(nrow, 1.0, x, alpha, p, x, A.isWaxpbyOptimized)# x = x + alpha*p
-    ComputeWAXPBY(nrow, 1.0, r, -alpha, Ap, r, A.isWaxpbyOptimized)
-    t2 = toc()# r = r - alpha*Ap
-    tic() 
-    ComputeDotProduct(nrow, r, r, normr, t4, A.isDotProductOptimized)
-    t1 = toc()
-    normr = sqrt(normr)
+    		tic() 
+    		ComputeSPMV(A, p, Ap) 
+    		t3 = toc() # Ap = A*p
+    		tic() 
+    		ComputeDotProduct(nrow, p, Ap, pAp, t4, A.isDotProductOptimized) 
+    		t1 = toc() # alpha = p'*Ap
+    		alpha = rtz/pAp
+    		tic() 
+    		ComputeWAXPBY(nrow, 1.0, x, alpha, p, x, A.isWaxpbyOptimized)# x = x + alpha*p
+    		ComputeWAXPBY(nrow, 1.0, r, -alpha, Ap, r, A.isWaxpbyOptimized)
+    		t2 = toc()# r = r - alpha*Ap
+    		tic() 
+		ComputeDotProduct(nrow, r, r, normr, t4, A.isDotProductOptimized)
+    		t1 = toc()
+    		normr = sqrt(normr)
 #ifdef HPCG_DEBUG
-    if A.geom->rank==0 && (k%print_freq == 0 || k == max_iter)
-      @debug("Iteration = ",k,"   Scaled Residual = ",normr/normr0, "\n")
+    		if A.geom.rank==0 && (k%print_freq == 0 || k == max_iter)
+      			@debug("Iteration = ",k,"   Scaled Residual = ",normr/normr0, "\n")
+		end
 #endif
-    niters = k
+    		niters = k
+  	end
   end
-
   # Store times
   times[1] += t1 # dot-product time
   times[2] += t2 # WAXPBY time

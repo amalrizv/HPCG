@@ -50,36 +50,40 @@ function CheckProblem(A, b, x, xexact)
   end
    localNumberOfNonzeros = 0
   # TODO:  This triply nested loop could be flattened or use nested parallelism
-  for iz=0 iz<nz iz++) 
+  for iz=1:nz 
      giz = giz0+iz
-    for ( iy=0 iy<ny iy++) 
+    for iy=1:ny  
        giy = giy0+iy
-      for ( ix=0 ix<nx ix++) 
+      for ix=1:nx  
          gix = gix0+ix
          currentLocalRow = iz*nx*ny+iy*nx+ix
          currentGlobalRow = giz*gnx*gny+giy*gnx+gix
         @assert(A.localToGlobalMap[currentLocalRow] == currentGlobalRow)
 
-        @debug(" rank, globalRow, localRow = $A.geom.rank $currentGlobalRow  $(A.globalToLocalMap[$currentGlobalRow])")  
-
+        @debug(" rank, globalRow, localRow = $A.geom.rank $currentGlobalRow ",A.globalToLocalMap[currentGlobalRow])
         numberOfNonzerosInRow = 0
         currentValuePointer = A.matrixValues[currentLocalRow] # Pointer to current value in current row
         currentIndexPointerG = A.mtxIndG[currentLocalRow] # Pointer to current index in current row
-        for (int sz=-1 sz<=1 sz++) 
-          if (giz+sz>-1 && giz+sz<gnz) 
-            for (int sy=-1 sy<=1 sy++) 
-              if (giy+sy>-1 && giy+sy<gny) 
-                for (int sx=-1 sx<=1 sx++) 
-                  if (gix+sx>-1 && gix+sx<gnx) 
+	cvp = 1
+	cipg = 1
+        for sz=-1 :1 
+          if giz+sz>-1 && giz+sz<gnz
+            for sy=-1:1  
+              if giy+sy>-1 && giy+sy<gny 
+                for sx=-1:1 
+                  if gix+sx>-1 && gix+sx<gnx 
                      curcol = currentGlobalRow+sz*gnx*gny+sy*gnx+sx
-                    if (curcol==currentGlobalRow) 
+                    if curcol==currentGlobalRow 
                       @assert(A.matrixDiagonal[currentLocalRow] == currentValuePointer)
-                      @assert(*currentValuePointer++ == 26.0)
+                      @assert(currentValuePointer[cvp]+1 == 26.0)
+		      cvp = cvp+1
                      else 
-                      @assert(*currentValuePointer++ == -1.0)
+                      @assert(currentValuePointer[cvp]+1 == -1.0)
+		      cvp = cvp +1
                     end
-                    @assert(*currentIndexPointerG++ == curcol)
-                    numberOfNonzerosInRow++
+                    @assert(currentIndexPointerG[cipg]+1 == curcol)
+		    cipg  = cipg+1
+                    numberOfNonzerosInRow+=1
                   end # end x bounds test
                 end # end sx loop
               end # end y bounds test
@@ -89,13 +93,19 @@ function CheckProblem(A, b, x, xexact)
         @assert(A.nonzerosInRow[currentLocalRow] == numberOfNonzerosInRow)
 
         localNumberOfNonzeros += numberOfNonzerosInRow # Protect this with an atomic
-        if (b!=0)      @assert(bv[currentLocalRow] == 26.0 - ((double) (numberOfNonzerosInRow-1)))
-        if (x!=0)      @assert(xv[currentLocalRow] == 0.0)
-        if (xexact!=0) @assert(xexactv[currentLocalRow] == 1.0)
+        if b!=0      
+		@assert(bv[currentLocalRow] == 26.0 - ((Float64)(numberOfNonzerosInRow-1)))
+        end
+        if x!=0      
+		@assert(xv[currentLocalRow] == 0.0)
+	end
+        if xexact!=0 
+		@assert(xexactv[currentLocalRow] == 1.0)
+	end
       end # end ix loop
     end # end iy loop
   end # end iz loop
-  @debug("Process $A.geom.rank  of $A.geom.size has $localNumberOfRows rows.\n Process $A.geom.rank of $A.geom.size has $localNumberOfNonzeros nonzeros.\n" 
+  @debug("Process $A.geom.rank  of $A.geom.size has $localNumberOfRows rows.\n Process $A.geom.rank of $A.geom.size has $localNumberOfNonzeros nonzeros.\n") 
 
    totalNumberOfNonzeros = 0
   # Use MPI's reduce function to sum all nonzeros

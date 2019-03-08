@@ -1,8 +1,3 @@
-/*!
- @file TestCG.cpp
-
- HPCG routine
- */
 
 # Changelog
 #
@@ -17,7 +12,7 @@ include("hpcg.jl")
 include("TestCG_struct.jl")
 include("CG.jl")
 
-/*!
+#=
   Test the correctness of the Preconditined CG implementation by using a system matrix with a dominant diagonal.
 
   @param[in]    geom The description of the problem's geometry.
@@ -30,7 +25,7 @@ include("CG.jl")
   @return Returns zero on success and a non-zero value otherwise.
 
   @see CG()
- */
+=#
 function TestCG(A, data, b, x, testcg_data) 
 
 
@@ -40,12 +35,12 @@ function TestCG(A, data, b, x, testcg_data)
   origDiagA = Vector
   exaggeratedDiagA = Vector
   origB = Vector
-  InitializeVector(origDiagA, A.localNumberOfRows)
-  InitializeVector(exaggeratedDiagA, A.localNumberOfRows)
-  InitializeVector(origB, A.localNumberOfRows)
+  origDiagA = Vector(undef,A.localNumberOfRows)
+  exaggeratedDiagA = Vector(undef, A.localNumberOfRows)
+  origB =Vector(undef,A.localNumberOfRows)
   CopyMatrixDiagonal(A, origDiagA)
-  CopyVector(origDiagA, exaggeratedDiagA)
-  CopyVector(b, origB)
+  origDiagA= exaggeratedDiagA
+  b = origB
 
   # Modify the matrix diagonal to greatly exaggerate diagonal values.
   # CG should converge in about 10 iterations for this problem, regardless of problem size
@@ -78,23 +73,23 @@ function TestCG(A, data, b, x, testcg_data)
 	 expected_niters = testcg_data.expected_niters_prec
     end
     for i=0:numberOfCgCalls
-      ZeroVector(x) # Zero out x
+      x = zeros(length(x)) # Zero out x
       ierr = CG(A, data, b, x, maxIters, tolerance, niters, normr, normr0, times[0], k==1)
       if ierr
 	@debug("Error in call to CG:$ierr.\n")
       end
       if niters <= expected_niters 
-        ++testcg_data.count_pass
+        testcg_data.count_pass+=1
        else 
-        ++testcg_data.count_fail
-      ens
+        testcg_data.count_fail+=1
+      end
       if k==0 && niters>testcg_data.niters_max_no_prec
 	 testcg_data.niters_max_no_prec = niters # Keep track of largest iter count
       end
       if k==1 && niters>testcg_data.niters_max_prec
 	 testcg_data.niters_max_prec = niters # Same for preconditioned run
       end
-      if A.geom->rank==0
+      if A.geom.rank==0
         @debug("Call [$i] Number of Iterations [$niters] Scaled Residual [$(normr/normr0)]")
         if niters > expected_niters
           @debug(" Expected $expected_niters iterations.  Performed $niters .")
@@ -105,11 +100,11 @@ function TestCG(A, data, b, x, testcg_data)
 
   # Restore matrix diagonal and RHS
   ReplaceMatrixDiagonal(A, origDiagA)
-  CopyVector(origB, b)
+  b = origB
   # Delete vectors
-  DeleteVector(origDiagA)
-  DeleteVector(exaggeratedDiagA)
-  DeleteVector(origB)
+  origDiagA = nothing
+  exaggeratedDiagA= nothing
+  origB = nothing
   testcg_data.normr = normr
 
   return 0

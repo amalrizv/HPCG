@@ -6,11 +6,11 @@
 
 include("SpMatrix.jl")
 
-mutable struct CGData_STRUCT 
-  Vector ri::Vector #< pointer to residual vector
-  Vector z::Vector #< pointer to preconditioned residual vector
-  Vector p::Vector #< pointer to direction vector
-  Vector Ap::Vector #< pointer to Krylov vector
+mutable struct CGData 
+  ri::Vector #< pointer to residual vector
+  z::Vector #< pointer to preconditioned residual vector
+  p::Vector #< pointer to direction vector
+  Ap::Vector #< pointer to Krylov vector
 end
 
 #=
@@ -21,10 +21,10 @@ end
 @inline function InitializeSparseCGData(A, data) 
   nrow = A.localNumberOfRows
   ncol = A.localNumberOfColumns
-  InitializeVector(data.r, nrow)
-  InitializeVector(data.z, ncol)
-  InitializeVector(data.p, ncol)
-  InitializeVector(data.Ap, nrow)
+  data.r = Vector(nrow)
+  data.z = Vector(ncol)
+  data.p = Vector(ncol)
+  data.Ap = Vector(nrow)
   return
 end
 

@@ -14,19 +14,24 @@ include("TestNorms_struct.jl")
   @return Returns 0 upon success or non-zero otherwise
 =#
 function TestNorms(testnorms_data) 
+
  mean_delta = 0.0
+
  for i= 1:testnorms_data.samples
-	mean_delta += (testnorms_data.values[i] - testnorms_data.values[0])
+	mean_delta += (testnorms_data.values[i] - testnorms_data.values[1])
  end
- mean = testnorms_data.values[0] + mean_delta/testnorms_data.samples
+
+ mean = testnorms_data.values[1] + mean_delta/testnorms_data.samples
  testnorms_data.mean = mean
 
  #Compute variance
- double sumdiff = 0.0
- for (i= 1:testnorms_data.samples 
+ sumdiff = 0.0
+
+ for i= 1:testnorms_data.samples 
 	sumdiff += (testnorms_data.values[i] - mean) * (testnorms_data.values[i] - mean)
  end
- testnorms_data.variance = sumdiff/(double)testnorms_data.samples
+
+ testnorms_data.variance = sumdiff/testnorms_data.samples
 
  #Determine if variation is sufficiently small to declare success
  testnorms_data.pass = (testnorms_data.variance<1.0e-6)

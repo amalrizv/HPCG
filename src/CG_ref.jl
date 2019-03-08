@@ -7,10 +7,10 @@
 
 include("hpcg.jl")
 
-include("mytimer.jl")
+#include("mytimer.jl")
 include("ComputeSPMV_ref.jl")
-include("ComputeMG_ref.jl")
-include("ComputeDotProduct_ref.jl")
+include("ComputeMG.jl")
+include("ComputeDotProduct.jl")
 include("ComputeWAXPBY_ref.jl")
 
 
@@ -31,11 +31,11 @@ include("ComputeWAXPBY_ref.jl")
   @return Returns zero on success and a non-zero value otherwise.
   @see CG()
 =#
-function CG_ref(const A, data, const b, x, const max_iter, const tolerance, niters, normr, normr0, times, doPreconditioning) 
+function CG_ref(A, data,b, x,max_iter,tolerance, niters, normr, normr0, times, doPreconditioning) 
 
   t_begin = time_ns()  # Start timing right away
   normr = 0.0
-  double rtz = 0.0
+  rtz = 0.0
   oldrtz = 0.0
   alpha = 0.0 
   beta = 0.0
@@ -71,9 +71,9 @@ function CG_ref(const A, data, const b, x, const max_iter, const tolerance, nite
   end
 #endif
   # p is of length ncols, copy x to p for sparse MV operation
-  CopyVector(x, p)
+  p = x
   tic() 
-	ComputeSPMV_ref(A, p, Ap)  
+  ComputeSPMV_ref(A, p, Ap)  
   t3 = toc() # Ap = A*p
   tic() 
   ComputeWAXPBY_ref(nrow, 1.0, b, -1.0, Ap, r) 
@@ -93,16 +93,18 @@ function CG_ref(const A, data, const b, x, const max_iter, const tolerance, nite
 
   # Start iterations
   while nomr/nomr0 > tolerance
-    for (k=1:max_iter 
+    for k=1:max_iter 
     	tic()
     	if doPreconditioning
       		ComputeMG_ref(A, r, z) # Apply preconditioner
     	else
       		ComputeWAXPBY_ref(nrow, 1.0, r, 0.0, r, z) # copy r to z (no preconditioning)
+	end
     	toc(t5) # Preconditioner apply time
 
     	if k == 1
-      		CopyVector(z, p) toc(t2) # Copy Mr to p
+      		p = z 
+		toc(t2) # Copy Mr to p
       		tic() 
       		ComputeDotProduct_ref(nrow, r, z, rtz, t4) 
       		t1 = toc() # rtz = r'*z
