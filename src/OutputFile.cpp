@@ -1,102 +1,90 @@
-
-
 include("OutputFile_header.jl")
+using DataStructures
+function OutputFile(of, name_arg, version_arg)
+
+  #: name(name_arg), version(version_arg), eol("\n"), keySeparator("::") {}
+end
+
+function OutputFile(of, name_arg, version_arg)
+end
+
+function OutputFile(void) 
+	#: eol("\n"), keySeparator("::") {}
+end
+
+#does this delete all the OutputFile structs listed in descendents
+function del_OutputFile(of) 
+  for it in of.descendents
+    it = nothing
+  end
+end
 
 
-OutputFile::OutputFile(const string & name_arg, const string & version_arg)
-  : name(name_arg), version(version_arg), eol("\n"), keySeparator("::") {}
+function OutputFile_add(of, key_arg, value_arg::String) 
+#  descendants.push_back(allocKeyVal(key_arg, value_arg));
+end
 
-OutputFile::OutputFile(void) : eol("\n"), keySeparator("::") {}
 
-OutputFile::~OutputFile() {
-  for (list<OutputFile*>::iterator it = descendants.begin(); it != descendants.end(); ++it) {
-    delete *it;
-  }
-}
+function OutputFile_add(of, key_arg, value_arg::Float64) 
+#  stringstream ss;
+#  ss << value_arg;
+#  descendants.push_back(allocKeyVal(key_arg, ss.str()));
+end
 
-void
-OutputFile::add(const string & key_arg, const string & value_arg) {
-  descendants.push_back(allocKeyVal(key_arg, value_arg));
-}
 
-void
-OutputFile::add(const string & key_arg, double value_arg) {
-  stringstream ss;
-  ss << value_arg;
-  descendants.push_back(allocKeyVal(key_arg, ss.str()));
-}
+function OutputFile_add(of,key_arg, value_arg::Int64) 
+   stringstream ss;
+#  ss << value_arg;
+#  descendants.push_back(allocKeyVal(key_arg, ss.str()));
+end
 
-void
-OutputFile::add(const string & key_arg, int value_arg) {
-  stringstream ss;
-  ss << value_arg;
-  descendants.push_back(allocKeyVal(key_arg, ss.str()));
-}
 
-#ifndef HPCG_NO_LONG_LONG
+function OutputFile_setKeyValue(of,key_arg, value_arg) 
+  of.key = key_arg
+  of.value = value_arg
+end
 
-void
-OutputFile::add(const string & key_arg, long long value_arg) {
-  stringstream ss;
-  ss << value_arg;
-  descendants.push_back(allocKeyVal(key_arg, ss.str()));
-}
 
-#endif
+function OutputFile_get(of, key_arg) 
+  for it in of.descendents
+    if it.key == key_arg
+      return it
+    end
+  end
+  return 0
+end
 
-void
-OutputFile::add(const string & key_arg, size_t value_arg) {
-  stringstream ss;
-  ss << value_arg;
-  descendants.push_back(allocKeyVal(key_arg, ss.str()));
-}
 
-void
-OutputFile::setKeyValue(const string & key_arg, const string & value_arg) {
-  key = key_arg;
-  value = value_arg;
-}
+function OutputFile_generateRecursive(of,prefix) 
+  string result = ""
 
-OutputFile *
-OutputFile::get(const string & key_arg) {
-  for (list<OutputFile*>::iterator it = descendants.begin(); it != descendants.end(); ++it) {
-    if ((*it)->key == key_arg)
-      return *it;
-  }
+  result += prefix + key + "=" + value + eol
 
-  return 0;
-}
-
-string
-OutputFile::generateRecursive(string prefix) {
-  string result = "";
-
-  result += prefix + key + "=" + value + eol;
-
-  for (list<OutputFile*>::iterator it = descendants.begin(); it != descendants.end(); ++it) {
-    result += (*it)->generateRecursive(prefix + key + keySeparator);
-  }
+ for it in of.descendents
+    result += generateRecursive(of, prefix + key + keySeparator);
+  end
 
   return result;
-}
+end
 
-string
-OutputFile::generate(void) {
+
+function OutputFile_generate(of) 
   string result = name + "\nversion=" + version + eol;
 
-  for (list<OutputFile*>::iterator it = descendants.begin(); it != descendants.end(); ++it) {
-    result += (*it)->generateRecursive("");
-  }
-
+  for it in of.descendent 
+    result += generateRecursive(it, "")
+  end
+  #time this using mytimer()
   time_t rawtime;
   time(&rawtime);
   tm * ptm = localtime(&rawtime);
+  #Check ReadHPCGDat.jl
   char sdate[25];
-  //use tm_mon+1 because tm_mon is 0 .. 11 instead of 1 .. 12
-  sprintf (sdate,"%04d-%02d-%02d_%02d-%02d-%02d",ptm->tm_year + 1900, ptm->tm_mon+1,
-        ptm->tm_mday, ptm->tm_hour, ptm->tm_min,ptm->tm_sec);
+  #use tm_mon+1 because tm_mon is 0 .. 11 instead of 1 .. 12
+  # use Date Time package
+  write(sdate,ptm.tm_year + 1900, ptm.tm_mon+1, ptm.tm_mday, ptm.tm_hour, ptm.tm_min,ptm.tm_sec);
 
-  string filename = name + "_" + version + "_";
+  filename = name *"_" *version * "_";
   filename += string(sdate) + ".txt";
 
   ofstream myfile(filename.c_str());
@@ -104,10 +92,10 @@ OutputFile::generate(void) {
   myfile.close();
 
   return result;
-}
+end
 
-OutputFile * OutputFile::allocKeyVal(const std::string & key_arg, const std::string & value_arg) {
-  OutputFile * of = new OutputFile();
-  of->setKeyValue(key_arg, value_arg);
+function OutputFile_allocKeyVal(key_arg, value_arg) 
+  of = OutputFile()
+  setKeyValue(of, key_arg, value_arg)
   return of;
 }
