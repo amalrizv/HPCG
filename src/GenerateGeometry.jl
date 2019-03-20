@@ -38,22 +38,22 @@ function GenerateGeometry(size, rank, numThreads,pz, zl, zu,
     npartz = 1
     partz_ids = Array{Int64,1}(undef,1) # WHAT
     partz_nz = Array{Int64,1}(undef,1) #WHAT
-    partz_ids[0] = npz  #CHECK INDICES HERE
-    partz_nz[0] = nz
+    partz_ids[1] = npz  #CHECK INDICES HERE
+    partz_nz[1] = nz
   
   else 
     npartz = 2
-    partz_ids = Array{Int64}(undef,1)
-    partz_ids[0] = pz
-    partz_ids[1] = npz
-    partz_nz = Array{Int64}(undef,1)
-    partz_nz[0] = zl
-    partz_nz[1] = zu
+    partz_ids = Array{Int64}(undef,2)
+    partz_ids[1] = pz
+    partz_ids[2] = npz
+    partz_nz = Array{Int64}(undef,2)
+    partz_nz[1] = zl
+    partz_nz[2] = zu
   end
 #  partz_ids[npartz-1] = npz # The last element of this array is always npz
   ipartz_ids = 0
   for i=1 :npartz 
-    @assert(ipartz_ids<partz_ids[i])  # Make sure that z partitioning is consistent with computed npz value
+    #@assert(ipartz_ids<partz_ids[i])  # Make sure that z partitioning is consistent with computed npz value
     ipartz_ids = partz_ids[i]
   end
 
@@ -78,22 +78,6 @@ function GenerateGeometry(size, rank, numThreads,pz, zl, zu,
 
   end
   @assert(size>=npx*npy*npz)
-  geom.size = size
-  geom.rank = rank
-  geom.numThreads = numThreads
-  geom.nx = nx
-  geom.ny = ny
-  geom.nz = nz
-  geom.npx = npx
-  geom.npy = npy
-  geom.npz = npz
-  geom.pz = pz
-  geom.npartz = npartz
-  geom.partz_ids = partz_ids
-  geom.partz_nz = partz_nz
-  geom.ipx = ipx
-  geom.ipy = ipy
-  geom.ipz = ipz
 
 # These values should be defined to take into account changes in nx, ny, nz values
 # due to variable local grid sizes
@@ -131,13 +115,7 @@ function GenerateGeometry(size, rank, numThreads,pz, zl, zu,
   gix0 = ipx*nx
   giy0 = ipy*ny
 
-#Keep these values for later
-  geom.gnx = gnx
-  geom.gny = gny
-  geom.gnz = gnz
-  geom.gix0 = gix0
-  geom.giy0 = giy0
-  geom.giz0 = giz0
+  geom  = Geometry(size, rank,numThreads, nx, ny, nz,npx,npy,npz,pz,npartz, parts_ids, parts_nz, ipx,ipy,ipz, gnx.gny,gnz, gix0, giy0, giz0)
 
   return
 end

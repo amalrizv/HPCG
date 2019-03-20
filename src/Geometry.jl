@@ -86,8 +86,8 @@ end
 =#
 @inline function DeleteGeometry(geom) 
 
-  free(geom.partz_nz)
-  free(geom.partz_ids)
+  geom.partz_nz = nothing
+  geom.partz_ids =nothing
 
   return
 end

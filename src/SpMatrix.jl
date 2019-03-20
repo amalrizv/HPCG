@@ -31,17 +31,17 @@ mutable struct SpMatrix
    This is for storing optimized data structres created in OptimizeProblem and
    used inside optimized ComputeSPMV().
   =#
-   Ac #Coarse grid matrix
-   mgData #Pointer to the coarse level data for this fine matrix
-   optimizationData  #pointer that can be used to store implementation-specific data
 
-   numberOfSendNeighborsi::Int64 # number of neighboring processes that will be send local data
+   numberOfSendNeighbors::Int64 # number of neighboring processes that will be send local data
    totalToBeSent::Int64  # total number of entries to be sent
    elementsToSend #elements to send to neighboring processes
    neighbors #neighboring processes
    receiveLength # lenghts of messages received from neighboring processes
    sendLength # lenghts of messages sent to neighboring processes
    sendBuffer # send buffer for non-blocking sends
+   mgData #Pointer to the coarse level data for this fine matrix
+   Ac #Coarse grid matrix
+
 end
 
 #=
@@ -49,38 +49,10 @@ end
 
   @param[in] A the known system matrix
 =#
-@inline function InitializeSparseMatrix(A, geom) 
-  A.title = 0
-  A.geom = geom
-  A.totalNumberOfRows = 0
-  A.totalNumberOfNonzeros = 0
-  A.localNumberOfRows = 0
-  A.localNumberOfColumns = 0
-  A.localNumberOfNonzeros = 0
-  A.nonzerosInRow = 0
-  A.mtxIndG = 0
-  A.mtxIndL = 0
-  A.matrixValues = 0
-  A.matrixDiagonal = 0
-
-  # Optimization is ON by default. The code that switches it OFF is in the
-  # functions that are meant to be optimized.
-  A.isDotProductOptimized = true
-  A.isSpmvOptimized       = true
-  A.isMgOptimized      = true
-  A.isWaxpbyOptimized     = true
-
-  A.numberOfExternalValues = 0
-  A.numberOfSendNeighbors = 0
-  A.totalToBeSent = 0
-  A.elementsToSend = 0
-  A.neighbors = 0
-  A.receiveLength = 0
-  A.sendLength = 0
-  A.sendBuffer = 0
-  A.mgData = 0 #Fine-to-coarse grid transfer initially not defined.
-  A.Ac =0
-  return
+function InitializeSparseMatrix(A::Type{SpMatrix} , geom::Geometry) 
+   #Optimization data not inlcuded in struct
+  A = SpMatrix("", geom,0,0,0,0,0,0,0,0,0,0,0,0, true, true, true,true, 0,0,0,0,0,0,0,0,0)
+  return A
 end
 
 #=
@@ -94,7 +66,7 @@ end
     dv = diagonal.values
     @assert(A.localNumberOfRows==diagonal.localLength)
     for i=1:A.localNumberOfRows 
-	dv[i] = *(curDiagA[i])
+	dv[i] = curDiagA[i]
     end
   return
 end

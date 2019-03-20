@@ -1,8 +1,7 @@
 using MPI
 using Dates
 using Logging
-HPCG_fout = Logger("HPCG_Fout")
-Logging.configure(HPCG_fout, level=DEBUG)
+
 include("hpcg.jl")
 
 include("ReadHpcgDat.jl")
@@ -33,18 +32,17 @@ startswith(const char * s, const char * prefix) {
   @see HPCG_Finalize
 =#
 
-function HPCG_Init(int * argc_p, char ** *argv_p, params) 
-  argc = *argc_p
-  argv = *argv_p
+function HPCG_Init(length, ARGS , params) 
+  argc = length(ARGS)
+  argv = ARGS
   fname = String
   i =Int64 
   j =Int64
-  iparams = Array{Int64}
-  cparams[][7] = {"--nx=", "--ny=", "--nz=", "--rt=", "--pz=", "--zl=", "--zu=", "--npx=", "--npy=", "--npz="}
-  const int nparams = (sizeof cparams) / (sizeof cparams[0])
-  bool broadcastParams = false # Make true if parameters read from file.
+  cparams[:,7] = ["--nx=", "--ny=", "--nz=", "--rt=", "--pz=", "--zl=", "--zu=", "--npx=", "--npy=", "--npz="]
+  nparams = sizeof(cparams) / sizeof(cparams[0])
+  broadcastParams = false # Make true if parameters read from file.
 
-  iparams = Array{Int64}(nparams)
+  iparams = Array{Int64,1}(undef, nparams)
 
   
   # for sequential and some MPI implementations it's OK to read first three args */
@@ -61,9 +59,8 @@ function HPCG_Init(int * argc_p, char ** *argv_p, params)
       if startswith(ARGS[i], cparams[j])
 	#startswith(s::AbstractString, prefix::AbstractString)
 	#Returns true if s starts with prefix. If prefix is a vector or set of characters, tests whether the first character of s belongs to that set.
-
-        ARGS[i]+strlen(cparams[j]) = iparams[j]
           iparams[j] = 0
+      end
     end 
    i = i+1
   end
@@ -117,16 +114,19 @@ function HPCG_Init(int * argc_p, char ** *argv_p, params)
   params.numThreads = 1
 #  params.numThreads = omp_get_num_threads()
   date = Dates.DateTimenow()
-  fname =  "hpcg"*$(1900 + date.year) * $date.month * $date.day * $date.hour * $date.min * $date.sec *".txt"
+  fname =  "hpcg"*"_"*string(date)*".txt"
+  io = open(fname, "w+")
+  HPCG_fout = SimpleLogger(io)
+  Logging.configure(HPCG_fout, level=DEBUG)
 
   if 0 == params.comm_rank
     Logging.configure(HPCG_fout, filename=fname)
   else 
-    fname =  "hpcg"*$(1900 + date.year) * $date.month * $date.day * $date.hour * $date.min * $date.sec * "_"* $params.comm_rank*".txt"
+  fname =  "hpcg"*"_"*string(date)*".txt"
     Logging.configure(HPCG_fout, filename=fname)
   end
 
-  free( iparams )
+  iparams  = nothing
 
   return 0
 end

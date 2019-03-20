@@ -46,8 +46,8 @@ function GenerateProblem_ref(A, b,x, xexact)
 
   # Allocate arrays that are of length localNumberOfRows
   nonzerosInRow = Array{Any}(undef,localNumberOfRows)
-  mtxIndG = Array{Int64}(undef, localNumberOfRows)
-  mtxIndL =Array{Int64}(undef,localNumberOfRows)
+  mtxIndG = Array{Int64,2}(undef, localNumberOfRows)
+  mtxIndL =Array{Int64,2}(undef,localNumberOfRows)
   matrixValues = Array{Float64}(undef,localNumberOfRows)
   matrixDiagonal = Array{Float64}(undef,localNumberOfRows)
 
@@ -84,25 +84,26 @@ function GenerateProblem_ref(A, b,x, xexact)
     mtxIndG[i] = 0
     mtxIndL[i] = 0
   end
-#  if HPCG_CONTIGUOUS_ARRAYS==1	Consider making HPCG_CONTIGUOS_ARRAYS A Bool 
+#=  if HPCG_CONTIGUOUS_ARRAYS==1	Consider making HPCG_CONTIGUOS_ARRAYS A Bool 
   for i=1:localNumberOfRows 
-    mtxIndL[i] = Array{Float64}(undef,numberOfNonzerosPerRow)
+    mtxIndL[i,:] = Array{Float64}(undef,numberOfNonzerosPerRow)
   end
   for i=1:localNumberOfRows 
-    matrixValues[i] = Array{Float64}(undef,numberOfNonzerosPerRow)
+    matrixValues[i,:] = Array{Float64}(undef,numberOfNonzerosPerRow)
   end
   for i=1:localNumberOfRows
-   mtxIndG[i] = Array{Float64}(undef,numberOfNonzerosPerRow)
+   mtxIndG[i,:] = Array{Float64}(undef,numberOfNonzerosPerRow)
   end
 #else
-  mtxIndL[1] = Array{Float64}(undef,localNumberOfRows * numberOfNonzerosPerRow)
-  matrixValues[1] = Array{Float64}(undef,localNumberOfRows * numberOfNonzerosPerRow)
-  mtxIndG[1] = Array{Float64}(undef,localNumberOfRows * numberOfNonzerosPerRow)
+=#
+  mtxIndL[1,:] = Array{Float64}(undef,localNumberOfRows * numberOfNonzerosPerRow)
+  matrixValues[1,:] = Array{Float64}(undef,localNumberOfRows * numberOfNonzerosPerRow)
+  mtxIndG[1,:] = Array{Float64}(undef,localNumberOfRows * numberOfNonzerosPerRow)
 
   for i=1:localNumberOfRows
-	  mtxIndL[i] = mtxIndL[1] + i * numberOfNonzerosPerRow
-	  matrixValues[i] = matrixValues[1] + i * numberOfNonzerosPerRow
-	  mtxIndG[i] = mtxIndG[1] + i * numberOfNonzerosPerRow
+	  mtxIndL[i,:] = mtxIndL[1] + i * numberOfNonzerosPerRow
+	  matrixValues[i,:] = matrixValues[1] + i * numberOfNonzerosPerRow
+	  mtxIndG[i,:] = mtxIndG[1] + i * numberOfNonzerosPerRow
   end
    localNumberOfNonzeros = 0
   # TODO:  This triply nested loop could be flattened or use nested parallelism

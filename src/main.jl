@@ -77,7 +77,7 @@ function main()
 
   ierr = CheckAspectRatio(0.125, nx, ny, nz, "local problem", rank==0)
 
-  if ierr
+  if ierr!=0
     return ierr
   end
 
@@ -93,7 +93,7 @@ function main()
 
   ierr = CheckAspectRatio(0.125, geom.npx, geom.npy, geom.npz, "process grid", rank==0)
 
-  if (ierr)
+  if ierr!=0
     return ierr
   end
 
@@ -366,3 +366,4 @@ function main()
   MPI.Finalize()
   return 0
 end
+main()

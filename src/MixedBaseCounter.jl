@@ -31,7 +31,7 @@ end
 
 function next(this) 
   for  i =1:this.length
-    this.cur_counts[i]++
+    this.cur_counts[i]+=1
     if this.cur_counts[i] > this.max_counts[i] 
       this.cur_counts[i] = 0
       continue

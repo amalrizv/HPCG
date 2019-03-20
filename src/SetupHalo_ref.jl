@@ -30,7 +30,7 @@ function SetupHalo_ref(A)
   for i=1:localNumberOfRows 
     cur_nnz = nonzerosInRow[i]
     for j=1:cur_nnz
-	mtxIndL[i][j] = mtxIndG[i][j]
+	mtxIndL[i,j] = mtxIndG[i,j]
     end
   end
 
@@ -107,12 +107,12 @@ function SetupHalo_ref(A)
   #Convert matrix indices to local IDs
   for i=1:localNumberOfRows
     for j=1:nonzerosInRow[i]
-      curIndex = mtxIndG[i][j]
+      curIndex = mtxIndG[i,j]
       rankIdOfColumnEntry = ComputeRankOfMatrixRow(A.geom, curIndex)
       if A.geom.rank==rankIdOfColumnEntry # My column index, so convert to local index
-        mtxIndL[i][j] = A.globalToLocalMap[curIndex]
+        mtxIndL[i,j] = A.globalToLocalMap[curIndex]
       else # If column index is not a row index, then it comes from another processor
-        mtxIndL[i][j] = externalToLocalMap[curIndex]
+        mtxIndL[i,j] = externalToLocalMap[curIndex]
       end
     end
   end
