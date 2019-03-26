@@ -53,7 +53,7 @@ function GenerateGeometry(size, rank, numThreads,pz, zl, zu,
 #  partz_ids[npartz-1] = npz # The last element of this array is always npz
   ipartz_ids = 0
   for i=1 :npartz 
-    #@assert(ipartz_ids<partz_ids[i])  # Make sure that z partitioning is consistent with computed npz value
+    @assert(ipartz_ids<partz_ids[i])  # Make sure that z partitioning is consistent with computed npz value
     ipartz_ids = partz_ids[i]
   end
 

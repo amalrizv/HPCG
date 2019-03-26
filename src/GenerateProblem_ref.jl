@@ -96,14 +96,14 @@ function GenerateProblem_ref(A, b,x, xexact)
   end
 #else
 =#
-  mtxIndL[1,:] = Array{Float64}(undef,localNumberOfRows * numberOfNonzerosPerRow)
-  matrixValues[1,:] = Array{Float64}(undef,localNumberOfRows * numberOfNonzerosPerRow)
-  mtxIndG[1,:] = Array{Float64}(undef,localNumberOfRows * numberOfNonzerosPerRow)
+  mtxIndL = Array{Float64,2}(undef,localNumberOfRows, numberOfNonzerosPerRow)
+  matrixValues = Array{Float64,2}(undef,localNumberOfRows, numberOfNonzerosPerRow)
+  mtxIndG = Array{Float64}(undef,localNumberOfRows, numberOfNonzerosPerRow)
 
   for i=1:localNumberOfRows
-	  mtxIndL[i,:] = mtxIndL[1] + i * numberOfNonzerosPerRow
-	  matrixValues[i,:] = matrixValues[1] + i * numberOfNonzerosPerRow
-	  mtxIndG[i,:] = mtxIndG[1] + i * numberOfNonzerosPerRow
+	  mtxIndL[i,:] = mtxIndL[1,:] + i * numberOfNonzerosPerRow
+	  matrixValues[i,:] = matrixValues[1,:] + i * numberOfNonzerosPerRow
+	  mtxIndG[i,:] = mtxIndG[1,:] + i * numberOfNonzerosPerRow
   end
    localNumberOfNonzeros = 0
   # TODO:  This triply nested loop could be flattened or use nested parallelism
@@ -120,8 +120,8 @@ function GenerateProblem_ref(A, b,x, xexact)
          A.localToGlobalMap[currentLocalRow] = currentGlobalRow
          @debug(" rank, globalRow, localRow = $A.geom.rank $currentGlobalRow ",A.globalToLocalMap[currentGlobalRow])
          numberOfNonzerosInRow = 0
-         currentValuePointer = matrixValues[currentLocalRow]  #Pointer to current value in current row
-         currentIndexPointerG = mtxIndG[currentLocalRow] # Pointer to current index in current row
+         currentValuePointer = matrixValues[currentLocalRow,1]  #Pointer to current value in current row
+         currentIndexPointerG = mtxIndG[currentLocalRow,1] # Pointer to current index in current row
 	 cvp = 1
 	 cipg = 1
          for sz=-1:1 

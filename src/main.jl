@@ -6,9 +6,9 @@
 #   Main routine of a program that calls the HPCG conjugate gradient
 #   solver to solve the problem, and then prints results.
 
-import MPI
 include("hpcg.jl")
-
+include("init.jl")
+using MPI
 include("CheckAspectRatio.jl")
 include("GenerateGeometry.jl")
 include("GenerateProblem.jl")
@@ -42,17 +42,22 @@ include("TestNorms.jl")
   @return Returns zero on success and a non-zero value otherwise.
 
 =#
-function main() 
-  MPI.Init()
+function main(hpcg_args) 
 
+  #retrieve arguments:
+  opts = collect(keys(hpcg_args))
+  vals = collect(values(hpcg_args))
+  if hpcg_args["USE_MPI"] == true 
+  	MPI.Init()
+  end
   params=HPCG_Params
 
-  HPCG_Init(length(ARGS), ARGS, params)
+  params = HPCG_Init(hpcg_args, params)
 
   #Check if QuickPath option is enabled.
   #If the running time is set to zero, we minimize all paths through the program
-
-  quickPath = (params.runningTime==0)
+  println(typeof(params))
+  quickPath::Bool = (params.runningTime==0)
 
   size = params.comm_size
   rank = params.comm_rank # Number of MPI processes, My process ID
@@ -61,12 +66,10 @@ function main()
 	@debug("Process ",rank, " of ",size," is alive with " , params.numThreads , " threads.") 
   end 
 
-  if rank==0 
-    c = readline()
+
+  if hpcg_args["USE_MPI"] == true 
+  	MPI.Barrier(MPI.COMM_WORLD)
   end
-
-  MPI.Barrier(MPI.COMM_WORLD)
-
   nx = Int64
   ny = Int64
   nz = Int64
@@ -85,7 +88,7 @@ function main()
    ## Problem setup Phase ##
    #########################
 
-  t1 = mytimer() #INCLUDE CORRECT TIMER 
+  t1 = time_ns() #INCLUDE CORRECT TIMER 
 
   #Construct the geometry and linear system
   geom = Geometry
@@ -366,4 +369,3 @@ function main()
   MPI.Finalize()
   return 0
 end
-main()

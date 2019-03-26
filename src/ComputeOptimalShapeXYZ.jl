@@ -1,6 +1,8 @@
 include("MixedBaseCounter.jl")
 
-function ComputePrimeFactors(n, factors)
+function ComputePrimeFactors(n)
+ # TODO : Operate on this using Dicts not arrays
+  factors = Dict{Int64, Int64}()
   d = Int64 
   sq = Int64(sqrt(n)+1)
 
@@ -16,7 +18,7 @@ function ComputePrimeFactors(n, factors)
       r = div(n, d)
       rr = rem(n,d)
       if rr == 0 
-        factors[d] = facctors[d] +1
+        factors[d] = factors[d] +1
         n = r
         continue
       end
@@ -24,9 +26,10 @@ function ComputePrimeFactors(n, factors)
     end
   d = d+1
   end
-  if n > 1 || factors.size() == 0  # left with a prime or x==1
+  if n > 1 || length(factors) == 0  # left with a prime or x==1
     factors[n] = factors[n]+1
   end
+  return factors
 end
 
 function pow_i(x,p) 
@@ -52,9 +55,8 @@ function pow_i(x,p)
 end
 
 function ComputeOptimalShapeXYZ(xyz, x, y, z) 
-  factors  = Dict{Int64, Int64} 
 
-  ComputePrimeFactors( xyz, factors ) # factors are sorted: ascending order
+  factors = ComputePrimeFactors( xyz) # factors are sorted: ascending order
   # there is at least one prime factor
   keys = collect(keys(factors))     # cache the first factor, move to the next one
   values = collect(values(factors))

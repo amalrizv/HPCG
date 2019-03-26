@@ -17,8 +17,8 @@ mutable struct SpMatrix
    localNumberOfColumns::Int64   #number of columns local to this process
    localNumberOfNonzeros::Int64   # number of nonzeros local to this process
    nonzerosInRow  # The number of nonzeros in a row will always be 27 or fewer
-   mtxIndG # matrix indices as global values
-   mtxIndL # matrix indices as local values
+   mtxIndG ::Array{Int64,2}# matrix indices as global values
+   mtxIndL ::Array{Int64,2}# matrix indices as local values
    matrixValues # values of matrix entries
    matrixDiagonal # values of matrix diagonal entries
    globalToLocalMap #global-to-local mapping

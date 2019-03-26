@@ -32,47 +32,22 @@ startswith(const char * s, const char * prefix) {
   @see HPCG_Finalize
 =#
 
-function HPCG_Init(length, ARGS , params) 
-  argc = length(ARGS)
-  argv = ARGS
-  fname = String
-  i =Int64 
-  j =Int64
-  cparams[:,7] = ["--nx=", "--ny=", "--nz=", "--rt=", "--pz=", "--zl=", "--zu=", "--npx=", "--npy=", "--npz="]
-  nparams = sizeof(cparams) / sizeof(cparams[0])
+function HPCG_Init(arg_hpcg, params) 
+  #arg_hpcg  = [np, nx,ny,nz, d,rt, mpi]
+  opts = collect(keys(arg_hpcg))
+  vals = collect(values(arg_hpcg))
+  #Documentation asks us to only provide nx ny nz np and rt not pz zl zu npx npy npz
+  # If these are not provided in command line then assign them zero, therefore last 6 values are 0
+  #TODO :Add option for pz zl zu npz npy npz
+  #     :Add option to read from File
+
+  iparams = [arg_hpcg["nx"], arg_hpcg["ny"], arg_hpcg["nz"], arg_hpcg["rt"], 0,0,0,0,0,0]
+  cparams = ["--nx=", "--ny=", "--nz=", "--rt=", "--pz=", "--zl=", "--zu=", "--npx=", "--npy=", "--npz="]
+  nparams = length(cparams)
   broadcastParams = false # Make true if parameters read from file.
 
-  iparams = Array{Int64,1}(undef, nparams)
 
   
-  # for sequential and some MPI implementations it's OK to read first three args */
-  for i = 1:4
-    if  ARGS[i]< 10
-	 iparams = Int64(ARGS[1])
-	 iparams[i] = 0
-    end
-  end
-  # for some MPI environments, command line arguments may get complicated so we need a prefix */
-  i = 1 
-  while i <= length[ARGS] 
-    for j =1:nparams 
-      if startswith(ARGS[i], cparams[j])
-	#startswith(s::AbstractString, prefix::AbstractString)
-	#Returns true if s starts with prefix. If prefix is a vector or set of characters, tests whether the first character of s belongs to that set.
-          iparams[j] = 0
-      end
-    end 
-   i = i+1
-  end
-  # Check if --rt was specified on the command line
-  rt  = iparams+3  #Assume runtime was not specified and will be read from the hpcg.dat file
-  if ! iparams[3]
-	 rt = 0 #If --rt was specified, we already have the runtime, so don't read it from file
-  end
-  if ! iparams[0] && ! iparams[1] && ! iparams[2] # no geometry arguments on the command line 
-    ReadHpcgDat(iparams, rt, iparams+7)
-    broadcastParams = true
-  end
 
   #Check for small or unspecified nx, ny, nz values
   #If any dimension is less than 16, make it the max over the other two dimensions, or 16, whichever is largest
@@ -90,11 +65,18 @@ function HPCG_Init(length, ARGS , params)
   end
 
 #Broadcast values of iparams to all MPI processes
-#ifndef HPCG_NO_MPI
-  if (broadcastParams) 
-    MPI.Bcast( iparams, nparams, MPI_INT, 0, MPI.COMM_WORLD )
+  if arg_hpcg["USE_MPI"] == true
+    if broadcastParams == true 
+      MPI.Bcast( iparams, nparams, 0, MPI.COMM_WORLD )
+    end
   end
+  if arg_hpcg["USE_MPI"] == true
+    params = HPCG_Params(MPI.size(MPI.COMM_WORLD), MPI.rank(MPI.COMM_WORLD), 1, iparams[1], iparams[2], iparams[3], iparams[4], iparams[8], iparams[9], iparams[10], iparams[5], iparams[6], iparams[7])
+  else
+    params = HPCG_Params(1, 0, 1, iparams[1], iparams[2], iparams[3], iparams[4], iparams[8], iparams[9], iparams[10], iparams[5], iparams[6], iparams[7])
+  end 
 
+  #=
   params.nx = iparams[1]
   params.ny = iparams[2]
   params.nz = iparams[3]
@@ -112,21 +94,16 @@ function HPCG_Init(length, ARGS , params)
   params.comm_size = 1
 
   params.numThreads = 1
-#  params.numThreads = omp_get_num_threads()
-  date = Dates.DateTimenow()
+  =#
+
+
+  date = now()
   fname =  "hpcg"*"_"*string(date)*".txt"
   io = open(fname, "w+")
-  HPCG_fout = SimpleLogger(io)
-  Logging.configure(HPCG_fout, level=DEBUG)
-
-  if 0 == params.comm_rank
-    Logging.configure(HPCG_fout, filename=fname)
-  else 
-  fname =  "hpcg"*"_"*string(date)*".txt"
-    Logging.configure(HPCG_fout, filename=fname)
-  end
+  HPCG_Fout = SimpleLogger(io,Logging.Debug)
+  HPCG_fout = global_logger(HPCG_Fout)
 
   iparams  = nothing
 
-  return 0
+  return params
 end

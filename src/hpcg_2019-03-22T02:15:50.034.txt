@@ -1,0 +1,8 @@
+┌ Debug: Process 
+│   rank = 0
+│    of  =  of 
+│   size = 1
+│    is alive with  =  is alive with 
+│   params.numThreads = 1
+│    threads. =  threads.
+└ @ Main /Users/rzvbook/Documents/HPCG/src/main.jl:66
