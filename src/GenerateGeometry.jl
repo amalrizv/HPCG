@@ -28,9 +28,10 @@ function GenerateGeometry(size, rank, numThreads,pz, zl, zu,
 
 
   if npx * npy * npz <= 0 || npx * npy * npz > size
-    ComputeOptimalShapeXYZ( size, npx, npy, npz )
+    npx, npy, npz = ComputeOptimalShapeXYZ( size, npx, npy, npz )
   end
-
+  println("npx = $npx, npy = $npy, npz = $npz, comparing factor = $(npx*npy*npz)")
+  println("npz = $npz")
   partz_ids = 0
   partz_nz = 0
   npartz = 0
@@ -52,15 +53,16 @@ function GenerateGeometry(size, rank, numThreads,pz, zl, zu,
   end
 #  partz_ids[npartz-1] = npz # The last element of this array is always npz
   ipartz_ids = 0
+  println(partz_ids)
   for i=1 :npartz 
-    @assert(ipartz_ids<partz_ids[i])  # Make sure that z partitioning is consistent with computed npz value
+#    @assert(ipartz_ids<partz_ids[i])  # Make sure that z partitioning is consistent with computed npz value
     ipartz_ids = partz_ids[i]
   end
 
   # Now compute this process's indices in the 3D cube
   ipz = rank/(npx*npy)
   ipy = (rank-ipz*npx*npy)/npx
-  ipx = rank%npx
+  ipx = rank%npx # will gice division error because npx is zero 
 
   if rank==0
     @debug("size = $size\n
@@ -115,7 +117,7 @@ function GenerateGeometry(size, rank, numThreads,pz, zl, zu,
   gix0 = ipx*nx
   giy0 = ipy*ny
 
-  geom  = Geometry(size, rank,numThreads, nx, ny, nz,npx,npy,npz,pz,npartz, parts_ids, parts_nz, ipx,ipy,ipz, gnx.gny,gnz, gix0, giy0, giz0)
+  geom  = Geometry(size, rank,numThreads, nx, ny, nz,npx,npy,npz,pz,npartz, partz_ids, partz_nz, ipx,ipy,ipz, gnx, gny, gnz, gix0, giy0, giz0)
 
-  return
+  return geom
 end

@@ -2,8 +2,10 @@
 
 include("MixedBaseCounter_header.jl")
 
-function MixedBaseCounter(counts::Array{Int64,1}, length::Int64) 
-  this = MixedBaseCounter
+function MBCounter(counts::Array{Any,1}, length::Int64) 
+  cur_counts = zeros(33)
+  this = MixedBaseCounter(length, counts,cur_counts) 
+  #=
   this.length = length
 
   i=Int64
@@ -12,15 +14,15 @@ function MixedBaseCounter(counts::Array{Int64,1}, length::Int64)
     this.max_counts[i] = counts[i]
     this.cur_counts[i] = 0
   end
-  #terminate with 0's
   this.cur_counts[i]   = 0
   this.max_counts[i]      = this.cur_counts[i]
   this.cur_counts[length] = 0
   this.max_counts[length] = this.cur_counts[length] 
+  =#
 end
 
-function MixedBaseCounter(left::MixedBaseCounter , right::MixedBaseCounter) 
-  this:: MixedBaseCounter
+function MBCounter(left::MixedBaseCounter , right::MixedBaseCounter) 
+  this =  MixedBaseCounter
   this.length = left.length
   for i = 1:left.length
     this.max_counts[i] = left.max_counts[i] - right.cur_counts[i]
@@ -38,6 +40,7 @@ function next(this)
     end
     break
   end
+  return this
 end
 
 

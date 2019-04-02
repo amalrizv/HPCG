@@ -8,30 +8,22 @@
 include("Geometry.jl")
 include("MGData.jl")
 
-mutable struct SpMatrix
-  title::String #name of the sparse matrix
-  geom::Geometry #geometry associated with this matrix
-   totalNumberOfRows::Int64 #total number of matrix rows across all processes
-   totalNumberOfNonzeros::Int64  #total number of matrix nonzeros across all processes
-   localNumberOfRows::Int64  # number of rows local to this process
-   localNumberOfColumns::Int64   #number of columns local to this process
-   localNumberOfNonzeros::Int64   # number of nonzeros local to this process
-   nonzerosInRow  # The number of nonzeros in a row will always be 27 or fewer
-   mtxIndG ::Array{Int64,2}# matrix indices as global values
-   mtxIndL ::Array{Int64,2}# matrix indices as local values
-   matrixValues # values of matrix entries
-   matrixDiagonal # values of matrix diagonal entries
-   globalToLocalMap #global-to-local mapping
-   localToGlobalMap #local-to-global mapping
+mutable struct SpMatrix_init
    isDotProductOptimized
    isSpmvOptimized
    isMgOptimized
    isWaxpbyOptimized
-  #=
-   This is for storing optimized data structres created in OptimizeProblem and
-   used inside optimized ComputeSPMV().
-  =#
-
+   geom::Geometry #geometry associated with this matrix
+end
+mutable struct
+   sp_matrix
+   mgData #Pointer to the coarse level data for this fine matrix
+   Ac #Coarse grid matrix
+end
+mutable struct SpMatrix_anx
+   sp_matrix
+   localNumberOfCols::Int64
+   numberOfExternalValues::Int64
    numberOfSendNeighbors::Int64 # number of neighboring processes that will be send local data
    totalToBeSent::Int64  # total number of entries to be sent
    elementsToSend #elements to send to neighboring processes
@@ -39,8 +31,29 @@ mutable struct SpMatrix
    receiveLength # lenghts of messages received from neighboring processes
    sendLength # lenghts of messages sent to neighboring processes
    sendBuffer # send buffer for non-blocking sends
-   mgData #Pointer to the coarse level data for this fine matrix
-   Ac #Coarse grid matrix
+
+end
+
+mutable struct SpMatrix
+   sp_matrix
+   title::String #name of the sparse matrix
+   totalNumberOfRows::Int64 #total number of matrix rows across all processes
+   totalNumberOfNonzeros::Int64  #total number of matrix nonzeros across all processes
+   localNumberOfRows::Int64  # number of rows local to this process
+   localNumberOfColumns::Int64   #number of columns local to this process
+   localNumberOfNonzeros::Int64   # number of nonzeros local to this process
+   nonzerosInRow  # The number of nonzeros in a row will always be 27 or fewer
+   mtxIndG ::Array{Array{Int64,1}} # matrix indices as global values
+   mtxIndL ::Array{Array{Int64,1}} # matrix indices as local value
+   matrixValues :: Array{Array{Float64,1}} # values of matrix entries
+   matrixDiagonal :: Array{Array{Float64,1}} #values of matrix diagonal entries
+   localToGlobalMap #local-to-global mapping
+   globalToLocalMap #global-to-local mapping
+  #=
+   This is for storing optimized data structres created in OptimizeProblem and
+   used inside optimized ComputeSPMV().
+  =#
+
 
 end
 
@@ -49,9 +62,9 @@ end
 
   @param[in] A the known system matrix
 =#
-function InitializeSparseMatrix(A::Type{SpMatrix} , geom::Geometry) 
-   #Optimization data not inlcuded in struct
-  A = SpMatrix("", geom,0,0,0,0,0,0,0,0,0,0,0,0, true, true, true,true, 0,0,0,0,0,0,0,0,0)
+function InitializeSparseMatrix(geom::Geometry) 
+  A = SpMatrix_init(true, true, true, true, geom)
+  
   return A
 end
 

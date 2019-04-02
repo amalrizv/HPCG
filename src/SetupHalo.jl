@@ -14,11 +14,11 @@ include("SetupHalo_ref.jl")
 
   @see ExchangeHalo
 =#
-function SetupHalo(A) 
+function SetupHalo(A, AA) 
 
   #The call to this reference version of SetupHalo can be replaced with custom code.
   #However, any code must work for general unstructured sparse matrices.  Special knowledge about the
   #specific nature of the sparsity pattern may not be explicitly used.
 
-  return(SetupHalo_ref(A))
+  return(SetupHalo_ref(A,AA))
 end

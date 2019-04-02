@@ -1,19 +1,21 @@
 include("MixedBaseCounter.jl")
 
 function ComputePrimeFactors(n)
+  println(n)
  # TODO : Operate on this using Dicts not arrays
-  factors = Dict{Int64, Int64}()
+  factors = Dict()
   d = Int64 
   sq = Int64(sqrt(n)+1)
 
   # remove 2 as a factor with shifts instead "/" and "%"
+  factors[2] = 0
   while n > 1 & (n & 1) == 0  
-    factors[2] = factors[2] +1
+    factors[2] = factors[2] + 1
     n>>=1
   end
-
   # keep removing subsequent odd numbers
   for d = 3:sq 
+    factors[d] = 0
     while 1 
       r = div(n, d)
       rr = rem(n,d)
@@ -26,8 +28,9 @@ function ComputePrimeFactors(n)
     end
   d = d+1
   end
+  factors[n] = 0
   if n > 1 || length(factors) == 0  # left with a prime or x==1
-    factors[n] = factors[n]+1
+     factors[n] = factors[n]+1
   end
   return factors
 end
@@ -56,48 +59,49 @@ end
 
 function ComputeOptimalShapeXYZ(xyz, x, y, z) 
 
-  factors = ComputePrimeFactors( xyz) # factors are sorted: ascending order
+  factors = ComputePrimeFactors(xyz) # factors are sorted: ascending order
+  println(factors)
   # there is at least one prime factor
-  keys = collect(keys(factors))     # cache the first factor, move to the next one
-  values = collect(values(factors))
-  x = keys[1]
-  if length(keys)>1
-  y = keys[2]# try to cache the second factor in "y"
+  keyss = collect(keys(factors))     # cache the first factor, move to the next one
+  vals = collect(values(factors))
+  x = keyss[1]
+  if length(keyss)>1
+  y = keyss[2]# try to cache the second factor in "y"
   end
   if length(factors) == 1  # only a single factor
     z = pow_i(x, factors[x] / 3)
     y = pow_i(x, factors[x] / 3 + ((factors[x] % 3) >= 2 ? 1 : 0))
     x = pow_i(x, factors[x] / 3 + ((factors[x] % 3) >= 1 ? 1 : 0))
 
-  elseif length.factors == 2 && factors[x] == 1 && factors[y] == 1  # two distinct prime factors
+  elseif length(factors) == 2 && factors[x] == 1 && factors[y] == 1  # two distinct prime factors
     z = 1
 
-  elseif length.factors == 2 && factors[x] + factors[y] == 3  # three prime factors, one repeated
+  elseif length(factors) == 2 && factors[x] + factors[y] == 3  # three prime factors, one repeated
     z = factors[x] == 2 ? x : y # test which factor is repeated
 
-  elseif length.factors == 3 && factors[x] == 1 && factors[y] == 1 && iter->second == 1# three distinct and single prime factors
-    z = keys[1]
+  elseif length(factors) == 3 && factors[x] == 1 && factors[y] == 1 && iter->second == 1# three distinct and single prime factors
+    z = keyss[1]
 
   else  # 3 or more prime factors so try all possible 3-subsets
 
-    distinct_factors= keys 
-    count_factors =  values
+    distinct_factors= keyss 
+    count_factors =  vals
 
     # count total number of prime factors in "c_main" and distribute some factors into "c1"
-    c_main = MixedBaseCounter(count_factors, factors.size()) 
-    c1 = MixedBaseCounter(count_factors, factors.size())
+    c_main = MBCounter(count_factors, length(factors)) 
+    c1 = MBCounter(count_factors, length(factors))
 
     # at the beginning, minimum area is the maximum area
     area= Float64 
     min_area = 2.0 * xyz + 1.0
 
-    c1.next() 
-	while ! c1.is_zero() 
+    next(c1) 
+	while is_zero(c1)==0 
      	   c2 = MixedBaseCounter(c_main, c1) # "c2" gets the factors remaining in "c_main" that "c1" doesn't have
            c2.next() 
-	   while ! c2.is_zero()
-        	tf1 = Int64(c1.product(distinct_factors))
-        	tf2 = Int64(c2.product(distinct_factors))
+	   while is_zero(c2)==0
+        	tf1 = Int64(product(c1,distinct_factors))
+        	tf2 = Int64(product(c2,distinct_factors))
         	tf3 = Int64(xyz / tf1/ tf2) # we derive the third dimension, we don't keep track of the factors it has
 
         	area = tf1 * Float64(tf2) + tf2 * Float(tf3) + tf1 * Float(tf3)
@@ -107,9 +111,10 @@ function ComputeOptimalShapeXYZ(xyz, x, y, z)
           		y = tf2
           		z = tf3
         	end
-		c2.next()
+		next(c2)
       	 end
-    	 c1.next()
+    	 next(c1)
       end
   end
+  return x, y, z 
 end

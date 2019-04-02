@@ -19,6 +19,31 @@ include("main.jl")
 			help = "nz"
                         nargs = '?'
                         arg_type = Int
+		"--npx"              
+			help = "npx"
+                        nargs = '?'
+                        arg_type = Int
+		"--npy" 
+			help = "npy"
+                        nargs = '?'
+                        arg_type = Int
+		"--npz" 
+			help = "npz"
+                        nargs = '?'
+                        arg_type = Int
+
+		"--zl"              
+			help = "zl"
+                        nargs = '?'
+                        arg_type = Int
+		"--zu" 
+			help = "zu"
+                        nargs = '?'
+                        arg_type = Int
+		"--pz" 
+			help = "pz"
+                        nargs = '?'
+                        arg_type = Int
 		"--DEFAULT" 
 			help = "default"
                         action = :store_true

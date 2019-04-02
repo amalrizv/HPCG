@@ -46,8 +46,8 @@ end
   gnx = geom.gnx
   gny = geom.gny
 
-  iz = index/(gny*gnx)
-  iy = (index-iz*gny*gnx)/gnx
+  iz = cld(index,(gny*gnx))
+  iy = cld((index-iz*gny*gnx),gnx)
   ix = index%gnx
   # We now permit varying values for nz for any nx-by-ny plane of MPI processes.
   # npartz is the number of different groups of nx-by-ny groups of processes.
@@ -62,7 +62,7 @@ end
     ipart_nz = geom.partz_nz[i]
     ipartz_ids = geom.partz_ids[i] - ipartz_ids
     if iz<= ipart_nz*ipartz_ids
-      ipz += iz/ipart_nz
+      ipz += cld(iz,ipart_nz)
       break
     else 
       ipz += ipartz_ids
@@ -71,8 +71,8 @@ end
 
   end #for loop
 #  ipz = iz/geom.nz
-  ipy = iy/geom.ny
-  ipx = ix/geom.nx
+  ipy = cld(iy,geom.ny)
+  ipx = cld(ix,geom.nx)
   rank = ipx+ipy*geom.npx+ipz*geom.npy*geom.npx
   return rank
 end

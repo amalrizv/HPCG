@@ -41,7 +41,7 @@ function HPCG_Init(arg_hpcg, params)
   #TODO :Add option for pz zl zu npz npy npz
   #     :Add option to read from File
 
-  iparams = [arg_hpcg["nx"], arg_hpcg["ny"], arg_hpcg["nz"], arg_hpcg["rt"], 0,0,0,0,0,0]
+  iparams = [arg_hpcg["nx"], arg_hpcg["ny"], arg_hpcg["nz"], arg_hpcg["rt"],arg_hpcg["pz"], arg_hpcg["zl"], arg_hpcg["zu"], arg_hpcg["npx"], arg_hpcg["npy"], arg_hpcg["npz"] ]
   cparams = ["--nx=", "--ny=", "--nz=", "--rt=", "--pz=", "--zl=", "--zu=", "--npx=", "--npy=", "--npz="]
   nparams = length(cparams)
   broadcastParams = false # Make true if parameters read from file.

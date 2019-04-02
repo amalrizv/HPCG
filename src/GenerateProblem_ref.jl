@@ -12,15 +12,15 @@ include("hpcg.jl")
 #=
   Reference version of GenerateProblem to generate the sparse matrix, right hand side, initial guess, and exact solution.
 
-  @param[in]  A      The known system matrix
-  @param[inout] b      The newly allocated and generated right hand side vector (if b!=0 on entry)
-  @param[inout] x      The newly allocated solution vector with entries set to 0.0 (if x!=0 on entry)
-  @param[inout] xexact The newly allocated solution vector with entries set to the exact solution (if the xexact!=0 non-zero on entry)
+  @param[in]  	A      The known system matrix
+  		b      The newly allocated and generated right hand side vector (if b!=0 on entry)
+  		x      The newly allocated solution vector with entries set to 0.0 (if x!=0 on entry)
+  		xexact The newly allocated solution vector with entries set to the exact solution (if the xexact!=0 non-zero on entry)
 
   @see GenerateGeometry
 =#
 
-function GenerateProblem_ref(A, b,x, xexact) 
+function GenerateProblem_ref(A) 
 
   #Make local copies of geometry information.  Use global_int_t since the RHS products in the calculations
   #below may result in global range values.
@@ -46,20 +46,14 @@ function GenerateProblem_ref(A, b,x, xexact)
 
   # Allocate arrays that are of length localNumberOfRows
   nonzerosInRow = Array{Any}(undef,localNumberOfRows)
-  mtxIndG = Array{Int64,2}(undef, localNumberOfRows)
-  mtxIndL =Array{Int64,2}(undef,localNumberOfRows)
-  matrixValues = Array{Float64}(undef,localNumberOfRows)
-  matrixDiagonal = Array{Float64}(undef,localNumberOfRows)
+  mtxIndG = Array{Array{Int64,1}}(undef,localNumberOfRows)
+  mtxIndL =Array{Array{Int64,1}}(undef,localNumberOfRows)
+  matrixValues = Array{Array{Float64,1}}(undef,localNumberOfRows)
+  matrixDiagonal = Array{Array{Float64,1}}(undef,localNumberOfRows)
 
-  if b!=0 
-	b  = Vector(localNumberOfRows)
-  end
-  if x!=0
-	x =  Vector(localNumberOfRows)
-  end
-  if xexact!=0
-	xexact = Vector(localNumberOfRows)
-  end
+  b  = Vector{Int64}(undef,localNumberOfRows)
+  x =  Vector{Int64}(undef,localNumberOfRows)
+  xexact = Vector{Int64}(undef,localNumberOfRows)
   bv = zeros(localNumberOfRows)
   xv = zeros(localNumberOfRows)
   xexactv = zeros(localNumberOfRows)
@@ -72,38 +66,33 @@ function GenerateProblem_ref(A, b,x, xexact)
   if xexact!=0
 	 xexactv = xexact # Only compute exact solution if requested
   end
-
-  resize!(A.localToGlobalMap, localNumberOfRows)
+  localToGlobalMap = Dict()
+  globalToLocalMap = Dict()
 
   #Use a parallel loop to do initial assignment:
   #distributes the physical placement of arrays of pointers across the memory system
-
   for i=1:localNumberOfRows 
-    matrixValues[i] = 0
-    matrixDiagonal[i] = 0
-    mtxIndG[i] = 0
-    mtxIndL[i] = 0
+    matrixValues[i] = zeros(numberOfNonzerosPerRow)
+    matrixDiagonal[i] = zeros(numberOfNonzerosPerRow)
+    mtxIndG[i] = zeros(numberOfNonzerosPerRow)
+    mtxIndL[i] = zeros(numberOfNonzerosPerRow)
   end
 #=  if HPCG_CONTIGUOUS_ARRAYS==1	Consider making HPCG_CONTIGUOS_ARRAYS A Bool 
   for i=1:localNumberOfRows 
-    mtxIndL[i,:] = Array{Float64}(undef,numberOfNonzerosPerRow)
+    mtxIndL[i] = Array{Float64}(undef,numberOfNonzerosPerRow)
   end
   for i=1:localNumberOfRows 
-    matrixValues[i,:] = Array{Float64}(undef,numberOfNonzerosPerRow)
+    matrixValues[i] = Array{Float64}(undef,numberOfNonzerosPerRow)
   end
   for i=1:localNumberOfRows
-   mtxIndG[i,:] = Array{Float64}(undef,numberOfNonzerosPerRow)
+   mtxIndG[i] = Array{Float64}(undef,numberOfNonzerosPerRow)
   end
 #else
 =#
-  mtxIndL = Array{Float64,2}(undef,localNumberOfRows, numberOfNonzerosPerRow)
-  matrixValues = Array{Float64,2}(undef,localNumberOfRows, numberOfNonzerosPerRow)
-  mtxIndG = Array{Float64}(undef,localNumberOfRows, numberOfNonzerosPerRow)
-
   for i=1:localNumberOfRows
-	  mtxIndL[i,:] = mtxIndL[1,:] + i * numberOfNonzerosPerRow
-	  matrixValues[i,:] = matrixValues[1,:] + i * numberOfNonzerosPerRow
-	  mtxIndG[i,:] = mtxIndG[1,:] + i * numberOfNonzerosPerRow
+	  mtxIndL[i] = mtxIndL[1] .+ i * numberOfNonzerosPerRow
+	  matrixValues[i] = matrixValues[1] .+ i * numberOfNonzerosPerRow
+	  mtxIndG[i] = mtxIndG[1] .+ i * numberOfNonzerosPerRow
   end
    localNumberOfNonzeros = 0
   # TODO:  This triply nested loop could be flattened or use nested parallelism
@@ -113,37 +102,35 @@ function GenerateProblem_ref(A, b,x, xexact)
        giy = giy0+iy
        for  ix=1:nx 
          gix = gix0+ix
-         currentLocalRow = iz*nx*ny+iy*nx+ix
+         currentLocalRow = (iz-1)*nx*ny+(iy-1)*nx+(ix-1) +1
          currentGlobalRow = giz*gnx*gny+giy*gnx+gix
-         A.globalToLocalMap[currentGlobalRow] = currentLocalRow
+         globalToLocalMap[currentGlobalRow] = currentLocalRow
 
-         A.localToGlobalMap[currentLocalRow] = currentGlobalRow
-         @debug(" rank, globalRow, localRow = $A.geom.rank $currentGlobalRow ",A.globalToLocalMap[currentGlobalRow])
+         localToGlobalMap[currentLocalRow] = currentGlobalRow
+         @debug(" rank, globalRow, localRow = $A.geom.rank $currentGlobalRow ",globalToLocalMap[currentGlobalRow])
          numberOfNonzerosInRow = 0
-         currentValuePointer = matrixValues[currentLocalRow,1]  #Pointer to current value in current row
-         currentIndexPointerG = mtxIndG[currentLocalRow,1] # Pointer to current index in current row
+         currentValuePointer = matrixValues[currentLocalRow]  #Pointer to current value in current row
+         currentIndexPointerG = mtxIndG[currentLocalRow] # Pointer to current index in current row
 	 cvp = 1
 	 cipg = 1
          for sz=-1:1 
-          if giz+sz>-1 && giz+sz<gn
+          if giz+sz>0 && giz+sz<=gnz
             for sy=-1:1 
-              if giy+sy>-1 && giy+sy<gny
+              if giy+sy>0 && giy+sy<=gny
                 for sx=-1:1 
-                  if gix+sx>-1 && gix+sx<gnx
+                  if gix+sx>0 && gix+sx<=gnx
                      curcol = currentGlobalRow+sz*gnx*gny+sy*gnx+sx
                     if curcol==currentGlobalRow
                       matrixDiagonal[currentLocalRow] = currentValuePointer
-                      currentValuePointer[cvp] = currentValuePointer[cvp]+1
-		      currentValuePointer[cvp]  = 26.0
-		      cvp = cvp + 1
+			
+		      cvp = cvp +26
                     else 
-                      currentValuePointer[cvp] = currentValuePointer[cvp]+1
-                      currentValuePointer[cvp] = -1.0
-		      cvp = cvp + 1
+		      cvp = cvp - 1
+		      if cvp ==0
+ 			
+		      end	
                     end
-		    currentIndexPointerG[cpg] = currentIndexPointerG[cpg]+1
-                    currentIndexPointerG[cpg] = curcol
-		    cipg = cipg + 1
+		    cipg = cipg + curcol
                     numberOfNonzerosInRow = numberOfNonzerosInRow +1
                   end #  stop x bounds test
                 end # stop sx loop
@@ -168,27 +155,19 @@ function GenerateProblem_ref(A, b,x, xexact)
 
   totalNumberOfNonzeros = 0
   # Use MPI's reduce function to sum all nonzeros
-  MPI.Allreduce(localNumberOfNonzeros, totalNumberOfNonzeros, MPI.SUM, MPI.COMM_WORLD)
+#  if USE_MPI == true
+#	  MPI.Allreduce(localNumberOfNonzeros, totalNumberOfNonzeros, MPI.SUM, MPI.COMM_WORLD)
+#  end
   lnnz = localNumberOfNonzeros 
   gnnz = 0 # convert to 64 bit for MPI call
-  MPI.Allreduce(lnnz, gnnz, MPI.SUM, MPI.COMM_WORLD)
+#  if USE_MPI==true
+#  	MPI.Allreduce(lnnz, gnnz, MPI.SUM, MPI.COMM_WORLD)
+#  end
   totalNumberOfNonzeros = gnnz # Copy back
   totalNumberOfNonzeros = localNumberOfNonzeros
   # If this assert fails, it most likely means that the global_int_t is set to int and should be set to long long
   # This assert is usually the first to fail as problem size increases beyond the 32-bit integer range.
-  @assert(totalNumberOfNonzeros>0) # Throw an exception of the number of nonzeros is less than zero (can happen if int overflow)
-
-  A.title = 0
-  A.totalNumberOfRows = totalNumberOfRows
-  A.totalNumberOfNonzeros = totalNumberOfNonzeros
-  A.localNumberOfRows = localNumberOfRows
-  A.localNumberOfColumns = localNumberOfRows
-  A.localNumberOfNonzeros = localNumberOfNonzeros
-  A.nonzerosInRow = nonzerosInRow
-  A.mtxIndG = mtxIndG
-  A.mtxIndL = mtxIndL
-  A.matrixValues = matrixValues
-  A.matrixDiagonal = matrixDiagonal
-
-  return
+#  @assert(totalNumberOfNonzeros>0) # Throw an exception of the number of nonzeros is less than zero (can happen if int overflow)
+  AA= SpMatrix(A, "0", totalNumberOfRows, totalNumberOfNonzeros, localNumberOfRows,localNumberOfRows, localNumberOfNonzeros, nonzerosInRow, mtxIndG, mtxIndL, matrixValues, matrixDiagonal, localToGlobalMap, globalToLocalMap) 
+  return AA
 end

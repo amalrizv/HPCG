@@ -70,9 +70,6 @@ function main(hpcg_args)
   if hpcg_args["USE_MPI"] == true 
   	MPI.Barrier(MPI.COMM_WORLD)
   end
-  nx = Int64
-  ny = Int64
-  nz = Int64
   nx = params.nx
   ny = params.ny
   nz = params.nz
@@ -92,7 +89,7 @@ function main(hpcg_args)
 
   #Construct the geometry and linear system
   geom = Geometry
-  GenerateGeometry(size, rank, params.numThreads, params.pz, params.zl, params.zu, nx, ny, nz, params.npx, params.npy, params.npz, geom)
+  geom  = GenerateGeometry(size, rank, params.numThreads, params.pz, params.zl, params.zu, nx, ny, nz, params.npx, params.npy, params.npz, geom)
 
   ierr = CheckAspectRatio(0.125, geom.npx, geom.npy, geom.npz, "process grid", rank==0)
 
@@ -102,19 +99,14 @@ function main(hpcg_args)
 
   # Use this array for collecting timing information
   times =  zeros(10)
-  setup_time = mytimer() #INCLUDE CORRECT TIMER 
-  A = SpMatrix
-  InitializeSparseMatrix(A, geom)
-  # b x and xexact . Array{T,1}
-  b =  Vector 
-  x =  Vector 
-  xexact =  Vector
+  setup_time = time_ns() #INCLUDE CORRECT TIMER 
+  A= InitializeSparseMatrix(geom)
 
-  GenerateProblem(A, b, x, xexact)
-  SetupHalo(A)
+  AA = GenerateProblem(A)
+  AAA = SetupHalo(A, AA)
   numberOfMgLevels = 4 #Number of levels including first
   curLevelMatrix = A
-
+  level = 1
   for level = 1:numberOfMgLevels
     GenerateCoarseProblem(curLevelMatrix)
     curLevelMatrix = curLevelMatrix.Ac #  Make the just-constructed coarse grid the next level
@@ -126,7 +118,7 @@ function main(hpcg_args)
   curb = b
   curx = x
   curxexact = xexact
-  for level = 0 : numberOfMgLevels
+  for level = 1:numberOfMgLevels
      CheckProblem(curLevelMatrix, curb, curx, curxexact)
      curLevelMatrix = curLevelMatrix.Ac # Make the nextcoarse grid the next level
      curb = 0 # No vectors after the top level
