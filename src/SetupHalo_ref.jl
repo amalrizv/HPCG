@@ -18,16 +18,19 @@ include("Geometry.jl")
 
   @see ExchangeHalo
 =#
-function SetupHalo_ref(A, AA) 
-  println("SetupHalo_ref")
+function setup_halo_ref!(A)
+
+  @debug("SetupHalo_ref")
+
   #Extract Matrix pieces
 
-  localNumberOfRows = AA.localNumberOfRows
-  nonzerosInRow = AA.nonzerosInRow
-  mIG = AA.mtxIndG
-  mIL = AA.mtxIndL
-  mtxIndG = permutedims(reshape(hcat(mIG...), (length(mIG[1]), length(mIG))))
-  mtxIndL = permutedims(reshape(hcat(mIL...), (length(mIL[1]), length(mIL))))
+  localNumberOfRows = A.localNumberOfRows
+  nonzerosInRow     = A.nonzerosInRow
+  mIG               = A.mtxIndG
+  mIL               = A.mtxIndL
+  mtxIndG           = permutedims(reshape(hcat(mIG...), (length(mIG[1]), length(mIG))))
+  mtxIndL           = permutedims(reshape(hcat(mIL...), (length(mIL[1]), length(mIL))))
+
   # LNR = ,"localNumberOfRows," dimsMIG = ,",size(mtxIndG)," dimMIL = ",size(mtxIndL),".")
   for i=1:localNumberOfRows 
     cur_nnz = nonzerosInRow[i]
@@ -36,14 +39,13 @@ function SetupHalo_ref(A, AA)
     end
   end
 
-
   # Scan global IDs of the nonzeros in the matrix.  Determine if the column ID matches a row ID.  If not:
   # 1) We call the ComputeRankOfMatrixRow function, which tells us the rank of the processor owning the row ID.
   #  We need to receive this value of the x vector during the halo exchange.
   # 2) We record our row ID since we know that the other processor will need this value from us, due to symmetry.
 
-  sendList  = Dict() 
-  receiveList = Dict()
+  sendList           = Dict()
+  receiveList        = Dict()
   externalToLocalMap = Dict()
 
   #  TODO: With proper critical and atomic regions, this loop could be threaded, but not attempting it at this time
@@ -81,14 +83,15 @@ function SetupHalo_ref(A, AA)
   end
 
   #Build the arrays and lists needed by the ExchangeHalo function.
-  sendBuffer = Array{Float64}(undef,totalToBeSent)
-  elementsToSend = Array{Int64}(undef,totalToBeSent)
-  neighbors = Array{Int64}(undef,length(collect(keys(sendList))))
-  receiveLength = Array{Int64}(undef, length(collect(keys(receiveList))))
-  sendLength = Array{Int64}(undef, length(collect(keys(receiveList))))
-  neighborCount = 1
+  sendBuffer        = Array{Float64}(undef,totalToBeSent)
+  elementsToSend    = Array{Int64}(undef,totalToBeSent)
+  neighbors         = Array{Int64}(undef,length(collect(keys(sendList))))
+  receiveLength     = Array{Int64}(undef, length(collect(keys(receiveList))))
+  sendLength        = Array{Int64}(undef, length(collect(keys(receiveList))))
+  neighborCount     = 1
   receiveEntryCount = 1
-  sendEntryCount = 1
+  sendEntryCount    = 1
+
   for (k,v) in receiveList 
     neighborId = k #rank of current neighbor we are processing
     neighbors[neighborCount] = neighborId # store rank ID of current neighbor
@@ -106,7 +109,7 @@ function SetupHalo_ref(A, AA)
     end
   end
 
-  #Convert matrix indices to local IDs
+  # Convert matrix indices to local IDs
   for i=1:localNumberOfRows
     for j=1:nonzerosInRow[i]
       curIndex = mtxIndG[i,j]
@@ -121,23 +124,31 @@ function SetupHalo_ref(A, AA)
 
   # Store contents in our matrix struct
   numberOfExternalValues = length(externalToLocalMap)
-  localNumberOfColumns = AA.localNumberOfRows + numberOfExternalValues
-  numberOfSendNeighbors = length(sendList)
-  totalToBeSent = totalToBeSent
-  elementsToSend = elementsToSend
-  neighbors = neighbors
-  receiveLength = receiveLength
-  sendLength = sendLength
-  sendBuffer = sendBuffer
-  AAA = SpMatrix_anx(AA, localNumberOfColumns , numberOfExternalValues, numberOfSendNeighbors, totalToBeSent, elementsToSend, neighbors, receiveLength, sendLength, sendBuffer)
+  localNumberOfColumns   = AA.localNumberOfRows + numberOfExternalValues
+  numberOfSendNeighbors  = length(sendList)
+  totalToBeSent          = totalToBeSent
+  elementsToSend         = elementsToSend
+  neighbors              = neighbors
+  receiveLength          = receiveLength
+  sendLength             = sendLength
+  sendBuffer             = sendBuffer
+
+  A.localNumberOfColumns   = localNumberOfColumns
+  A.numberOfExternalValues = numberOfExternalValues
+  A.numberOfSendNeighbors  = numberOfSendNeighbors
+  A.totalToBeSent          = totalToBeSent
+  A.elementsToSend         = elementsToSend
+  A.neighbors              = neighbors
+  A.receiveLength          = receiveLength
+  A.sendLength             = sendLength
+  A.sendBuffer             = sendBuffer
 
   @debug(" For rank $A.geom.rank of $A.geom.size number of neighbors $A.numberOfSendNeighbors")
-  for i = 1: numberOfSendNeighbors
-    @debug("     rank = ",A.geom.rank," neighbor = ",neighbors[i]," send/recv length = ", sendLength[i]/receiveLength[i],".")
+  for i = 1:numberOfSendNeighbors
+    @debug("     rank = ", A.geom.rank," neighbor = ",neighbors[i]," send/recv length = ", sendLength[i]/receiveLength[i],".")
     for j = 1:sendLength[i]
-      @debug("       rank = ",A.geom.rank," elementsToSend[$j] =", elementsToSend[j],".")
+      @debug("       rank = ", A.geom.rank," elementsToSend[$j] =", elementsToSend[j],".")
     end
   end
 
-  return AAA
 end

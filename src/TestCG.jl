@@ -55,7 +55,8 @@ function TestCG(AAAA, data, b, x, count_pass, count_fail)
       b = b .* 1.0e6
     end
   end
-  AA = ReplaceMatrixDiagonal(AA, exaggeratedDiagA)
+
+  ReplaceMatrixDiagonal(AA, exaggeratedDiagA)
 
   niters = 0
   normr = 0.0
@@ -101,7 +102,7 @@ function TestCG(AAAA, data, b, x, count_pass, count_fail)
   end
 
   # Restore matrix diagonal and RHS
-  ReplaceMatrixDiagonal(A, origDiagA)
+  ReplaceMatrixDiagonal(AA, origDiagA)
   b = origB
   # Delete vectors
   origDiagA = nothing

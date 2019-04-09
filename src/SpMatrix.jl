@@ -8,15 +8,15 @@
 include("Geometry.jl")
 include("MGData.jl")
 
-mutable struct SpMatrix_init
-   isDotProductOptimized
-   isSpmvOptimized
-   isMgOptimized
-   isWaxpbyOptimized
+mutable struct HPCGSparseMatrix
+
+   is_dot_prod_optimized::Bool
+   is_spmv_optimized::Bool
+   is_mg_optimized::Bool
+   is_waxpby_optimized::Bool
+
    geom::Geometry #geometry associated with this matrix
-end
-mutable struct SpMatrix
-   sp_matrix::SpMatrix_init
+
    title::String #name of the sparse matrix
    totalNumberOfRows::Int64 #total number of matrix rows across all processes
    totalNumberOfNonzeros::Int64  #total number of matrix nonzeros across all processes
@@ -35,10 +35,6 @@ mutable struct SpMatrix
    used inside optimized ComputeSPMV().
   =#
 
-
-end
-mutable struct SpMatrix_anx
-   sp_matrix::SpMatrix
    localNumberOfCols::Int64
    numberOfExternalValues::Int64
    numberOfSendNeighbors::Int64 # number of neighboring processes that will be send local data
@@ -49,23 +45,33 @@ mutable struct SpMatrix_anx
    sendLength # lenghts of messages sent to neighboring processes
    sendBuffer # send buffer for non-blocking sends
 
-end
-
-mutable struct Sp_coarse
-   sp_matrix::SpMatrix_anx
    Ac #Coarse grid matrix
    mgData #Pointer to the coarse level data for this fine matrix
 end
+
+function HPCGSparseMatrix(dot_prod,
+                 spmv,
+                 mg,
+                 waxpby,
+                 geom)
+
+   HPCGSparseMatrix(dot_prod, spmv, mg, waxpby, geom,
+                    "", 0, 0, 0, 0, 0, 0, nothing, 
+                    nothing, nothing, nothing, nothing, nothing,
+                    0, 0, 0, 0, 0, nothing, 0, 0, 
+                    nothing, nothing, nothing)
+
+end 
+
+
 
 #=
   Initializes the known system matrix data structure members to 0.
 
   @param[in] A the known system matrix
 =#
-function InitializeSparseMatrix(geom::Geometry) 
-  A = SpMatrix_init(true, true, true, true, geom)
-  
-  return A
+function initialize_sparse_matrix(geom::Geometry) 
+  return HPCGSparseMatrix(true, true, true, true, geom)
 end
 
 #=
@@ -87,16 +93,13 @@ end
   @param[inout] A The system matrix.
   @param[in] diagonal  Vector of diagonal values that will replace existing matrix diagonal values.
 =#
-@inline function ReplaceMatrixDiagonal(A, diagonal ) 
-    curDiagA = A.matrixDiagonal
-    dv = diagonal
-    @assert(A.localNumberOfRows==length(diagonal))
-    for i=1:A.localNumberOfRows
-	 curDiagA[i] = dv[i]
-    end
-    A.matrixDiagonal  = curDiagA
-  return A
+@inline function ReplaceMatrixDiagonal(A, diag) 
+    println(typeof(A))
+    @assert(A.localNumberOfRows==length(diag))
+    A.matrixDiagonal  = diag
 end
+
+
 #=
   Deallocates the members of the data structure of the known system matrix provided they are not 0.
 

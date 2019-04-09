@@ -6,9 +6,9 @@
 #   Main routine of a program that calls the HPCG conjugate gradient
 #   solver to solve the problem, and then prints results.
 
+using MPI
 include("hpcg.jl")
 include("init.jl")
-using MPI
 include("CheckAspectRatio.jl")
 include("GenerateGeometry.jl")
 include("GenerateProblem.jl")
@@ -42,21 +42,23 @@ include("TestNorms.jl")
   @return Returns zero on success and a non-zero value otherwise.
 
 =#
+
 function main(hpcg_args) 
 
-  #retrieve arguments:
+  # retrieve arguments:
   opts = collect(keys(hpcg_args))
   vals = collect(values(hpcg_args))
   if hpcg_args["USE_MPI"] == true 
   	MPI.Init()
   end
-  params=HPCG_Params
 
-  params = HPCG_Init(hpcg_args, params)
+  params = HPCG_Params
+  params = hpcg_init!(params, hpcg_args)
 
-  #Check if QuickPath option is enabled.
-  #If the running time is set to zero, we minimize all paths through the program
-  println(typeof(params))
+  # Check if QuickPath option is enabled.
+  # If the running time is set to zero, we minimize all paths through the program
+  @debug(typeof(params))
+
   quickPath::Bool = (params.runningTime==0)
 
   size = params.comm_size
@@ -66,16 +68,16 @@ function main(hpcg_args)
 	@debug("Process ",rank, " of ",size," is alive with " , params.numThreads , " threads.") 
   end 
 
-
-  if hpcg_args["USE_MPI"] == true 
+  @static if MPI.Initialized()
   	MPI.Barrier(MPI.COMM_WORLD)
   end
+
   nx = params.nx
   ny = params.ny
   nz = params.nz
-  ierr = 0  #Used to check return codes on function calls
 
-  ierr = CheckAspectRatio(0.125, nx, ny, nz, "local problem", rank==0)
+  ierr = 0  # Used to check return codes on function calls
+  ierr = check_aspect_ratio(0.125, nx, ny, nz, "local problem", rank==0)
 
   if ierr!=0
     return ierr
@@ -87,52 +89,51 @@ function main(hpcg_args)
 
   t1 = time_ns() #INCLUDE CORRECT TIMER 
 
-  #Construct the geometry and linear system
-  geom = Geometry
-  geom  = GenerateGeometry(size, rank, params.numThreads, params.pz, params.zl, params.zu, nx, ny, nz, params.npx, params.npy, params.npz, geom)
+  # Construct the geometry and linear system
+  geom = generate_geometry(size, rank, params.numThreads, params.pz, params.zl, params.zu, nx, ny, nz, params.npx, params.npy, params.npz)
 
-  ierr = CheckAspectRatio(0.125, geom.npx, geom.npy, geom.npz, "process grid", rank==0)
+  ierr = check_aspect_ratio(0.125, geom.npx, geom.npy, geom.npz, "process grid", rank==0)
 
   if ierr!=0
     return ierr
   end
 
   # Use this array for collecting timing information
-  times =  zeros(10)
-  setup_time = time_ns() #INCLUDE CORRECT TIMER 
-  A= InitializeSparseMatrix(geom)	#sp_init structure
+  times      = zeros(10)
+  setup_time = time_ns() # TODO: INCLUDE CORRECT TIMER
+  A          = initialize_sparse_matrix(geom)
 
-  AA,b,x,xexact = GenerateProblem(A)	#sp_matrix structure
-  AAA::SpMatrix_anx = SetupHalo(A, AA)		#sp_anx structure
-  numberOfMgLevels = 4 #Number of levels including first
+  b, x, xexact = generate_problem!(A)	
+  setup_halo!(A)	
+  numberOfMgLevels  = 4 #Number of levels including first
+
   level = 1
-  AAAA=Sp_coarse
+
   curLevelMatrix = SpMatrix_anx 
   for level=1:numberOfMgLevels
     println("level=$level")
-    AAAA = GenerateCoarseProblem(AAA) 	#sp_coarse structure
-    println("typeof mgData from main                ", typeof(AAAA.mgData))
-    curLevelMatrix = AAAA.Ac 		#  Make the just-constructed coarse grid the next level
+    generate_coarse_problem!(A) 	#sp_coarse structure
+    println("typeof mgData from main                ", typeof(A.mgData))
+    curLevelMatrix = A.Ac 		#  Make the just-constructed coarse grid the next level
   end
   println("All levels done")
   setup_time = time_ns() - setup_time #Capture total time of setup
 #  times[9] = setup_time #Save it for reporting
   
-  curb = b
-  curx = x
+  curb      = b
+  curx      = x
   curxexact = xexact
+
   for level = 1:numberOfMgLevels
      CheckProblem(AAAA, curb, curx, curxexact)
      curLevelMatrix = AAAA.Ac # Make the nextcoarse grid the next level
-     curb = 0 # No vectors after the top level
-     curx = 0
-     curxexact = 0
+     curb           = 0 # No vectors after the top level
+     curx           = 0
+     curxexact      = 0
   end
-
 
   data = CGData
   data = InitializeSparseCGData(AA, data)
-
 
 
   ####################################
@@ -141,16 +142,11 @@ function main(hpcg_args)
 
   # Call Reference SpMV and MG. Compute Optimization time as ratio of times in these routines
 
-  nrow = AA.localNumberOfRows
-  ncol = AAA.localNumberOfCols
+  nrow = A.localNumberOfRows
+  ncol = A.localNumberOfCols
 
-  x_overlap = Vector{Int64}(undef, ncol) #  Overlapped copy of x vector
+  x_overlap  = Vector{Int64}(undef, ncol) #  Overlapped copy of x vector
   b_computed = Vector{Int64}(undef, nrow) #  Computed RHS vector
- ####################################
-#  InitializeVector(x_overlap, ncol)
-#  InitializeVector(b_computed, nrow) 
-#####################################
-
 
   # Record execution time of reference SpMV and MG kernels for reporting times
   # First load vector with random values
@@ -161,15 +157,15 @@ function main(hpcg_args)
 	numberOfCalls = 1 #QuickPath means we do on one call of each block of repetitive code
   end
   t_begin = time_ns()
-  for i= 1: numberOfCalls
-    ierr = ComputeSPMV_ref(AAA, x_overlap, b_computed) # b_computed = A*x_overlap
+  for i = 1:numberOfCalls
+    ierr = ComputeSPMV_ref(A, x_overlap, b_computed) # b_computed = A*x_overlap
     if ierr==1 
-	@debug ("Error in call to SpMV: $ierr .\n")
+        @debug("Error in call to SpMV: $ierr .\n")
     end
-    println("typeof mgData from main sent to ComputeMG  ", typeof(AAAA.mgData))
-    ierr = ComputeMG(AAAA, b_computed, x_overlap,1) # b_computed = Minv*y_overlap
+    @debug("typeof mgData from main sent to ComputeMG  ", typeof(A.mgData))
+    ierr = ComputeMG(A, b_computed, x_overlap,1) # b_computed = Minv*y_overlap
     if ierr==1 
-	@debug ("Error in call to MG: $ierr .\n") 
+        @debug("Error in call to MG: $ierr .\n") 
     end
   end 
   times[8] = (time_ns() - t_begin)/( numberOfCalls) # Total time divided by number of calls.
@@ -182,45 +178,50 @@ function main(hpcg_args)
   ###############################
 
   t1 = time_ns()
-  global_failure = 0 # assume all is well: no failures
 
-  niters = 0
+  global_failure  = 0 # assume all is well: no failures
+  niters          = 0
   totalNiters_ref = 0
-  normr = 0.0
-  normr0 = 0.0
-  refMaxIters = 50
-  numberOfCalls = 1 # Only need to run the residual reduction analysis once
+  normr           = 0.0
+  normr0          = 0.0
+  refMaxIters     = 50
+  numberOfCalls   = 1 # Only need to run the residual reduction analysis once
 
   # Compute the residual reduction for the natural ordering and reference kernels
   ref_times = zeros(9)
   tolerance = 0.0 # Set tolerance to zero to make all runs do maxIters iterations
   err_count = 0
-  for i= 1:numberOfCalls
+
+  for i = 1:numberOfCalls
     x = zeros(length(x))
-    ierr, ref_add = CG_ref( AAA, data, b, x, refMaxIters, tolerance, niters, normr, normr0, ref_times, true)
+    ierr, ref_add = CG_ref(A, data, b, x, refMaxIters, tolerance, niters, normr, normr0, ref_times, true)
     ref_times = ref_add+ref_times
-    if ierr==1
+    if ierr == 1
 	 err_count+=1 # count the number of errors in CG
     end
+
     totalNiters_ref += niters
   end
+
   if rank == 0 
 	 @debug("$err_count error(s) in call(s) to reference CG.")
   end
+
   refTolerance::Float64 = normr / normr0
 
-  #Call user-tunable set up function.
+  # Call user-tunable set up function.
   t7 = time_ns()
   OptimizeProblem(AA, data, b, x, xexact)
   t7 = time_ns() - t7
   times[7] = t7
+
   if rank==0
 	 @debug("Total problem setup time in main (sec) = $(time_ns()-t1)") 
   end
+
   if geom.size == 1
 	# WriteProblem(geom, A, b, x, xexact)
   end
-
 
   ##############################
   ## Validation Testing Phase ##
@@ -230,7 +231,7 @@ function main(hpcg_args)
   count_pass = 0
   count_fail = 0
   println(length(x))
-  TestCGdata,  times = TestCG(AAAA, data, b, x, count_pass, count_fail)
+  TestCGdata, times = TestCG(AAAA, data, b, x, count_pass, count_fail)
 
   testsymmetry_data = TestSymmetryData 
   TestSymmetry(A, b, xexact, testsymmetry_data)

@@ -21,12 +21,12 @@ include("GenerateProblem_ref.jl")
   @see GenerateGeometry
 =#
 
-function GenerateProblem(A) 
+function generate_problem!(A::HPCGSparseMatrix) 
 
   # The call to this reference version of GenerateProblem can be replaced with custom code.
   # However, the data structures must remain unchanged such that the CheckProblem function is satisfied.
   # Furthermore, any code must work for general unstructured sparse matrices.  Special knowledge about the
   # specific nature of the sparsity pattern may not be explicitly used.
 
-  return(GenerateProblem_ref(A))
+  return generate_problem_ref!(A)
 end

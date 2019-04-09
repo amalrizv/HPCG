@@ -1,6 +1,6 @@
 include("MixedBaseCounter.jl")
 
-function ComputePrimeFactors(n)
+function compute_prime_factors(n)
  # TODO : Operate on this using Dicts not arrays
   factors = Dict()
   d = Int64 
@@ -56,48 +56,49 @@ function pow_i(x,p)
   return v
 end
 
-function ComputeOptimalShapeXYZ(xyz, x, y, z) 
+function compute_optimal_shape_xyz(xyz, x, y, z) 
 
-  factors = ComputePrimeFactors(xyz) # factors are sorted: ascending order
+  factors = compute_prime_factors(xyz) # factors are sorted: ascending order
   # there is at least one prime factor
   keyss = collect(keys(factors))     # cache the first factor, move to the next one
-  vals = collect(values(factors))
+  vals  = collect(values(factors))
+
   x = keyss[1]
+
   if length(keyss)>1
-  y = keyss[2]# try to cache the second factor in "y"
+      y = keyss[2] # try to cache the second factor in "y"
   end
+
   if length(factors) == 1  # only a single factor
     z = pow_i(x, factors[x] / 3)
     y = pow_i(x, factors[x] / 3 + ((factors[x] % 3) >= 2 ? 1 : 0))
     x = pow_i(x, factors[x] / 3 + ((factors[x] % 3) >= 1 ? 1 : 0))
-
   elseif length(factors) == 2 && factors[x] == 1 && factors[y] == 1  # two distinct prime factors
     z = 1
-
   elseif length(factors) == 2 && factors[x] + factors[y] == 3  # three prime factors, one repeated
     z = factors[x] == 2 ? x : y # test which factor is repeated
-
   elseif length(factors) == 3 && factors[x] == 1 && factors[y] == 1 && iter->second == 1# three distinct and single prime factors
     z = keyss[1]
-
   else  # 3 or more prime factors so try all possible 3-subsets
-
-    distinct_factors= keyss 
-    count_factors =  vals
+    distinct_factors = keyss 
+    count_factors = vals
 
     # count total number of prime factors in "c_main" and distribute some factors into "c1"
-    c_main = MBCounter(count_factors, length(factors)) 
-    c1 = MBCounter(count_factors, length(factors))
+    c_main = MBCounter(count_factors, length(factors))
+    c1     = MBCounter(count_factors, length(factors))
 
     # at the beginning, minimum area is the maximum area
-    area= Float64 
+    area = Float64 
     min_area = 2.0 * xyz + 1.0
 
     next(c1) 
+
 	while is_zero(c1)==0 
+
      	   c2 = MixedBaseCounter(c_main, c1) # "c2" gets the factors remaining in "c_main" that "c1" doesn't have
            c2.next() 
 	   while is_zero(c2)==0
+
         	tf1 = Int64(product(c1,distinct_factors))
         	tf2 = Int64(product(c2,distinct_factors))
         	tf3 = Int64(xyz / tf1/ tf2) # we derive the third dimension, we don't keep track of the factors it has
@@ -109,10 +110,11 @@ function ComputeOptimalShapeXYZ(xyz, x, y, z)
           		y = tf2
           		z = tf3
         	end
-		next(c2)
+            next(c2)
       	 end
     	 next(c1)
       end
   end
+
   return x, y, z 
 end

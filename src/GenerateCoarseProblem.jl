@@ -57,27 +57,28 @@ function GenerateCoarseProblem(Afff::SpMatrix_anx) #Afff is a Sp_anx structure
       end # end iy loop
     end # end even iz if statement
   end # end iz loop
+
   # Construct the geometry and linear system")
-  geomc = Geometry
   zlc = 0 # Coarsen nz for the lower block in the z processor dimension
   zuc = 0 # Coarsen nz for the upper block in the z processor dimension
-  pz = Af.geom.pz
+  pz  = Af.geom.pz
+
   if pz>0
     zlc = cld(Af.geom.partz_nz[1],2) # Coarsen nz for the lower block in the z processor dimension
     zuc = cld(Af.geom.partz_nz[2],2) # Coarsen nz for the upper block in the z processor dimension
   end
-  geomc = Geometry
-  geomc = GenerateGeometry(Af.geom.size, Af.geom.rank, Af.geom.numThreads, Af.geom.pz, zlc, zuc, nxc, nyc, nzc, Af.geom.npx, Af.geom.npy, Af.geom.npz, geomc)
 
-  Accc = InitializeSparseMatrix(geomc) 	#sp_init structure
-  Acc, a,b,c = GenerateProblem(Accc)		#sp_matrix structure
-  Ac = SetupHalo(Accc, Acc)             #sp_anx structure
-  rc = Vector{Int64}(undef, localNumberOfRows) 
-  xc = Vector{Int64}(undef, localNumberOfRows) 
-  Axf = Vector{Int64}(undef, localNumberOfRows) 
+  geomc = generate_geometry(Af.geom.size, Af.geom.rank, Af.geom.numThreads, Af.geom.pz, zlc, zuc, nxc, nyc, nzc, Af.geom.npx, Af.geom.npy, Af.geom.npz)
+
+  Accc        = InitializeSparseMatrix(geomc) 	#sp_init structure
+  Acc, a,b,c  = GenerateProblem(Accc)		#sp_matrix structure
+  Ac          = SetupHalo(Accc, Acc)             #sp_anx structure
+  rc          = Vector{Int64}(undef, localNumberOfRows)
+  xc          = Vector{Int64}(undef, localNumberOfRows)
+  Axf         = Vector{Int64}(undef, localNumberOfRows)
   mgd::MGData = InitializeMGData(f2cOperator, rc, xc, Axf)
-  AAAA = Sp_coarse(Afff, Ac, mgd)	#sp_coarse structure where Ac is sp_anx structure
-  println("typeof mgData from GenerateCoarseProblem", typeof(AAAA.mgData))
+  AAAA        = Sp_coarse(Afff, Ac, mgd)	#sp_coarse structure where Ac is sp_anx structure
+  @debug("typeof mgData from GenerateCoarseProblem", typeof(AAAA.mgData))
   return AAAA
 end
 

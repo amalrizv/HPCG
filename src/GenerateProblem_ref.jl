@@ -20,16 +20,16 @@ include("hpcg.jl")
   @see GenerateGeometry
 =#
 
-function GenerateProblem_ref(A) 
+function generate_problem_ref!(A::HPCGSparseMatrix) 
 
-  #Make local copies of geometry information.  Use global_int_t since the RHS products in the calculations
-  #below may result in global range values.
-  nx = A.geom.nx
-  ny = A.geom.ny
-  nz = A.geom.nz
-  gnx = A.geom.gnx
-  gny = A.geom.gny
-  gnz = A.geom.gnz
+  # Make local copies of geometry information.  Use global_int_t since the RHS products in the calculations
+  # below may result in global range values.
+  nx   = A.geom.nx
+  ny   = A.geom.ny
+  nz   = A.geom.nz
+  gnx  = A.geom.gnx
+  gny  = A.geom.gny
+  gnz  = A.geom.gnz
   gix0 = A.geom.gix0
   giy0 = A.geom.giy0
   giz0 = A.geom.giz0
@@ -43,20 +43,20 @@ function GenerateProblem_ref(A)
   # If this assert fails, it most likely means that the global_int_t is set to int and should be set to long long
   @assert(totalNumberOfRows>0) # Throw an exception of the number of rows is less than zero (can happen if int overflow)
 
-
   # Allocate arrays that are of length localNumberOfRows
-  nonzerosInRow = Array{Any}(undef,localNumberOfRows)
-  mtxIndG = Array{Array{Int64,1}}(undef,localNumberOfRows)
-  mtxIndL =Array{Array{Int64,1}}(undef,localNumberOfRows)
-  matrixValues = Array{Array{Float64,1}}(undef,localNumberOfRows)
+  nonzerosInRow  = Array{Any}(undef,localNumberOfRows)
+  mtxIndG        = Array{Array{Int64,1}}(undef,localNumberOfRows)
+  mtxIndL        = Array{Array{Int64,1}}(undef,localNumberOfRows)
+  matrixValues   = Array{Array{Float64,1}}(undef,localNumberOfRows)
   matrixDiagonal = Array{Array{Float64,1}}(undef,localNumberOfRows)
 
-  b  = Vector{Int64}(undef,localNumberOfRows)
-  x =  Vector{Int64}(undef,localNumberOfRows)
-  xexact = Vector{Int64}(undef,localNumberOfRows)
-  bv = zeros(localNumberOfRows)
-  xv = zeros(localNumberOfRows)
+  b       = Vector{Int64}(undef,localNumberOfRows)
+  x       = Vector{Int64}(undef,localNumberOfRows)
+  xexact  = Vector{Int64}(undef,localNumberOfRows)
+  bv      = zeros(localNumberOfRows)
+  xv      = zeros(localNumberOfRows)
   xexactv = zeros(localNumberOfRows)
+
   if b!=0
 	 bv = b # Only compute exact solution if requested
   end
@@ -123,7 +123,7 @@ function GenerateProblem_ref(A)
                     if curcol==currentGlobalRow
                       matrixDiagonal[currentLocalRow] = currentValuePointer
 			
-		      cvp = cvp +26
+		      cvp = cvp + 26
                     else 
 		      cvp = cvp - 1
 		      if cvp ==0
@@ -168,6 +168,21 @@ function GenerateProblem_ref(A)
   # If this assert fails, it most likely means that the global_int_t is set to int and should be set to long long
   # This assert is usually the first to fail as problem size increases beyond the 32-bit integer range.
 #  @assert(totalNumberOfNonzeros>0) # Throw an exception of the number of nonzeros is less than zero (can happen if int overflow)
-  AA= SpMatrix(A, "0", totalNumberOfRows, totalNumberOfNonzeros, localNumberOfRows,localNumberOfRows, localNumberOfNonzeros, nonzerosInRow, mtxIndG, mtxIndL, matrixValues, matrixDiagonal, localToGlobalMap, globalToLocalMap) 
-  return AA, b, x, xexact
+#
+  A.title                 = "0"
+  A.totalNumberOfRows     = totalNumberOfRows
+  A.totalNumberOfNonzeros = totalNumberOfNonzeros
+  A.localNumberOfRows     = localNumberOfRows
+  A.localNumberOfColumns  = localNumberOfRows
+  A.localNumberOfNonzeros = localNumberOfNonzeros
+  A.nonzerosInRow         = nonzerosInRow
+  A.mtxIndG               = mtxIndG
+  A.mtxIndL               = mtxIndL
+  A.matrixValues          = matrixValues
+  A.matrixDiagonal        = matrixDiagonal
+  A.localToGlobalMap      = localToGlobalMap
+  A.globalToLocalMap      = globalToLocalMap
+
+  return b, x, xexact
+
 end

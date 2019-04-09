@@ -67,6 +67,7 @@ function  CG(AAAA, data, b, x, max_iter, tolerance, niters, normr, normr0, times
   t3 = 0.0
   t4 = 0.0
   t5 = 0.0
+
 ##ifndef HPCG_NO_MPI
 # t6 = 0.0
 ##endif
@@ -171,7 +172,7 @@ function  CG(AAAA, data, b, x, max_iter, tolerance, niters, normr, normr0, times
   times[5] = times[1] +t4
   times[6] = times[1] +t5
 ##ifndef HPCG_NO_MPI
-  times[7] = times[1] +t6
+## times[7] = times[1] +t6
 ##else
 ##endif
   return 0, times
