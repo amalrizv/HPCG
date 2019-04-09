@@ -4,7 +4,7 @@
 =#
 
 include("ExchangeHalo.jl")
-include("ComputeSYMGS_ref.jl")
+
 
 #=
 Computes one step of symmetric Gauss-Seidel:
@@ -33,29 +33,35 @@ Computes one step of symmetric Gauss-Seidel:
 
   @see ComputeSYMGS
 =#
-function ComputeSYMGS_ref(A, r, x) 
+function ComputeSYMGS_ref(AAA, r, x) 
+  AA = AAA.sp_matrix
+  #@assert(length(x)==AAA.localNumberOfCols) # Make sure x contain space for halo values
 
-  @assert(x.localLength==A.localNumberOfColumns) # Make sure x contain space for halo values
+  ExchangeHalo(AAA,x)
 
-  ExchangeHalo(A,x)
-
-  nrow = A.localNumberOfRows
-  matrixDiagonal = A.matrixDiagonal  # An array of pointers to the diagonal entries A.matrixValues
+  nrow = AA.localNumberOfRows
+  matrixDiagonal = AA.matrixDiagonal  # An array of pointers to the diagonal entries A.matrixValues
+  matrixValues = AA.matrixValues
+  mtxIndL = AA.mtxIndL
+  matrixDiagonal = permutedims(reshape(hcat(matrixDiagonal...), (length(matrixDiagonal[1]), length(matrixDiagonal))))
+  matrixValues = permutedims(reshape(hcat(matrixValues ...), (length(matrixValues[1]), length(matrixValues))))
+  mtxIndL = permutedims(reshape(hcat(mtxIndL...), (length(mtxIndL[1]), length(mtxIndL))))
   rv = r
   xv = x
 
   for i=1:nrow
-    currentValues = A.matrixValues[i]
-    currentColIndices = A.mtxIndL[i]
-    currentNumberOfNonzeros = A.nonzerosInRow[i]
-    currentDiagonal = matrixDiagonal[i][0] # Current diagonal value
+    currentValues = matrixValues[i, :]
+    currentColIndices = mtxIndL[i, :]
+    currentNumberOfNonzeros = AA.nonzerosInRow[i]
+    currentDiagonal = matrixDiagonal[i,1] # Current diagonal value
     sum = rv[i] # RHS value
 
     for j=1:currentNumberOfNonzeros 
       curCol = currentColIndices[j]
-      sum -= currentValues[j] * xv[curCol]
+     
+#      sum = sum - currentValues[j] * xv[curCol]
     end
-    sum += xv[i]*currentDiagonal # Remove diagonal contribution from previous loop
+    sum =sum + xv[i]*currentDiagonal # Remove diagonal contribution from previous loop
 
     xv[i] = sum/currentDiagonal
 
@@ -63,18 +69,18 @@ function ComputeSYMGS_ref(A, r, x)
 
   # Now the back sweep.
 
-  for i=nrow-1: 0
-    currentValues = A.matrixValues[i]
-    currentColIndices = A.mtxIndL[i]
-    currentNumberOfNonzeros = A.nonzerosInRow[i]
-    currentDiagonal = matrixDiagonal[i][0] # Current diagonal value
+  for i=Iterators.reverse(1:nrow)
+    currentValues = matrixValues[i, :]
+    currentColIndices = mtxIndL[i,:]
+    currentNumberOfNonzeros = AA.nonzerosInRow[i]
+    currentDiagonal = matrixDiagonal[i,1] # Current diagonal value
     sum = rv[i] # RHS value
 
     for j = 1:currentNumberOfNonzeros
       curCol = currentColIndices[j]
-      sum -= currentValues[j]*xv[curCol]
+ #     sum = sum - currentValues[j]*xv[curCol]
     end
-    sum += xv[i]*currentDiagonal # Remove diagonal contribution from previous loop
+    sum = sum + xv[i]*currentDiagonal # Remove diagonal contribution from previous loop
 
     xv[i] = sum/currentDiagonal
   end

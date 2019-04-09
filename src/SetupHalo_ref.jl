@@ -19,7 +19,7 @@ include("Geometry.jl")
   @see ExchangeHalo
 =#
 function SetupHalo_ref(A, AA) 
-
+  println("SetupHalo_ref")
   #Extract Matrix pieces
 
   localNumberOfRows = AA.localNumberOfRows
@@ -129,7 +129,7 @@ function SetupHalo_ref(A, AA)
   receiveLength = receiveLength
   sendLength = sendLength
   sendBuffer = sendBuffer
-  AAA = (AA, localNumberOfColumns , numberOfExternalValues, numberOfSendNeighbors, totalToBeSent, elementsToSend, neighbors, receiveLength, sendLength, sendBuffer)
+  AAA = SpMatrix_anx(AA, localNumberOfColumns , numberOfExternalValues, numberOfSendNeighbors, totalToBeSent, elementsToSend, neighbors, receiveLength, sendLength, sendBuffer)
 
   @debug(" For rank $A.geom.rank of $A.geom.size number of neighbors $A.numberOfSendNeighbors")
   for i = 1: numberOfSendNeighbors

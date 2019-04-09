@@ -48,8 +48,10 @@ include("ComputeWAXPBY.jl")
   @return Returns zero on success and a non-zero value otherwise.
   @see CG_ref()
 =#
-function  CG(A, data, b, x, max_iter, tolerance, niters, normr, normr0, times, doPreconditioning) 
-
+function  CG(AAAA, data, b, x, max_iter, tolerance, niters, normr, normr0, times, doPreconditioning) 
+  AAA = AAAA.sp_matrix #spMatrix_anx structure
+  AA = AAA.sp_matrix  #sp_matrix structure
+  A = AA.sp_matrix  #sp_init structure
   t_begin = time_ns()  # Start timing right away
   normr = 0.0
   rtz = 0.0
@@ -68,7 +70,7 @@ function  CG(A, data, b, x, max_iter, tolerance, niters, normr, normr0, times, d
 ##ifndef HPCG_NO_MPI
 # t6 = 0.0
 ##endif
-  nrow = A.localNumberOfRow 
+  nrow = AA.localNumberOfRows 
   r = data.r # Residual vector
   p = data.p # Direction vector (in MPI mode ncol>=nrow)
   Ap = data.Ap
@@ -87,20 +89,20 @@ function  CG(A, data, b, x, max_iter, tolerance, niters, normr, normr0, times, d
 #endif
   # p is of length ncols, copy x to p for sparse MV operation
   x = p
-  tic() 
-  ComputeSPMV(A, p, Ap) 
-  t3 = toc() 
+  t3t = time_ns() 
+  ComputeSPMV(AAA, p, Ap) 
+  t3 = toc()-t3t 
   #Ap = A*p
-  tic() 
+  t2t = time_ns()
   ComputeWAXPBY(nrow, 1.0, b, -1.0, Ap, r, A.isWaxpbyOptimized)
-  t2 = toc(t2) 
+  t2 = time_ns()-t2t 
   # r = b - Ax (x stored in p)
-  tic() 
+  t1t = time_ns()
   ComputeDotProduct(nrow, r, r, normr, t4, A.isDotProductOptimized)
-  t1 = toc()
+  t1 = time_ns()-t1t
   normr = sqrt(normr)
 #ifdef HPCG_DEBUG
-  if A.geom.rank==0 
+  if A.sp_matrix.sp_matrix.geom.rank==0 
   	@debug("Initial Residual = ",normr,"\n")
   end
 #endif
@@ -111,46 +113,46 @@ function  CG(A, data, b, x, max_iter, tolerance, niters, normr, normr0, times, d
   # Start iterations
   while normr/normr0 > tolerance
   	for k=1:max_iter+1
-    		tic()
+    		t5t = time_ns()
     		if doPreconditioning
-      			ComputeMG(A, r, z) # Apply preconditioner
+      			ComputeMG(AAAA, r, z) # Apply preconditioner
     		else
       			z = r # copy r to z (no preconditioning)
     		end
-    		toc(t5) # Preconditioner apply time
+    		t5 = time_ns()- t5t # Preconditioner apply time
 
     		if k == 1
-      			tic() 
+      			t2t = time_ns()
       			ComputeWAXPBY(nrow, 1.0, z, 0.0, z, p, A.isWaxpbyOptimized)
-      			t2 = toc() # Copy Mr to p
-      			tic()
+      			t2 = t2+time_ns()-t2t # Copy Mr to p
+      			t1t = time_ns()
       			ComputeDotProduct(nrow, r, z, rtz, t4, A.isDotProductOptimized)
-      			t1 = toc() # rtz = r'*z
+      			t1 = t1+time_ns()- t1t # rtz = r'*z
    		else 
       			oldrtz = rtz
-      			tic() 
+      			t1t = time_ns()
       			ComputeDotProduct(nrow, r, z, rtz, t4, A.isDotProductOptimized) 
-      			t1 = toc() # rtz = r'*z
+      			t1 = t1+time_ns()-t1t # rtz = r'*z
       			beta = rtz/oldrtz
-      			tic() 
+      			t2t = time_ns()
       			ComputeWAXPBY(nrow, 1.0, z, beta, p, p, A.isWaxpbyOptimized)  
-      			t2 = toc() # p = beta*p + z
+      			t2 = time_ns()-t2t+t2 # p = beta*p + z
    		end
 
-    		tic() 
+    		t3t = time_ns()
     		ComputeSPMV(A, p, Ap) 
-    		t3 = toc() # Ap = A*p
-    		tic() 
+    		t3 = t3+time_ns()- t3t # Ap = A*p
+    		t1t = time_ns()
     		ComputeDotProduct(nrow, p, Ap, pAp, t4, A.isDotProductOptimized) 
-    		t1 = toc() # alpha = p'*Ap
+    		t1 = time_ns()-t1t+t1 # alpha = p'*Ap
     		alpha = rtz/pAp
-    		tic() 
+    		t2t  = time_ns() 
     		ComputeWAXPBY(nrow, 1.0, x, alpha, p, x, A.isWaxpbyOptimized)# x = x + alpha*p
     		ComputeWAXPBY(nrow, 1.0, r, -alpha, Ap, r, A.isWaxpbyOptimized)
-    		t2 = toc()# r = r - alpha*Ap
-    		tic() 
+    		t2 = time_ns()- t2t +t2# r = r - alpha*Ap
+    		t1t = time_ns()
 		ComputeDotProduct(nrow, r, r, normr, t4, A.isDotProductOptimized)
-    		t1 = toc()
+    		t1 = t1+time_ns()- t1t
     		normr = sqrt(normr)
 #ifdef HPCG_DEBUG
     		if A.geom.rank==0 && (k%print_freq == 0 || k == max_iter)
@@ -161,15 +163,15 @@ function  CG(A, data, b, x, max_iter, tolerance, niters, normr, normr0, times, d
   	end
   end
   # Store times
-  times[1] += t1 # dot-product time
-  times[2] += t2 # WAXPBY time
-  times[3] += t3 # SPMV time
-  times[4] += t4 # AllReduce time
-  times[5] += t5 # preconditioner apply time
+  times[2] += t1 # dot-product time
+  times[3] += t2 # WAXPBY time
+  times[4] += t3 # SPMV time
+  times[5] += t4 # AllReduce time
+  times[6] += t5 # preconditioner apply time
 ##ifndef HPCG_NO_MPI
-#  times[6] += t6 # exchange halo time
+#  times[7] += t6 # exchange halo time
 ##endif
-  times[0] += mytimer() - t_begin  # Total time. All done...
+  times[1] += time_ns() - t_begin  # Total time. All done...
   return 0
 end
 

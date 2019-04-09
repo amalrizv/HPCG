@@ -27,14 +27,11 @@ end
  @param[in] f2cOperator -
  @param[out] data the data structure for CG vectors that will be allocated to get it ready for use in CG iterations
  =#
-@inline function InitializeMGData(f2cOperator, rc, xc, Axf, data) 
-  data.numberOfPresmootherSteps = 1
-  data.numberOfPostsmootherSteps = 1
-  data.f2cOperator = f2cOperator # Space for injection operator
-  data.rc = rc
-  data.xc = xc
-  data.Axf = Axf
-  return
+
+
+function InitializeMGData(f2cOperator, rc, xc, Axf) 
+  data = MGData(1,1,f2cOperator,rc, xc, Axf)
+  return data
 end
 
 #=

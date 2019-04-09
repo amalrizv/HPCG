@@ -15,16 +15,16 @@
 
   @return Returns zero on success and a non-zero value otherwise.
 =#
-function ComputeRestriction_ref(A, rf) 
+function ComputeRestriction_ref(AAAA, rf) 
 
-  Axfv = A.mgData.Axf
+  Axfv = AAAA.mgData.Axf
   rfv = rf
-  rcv = A.mgData.rc
-  f2c = A.mgData.f2cOperator
-  nc = length(A.mgData.rc)
+  rcv = AAAA.mgData.rc
+  f2c = AAAA.mgData.f2cOperator
+  nc = length(AAAA.mgData.rc)
 
   for i  = 1:nc
-	rcv[i] = rfv[f2c[i]] - Axfv[f2c[i]]
+	#rcv[i] = rfv[f2c[i]] - Axfv[f2c[i]]
   end
   return 0
 end

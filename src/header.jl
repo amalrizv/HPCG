@@ -57,4 +57,5 @@ include("main.jl")
 	end
 	parsed_args =parse_args(s)
 	println(parsed_args)
+        const USE_MPI =  parsed_args["USE_MPI"]
 	main(parsed_args)

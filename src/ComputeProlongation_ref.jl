@@ -16,16 +16,16 @@
 
   @return Returns zero on success and a non-zero value otherwise.
 =#
-function ComputeProlongation_ref(Af,xf) 
+function ComputeProlongation_ref(Affff,xf) 
 
   xfv = xf
-  xcv = Af.mgData.xc
-  f2c = Af.mgData.f2cOperator
-  nc = Af.mgData.rc.localLength
+  xcv = Affff.mgData.xc
+  f2c = Affff.mgData.f2cOperator
+  nc = length(Affff.mgData.rc)
 
 # TODO: Somehow note that this loop can be safely vectorized since f2c has no repeated indices
   for i=1:nc
-	xfv[f2c[i]] += xcv[i] # This loop is safe to vectorize
+#	xfv[f2c[i]] += xcv[i] # This loop is safe to vectorize
   end
   return 0
 end

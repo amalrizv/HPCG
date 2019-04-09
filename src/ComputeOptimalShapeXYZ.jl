@@ -1,7 +1,6 @@
 include("MixedBaseCounter.jl")
 
 function ComputePrimeFactors(n)
-  println(n)
  # TODO : Operate on this using Dicts not arrays
   factors = Dict()
   d = Int64 
@@ -60,7 +59,6 @@ end
 function ComputeOptimalShapeXYZ(xyz, x, y, z) 
 
   factors = ComputePrimeFactors(xyz) # factors are sorted: ascending order
-  println(factors)
   # there is at least one prime factor
   keyss = collect(keys(factors))     # cache the first factor, move to the next one
   vals = collect(values(factors))

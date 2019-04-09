@@ -21,13 +21,14 @@
   @see GenerateProblem
 =#
 function OptimizeProblem(A, data, b, x, xexact) 
+  
 
   # This function can be used to completely transform any part of the data structures.
   # Right now it does nothing, so compiling with a check for unused variables results in complaints
 
 #if defined(HPCG_USE_MULTICOLORING)
   nrow = A.localNumberOfRows
-  colors = Vector(nrow, nrow) # value `nrow' means `uninitialized' initialized colors go from 0 to nrow-1
+  colors = Vector{Int64}(undef, nrow) # value `nrow' means `uninitialized' initialized colors go from 0 to nrow-1
   totalColors = 1
   colors[1] = 0 # first point gets color 0
 
@@ -37,7 +38,7 @@ function OptimizeProblem(A, data, b, x, xexact)
 	if colors[i] == nrow # if color not assigned
       		assigned = Vector(totalColors, 0)
       		currentlyAssigned = 0
-      		currentColIndices = A.mtxIndL[i]
+      		currentColIndices = A.mtxIndL[i, :]
       		currentNumberOfNonzeros = A.nonzerosInRow[i]
 
       		for j=1:currentNumberOfNonzeros # scan neighbors
@@ -64,9 +65,9 @@ function OptimizeProblem(A, data, b, x, xexact)
       	end # no more color left to use
     end #if loop for if color not assigned 
 
-    counters = Vector(totalColors)
+    counters = Vector{Int64}(undef,totalColors)
     for i=1:nrow
-      counters[colors[i]]+=1
+#      counters[colors[i]+1]+=1
     end
     old = Int64 
     old0 = Int64
@@ -79,7 +80,7 @@ function OptimizeProblem(A, data, b, x, xexact)
 
   # translate `colors' into a permutation
     for i=1:nrow # for each color `c'
-      colors[i] = counters[colors[i]]+1
+      #colors[i] = counters[colors[i]+1]+1
     end
 #endif
   return 0

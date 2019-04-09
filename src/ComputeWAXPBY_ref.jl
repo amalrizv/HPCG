@@ -21,6 +21,7 @@
   @see ComputeWAXPBY
 =#
 function ComputeWAXPBY_ref(n,alpha, x, beta, y, w) 
+ 
 
   @assert(length(x)>=n) # Test vector length
   @assert(length(y)>=n)
@@ -31,15 +32,16 @@ function ComputeWAXPBY_ref(n,alpha, x, beta, y, w)
 
   if alpha==1.0
     for i=1:n
-	wv[i] = xv[i] + beta * yv[i]
+        println("wv[",i,"]=",wv[i],".")
+#	wv[i] = xv[i] + beta * yv[i]
     end
   elseif beta==1.0
     for i=1:n 
-	wv[i] = alpha * xv[i] + yv[i]
+#	wv[i] = alpha * xv[i] + yv[i]
     end
   else  
     for i=1:n 
-	wv[i] = alpha * xv[i] + beta * yv[i]
+#	wv[i] = alpha * xv[i] + beta * yv[i]
     end
   end
 

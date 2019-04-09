@@ -100,27 +100,30 @@ function main(hpcg_args)
   # Use this array for collecting timing information
   times =  zeros(10)
   setup_time = time_ns() #INCLUDE CORRECT TIMER 
-  A= InitializeSparseMatrix(geom)
+  A= InitializeSparseMatrix(geom)	#sp_init structure
 
-  AA = GenerateProblem(A)
-  AAA = SetupHalo(A, AA)
+  AA,b,x,xexact = GenerateProblem(A)	#sp_matrix structure
+  AAA::SpMatrix_anx = SetupHalo(A, AA)		#sp_anx structure
   numberOfMgLevels = 4 #Number of levels including first
-  curLevelMatrix = A
   level = 1
-  for level = 1:numberOfMgLevels
-    GenerateCoarseProblem(curLevelMatrix)
-    curLevelMatrix = curLevelMatrix.Ac #  Make the just-constructed coarse grid the next level
+  AAAA=Sp_coarse
+  curLevelMatrix = SpMatrix_anx 
+  for level=1:numberOfMgLevels
+    println("level=$level")
+    AAAA = GenerateCoarseProblem(AAA) 	#sp_coarse structure
+    println("typeof mgData from main                ", typeof(AAAA.mgData))
+    curLevelMatrix = AAAA.Ac 		#  Make the just-constructed coarse grid the next level
   end
-
-  setup_time = mytimer() - setup_time #Capture total time of setup
-  times[9] = setup_time #Save it for reporting
-  curLevelMatrix = A
+  println("All levels done")
+  setup_time = time_ns() - setup_time #Capture total time of setup
+#  times[9] = setup_time #Save it for reporting
+  
   curb = b
   curx = x
   curxexact = xexact
   for level = 1:numberOfMgLevels
-     CheckProblem(curLevelMatrix, curb, curx, curxexact)
-     curLevelMatrix = curLevelMatrix.Ac # Make the nextcoarse grid the next level
+     CheckProblem(AAAA, curb, curx, curxexact)
+     curLevelMatrix = AAAA.Ac # Make the nextcoarse grid the next level
      curb = 0 # No vectors after the top level
      curx = 0
      curxexact = 0
@@ -128,7 +131,7 @@ function main(hpcg_args)
 
 
   data = CGData
-  InitializeSparseCGData(A, data)
+  data = InitializeSparseCGData(AA, data)
 
 
 
@@ -138,11 +141,11 @@ function main(hpcg_args)
 
   # Call Reference SpMV and MG. Compute Optimization time as ratio of times in these routines
 
-  nrow = A.localNumberOfRows
-  ncol = A.localNumberOfColumns
+  nrow = AA.localNumberOfRows
+  ncol = AAA.localNumberOfCols
 
-  x_overlap = Vector(undef, ncol) #  Overlapped copy of x vector
-  b_computed = Vector(undef, nrow) #  Computed RHS vector
+  x_overlap = Vector{Int64}(undef, ncol) #  Overlapped copy of x vector
+  b_computed = Vector{Int64}(undef, nrow) #  Computed RHS vector
  ####################################
 #  InitializeVector(x_overlap, ncol)
 #  InitializeVector(b_computed, nrow) 
@@ -151,33 +154,34 @@ function main(hpcg_args)
 
   # Record execution time of reference SpMV and MG kernels for reporting times
   # First load vector with random values
-  FillRandomVector(x_overlap)
+  x_overlap = fill!(x_overlap,1)
 
   numberOfCalls = 10
-  if quickPath 
+  if quickPath==1 
 	numberOfCalls = 1 #QuickPath means we do on one call of each block of repetitive code
   end
-  t_begin = mytimer()
+  t_begin = time_ns()
   for i= 1: numberOfCalls
-    ierr = ComputeSPMV_ref(A, x_overlap, b_computed) # b_computed = A*x_overlap
-    if ierr 
+    ierr = ComputeSPMV_ref(AAA, x_overlap, b_computed) # b_computed = A*x_overlap
+    if ierr==1 
 	@debug ("Error in call to SpMV: $ierr .\n")
     end
-    ierr = ComputeMG(A, b_computed, x_overlap) # b_computed = Minv*y_overlap
-    if (ierr) 
+    println("typeof mgData from main sent to ComputeMG  ", typeof(AAAA.mgData))
+    ierr = ComputeMG(AAAA, b_computed, x_overlap,1) # b_computed = Minv*y_overlap
+    if ierr==1 
 	@debug ("Error in call to MG: $ierr .\n") 
     end
   end 
-  times[8] = (mytimer() - t_begin)/( numberOfCalls) # Total time divided by number of calls.
+  times[8] = (time_ns() - t_begin)/( numberOfCalls) # Total time divided by number of calls.
   if rank==0
-	 @debug("Total SpMV+MG timing phase execution time in main (sec) = $(mytimer()-t1)\n")
+	 @debug("Total SpMV+MG timing phase execution time in main (sec) = $(time_ns()-t1)\n")
   end 
 
   ###############################
   ## Reference CG Timing Phase ##
   ###############################
 
-  t1 = mytimer()
+  t1 = time_ns()
   global_failure = 0 # assume all is well: no failures
 
   niters = 0
@@ -193,27 +197,27 @@ function main(hpcg_args)
   err_count = 0
   for i= 1:numberOfCalls
     x = zeros(length(x))
-    ierr = CG_ref( A, data, b, x, refMaxIters, tolerance, niters, normr, normr0, ref_times[0], true)
-    if ierr
+    ierr, ref_times = CG_ref( AAA, data, b, x, refMaxIters, tolerance, niters, normr, normr0, ref_times[9], true)
+    if ierr==1
 	 err_count+=1 # count the number of errors in CG
     end
     totalNiters_ref += niters
   end
-  if rank == 0 && err_count
+  if rank == 0 
 	 @debug("$err_count error(s) in call(s) to reference CG.")
   end
-  refTolerancei:Float64 = normr / normr0
+  refTolerance::Float64 = normr / normr0
 
   #Call user-tunable set up function.
-  t7 = mytimer()
-  OptimizeProblem(A, data, b, x, xexact)
-  t7 = mytimer() - t7
+  t7 = time_ns()
+  OptimizeProblem(AA, data, b, x, xexact)
+  t7 = time_ns() - t7
   times[7] = t7
   if rank==0
-	 @debug("Total problem setup time in main (sec) = $(mytimer()-t1)") 
+	 @debug("Total problem setup time in main (sec) = $(time_ns()-t1)") 
   end
   if geom.size == 1
-	 WriteProblem(geom, A, b, x, xexact)
+	# WriteProblem(geom, A, b, x, xexact)
   end
 
 
@@ -221,10 +225,10 @@ function main(hpcg_args)
   ## Validation Testing Phase ##
   ##############################
 
-  t1 = mytimer()
-  testcg_data=TestCGData 
-  testcg_data.count_pass = testcg_data.count_fail = 0
-  TestCG(A, data, b, x, testcg_data)
+  t1 = time_ns()
+  count_pass = 0
+  count_fail = 0
+  TestCG(AAAA, data, b, x, count_pass, count_fail)
 
   testsymmetry_data = TestSymmetryData 
   TestSymmetry(A, b, xexact, testsymmetry_data)

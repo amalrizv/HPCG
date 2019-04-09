@@ -39,11 +39,11 @@ function ComputeDotProduct_ref(n, x, y, result, time_allreduce)
   end
 
   #Use MPI's reduce function to collect all partial sums
-  t0 = mytimer()
+  t0 = time_ns()
   global_result = 0.0
-  MPI.Allreduce(local_result, global_result, 1, MPI_DOUBLE, MPI_SUM, MPI.COMM_WORLD)
+#  MPI.Allreduce(MPI.Comm_rank(MPI.COMM_WORLD), MPI.DOUBLE, 1, MPI.COMM_WORLD)
   result = global_result
-  time_allreduce += mytimer() - t0
+  time_allreduce += time_ns() - t0
   time_allreduce += 0.0
   result = local_result
 

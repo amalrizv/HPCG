@@ -32,7 +32,7 @@ include("ComputeWAXPBY_ref.jl")
   @see CG()
 =#
 function CG_ref(A, data,b, x,max_iter,tolerance, niters, normr, normr0, times, doPreconditioning) 
-
+  #A is a spspMatrix_anx structure
   t_begin = time_ns()  # Start timing right away
   normr = 0.0
   rtz = 0.0
@@ -50,14 +50,14 @@ function CG_ref(A, data,b, x,max_iter,tolerance, niters, normr, normr0, times, d
   t5 = 0.0
   t6 = 0.0
 
-  nrow = A.localNumberOfRows
+  nrow = A.sp_matrix.localNumberOfRows
 
   r = data.r # Residual vector
   z = data.z # Preconditioned residual vector
   p = data.p # Direction vector (in MPI mode ncol>=nrow)
   Ap = data.Ap
-
-  if !doPreconditioning && A.geom.rank==0
+                           #sp_anx=>sp_matrix=>sp_init
+  if !doPreconditioning && A.sp_matrix.sp_matrix.geom.rank==0
 	@debug("WARNING: PERFORMING UNPRECONDITIONED ITERATIONS")
   end
 
@@ -72,18 +72,19 @@ function CG_ref(A, data,b, x,max_iter,tolerance, niters, normr, normr0, times, d
 #endif
   # p is of length ncols, copy x to p for sparse MV operation
   p = x
-  tic() 
+  t3t = time_ns() 
   ComputeSPMV_ref(A, p, Ap)  
-  t3 = toc() # Ap = A*p
-  tic() 
+  t3 = time_ns()-t3t # Ap = A*p
+  t2t = time_ns() 
   ComputeWAXPBY_ref(nrow, 1.0, b, -1.0, Ap, r) 
-  t2 = toc() # r = b - Ax (x stored in p)
-  tic() 
+  t2 = time_ns()- t2t # r = b - Ax (x stored in p)
+  t1t = time_ns() 
   ComputeDotProduct_ref(nrow, r, r, normr, t4)  
-  t1 = toc()
+  t1 = time_ns()- t1t
   normr = sqrt(normr)
 #ifdef HPCG_DEBUG
-  if A.geom.rank==0 
+     #sp_anx=>sp_matrix=>sp_init
+  if A.sp_matrix.sp_matrix.geom.rank==0 
      @debug("Initial Residual = $normr") 
   end
 #endif
@@ -92,50 +93,50 @@ function CG_ref(A, data,b, x,max_iter,tolerance, niters, normr, normr0, times, d
   normr0 = normr
 
   # Start iterations
-  while nomr/nomr0 > tolerance
+  while normr/normr0 > tolerance
     for k=1:max_iter 
-    	tic()
+    	t5t = time_ns()
     	if doPreconditioning
       		ComputeMG_ref(A, r, z) # Apply preconditioner
     	else
       		ComputeWAXPBY_ref(nrow, 1.0, r, 0.0, r, z) # copy r to z (no preconditioning)
 	end
-    	toc(t5) # Preconditioner apply time
+    	t5 = time_ns()- t5t # Preconditioner apply time
 
     	if k == 1
       		p = z 
-		toc(t2) # Copy Mr to p
-      		tic() 
+		t2= t2+time_ns()-t5t # Copy Mr to p
+      		t1t = time_ns() 
       		ComputeDotProduct_ref(nrow, r, z, rtz, t4) 
-      		t1 = toc() # rtz = r'*z
+      		t1 = t1+time_ns()- t1t # rtz = r'*z
     	else 
       		oldrtz = rtz
-      		tic() 
+      		t1t = time_ns() 
       		ComputeDotProduct_ref(nrow, r, z, rtz, t4) 
-      		t1 = toc() # rtz = r'*z
+      		t1 = t1+time_ns()- t1t # rtz = r'*z
       		beta = rtz/oldrtz
-      		tic() 
+      		t2t = time_ns() 
       		ComputeWAXPBY_ref(nrow, 1.0, z, beta, p, p)  
-      		t2 = toc() # p = beta*p + z
+      		t2 = t2+time_ns()- t2t # p = beta*p + z
     	end
 
-    	tic() 
+    	t3t = time_ns() 
     	ComputeSPMV_ref(A, p, Ap) 
-    	t3 = toc() # Ap = A*p
-    	tic() 
+    	t3 = time_ns()- t3t+t3 # Ap = A*p
+    	t1t = time_ns() 
     	ComputeDotProduct_ref(nrow, p, Ap, pAp, t4) 
-    	t1 = toc() # alpha = p'*Ap
+    	t1 = time_ns()- t1t+t1 # alpha = p'*Ap
     	alpha = rtz/pAp
-    	tic() 
+    	t2t = time_ns() 
     	ComputeWAXPBY_ref(nrow, 1.0, x, alpha, p, x)# x = x + alpha*p
     	ComputeWAXPBY_ref(nrow, 1.0, r, -alpha, Ap, r)  
-    	t2 = toc()# r = r - alpha*Ap
-    	tic() 
+    	t2 = time_ns()- t2t+t2# r = r - alpha*Ap
+    	t1t = time_ns() 
     	ComputeDotProduct_ref(nrow, r, r, normr, t4) 
-    	t1 = toc()
+    	t1 = time_ns()- t1t+t1
     	normr = sqrt(normr)
 #ifdef HPCG_DEBUG
-    	if A.geom.rank==0 & k%print_freq == 0 || k == max_iter
+    	if A.sp_matrix.sp_matrix.geom.rank==0 & k%print_freq == 0 || k == max_iter
       		@debug("Iteration = $k Scaled Residual = $(normr/normr0)")
     	end
 #endif
@@ -144,15 +145,8 @@ function CG_ref(A, data,b, x,max_iter,tolerance, niters, normr, normr0, times, d
  end
 
   # Store times
-  times[1] += t1 # dot product time
-  times[2] += t2 # WAXPBY time
-  times[3] += t3 # SPMV time
-  times[4] += t4 # AllReduce time
-  times[5] += t5 # preconditioner apply time
-##ifndef HPCG_NO_MPI
-#  times[6] += t6 # exchange halo time
-##endif
-  times[0] += mytimer() - t_begin  # Total time. All done...
-  return 0
+  t0  = time_ns()-t_begin
+  times= [t0, t1, t2, t3, t4, t5, t6,0,0,0]
+  return 0, times
 end
 

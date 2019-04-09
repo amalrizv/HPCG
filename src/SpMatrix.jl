@@ -15,27 +15,8 @@ mutable struct SpMatrix_init
    isWaxpbyOptimized
    geom::Geometry #geometry associated with this matrix
 end
-mutable struct
-   sp_matrix
-   mgData #Pointer to the coarse level data for this fine matrix
-   Ac #Coarse grid matrix
-end
-mutable struct SpMatrix_anx
-   sp_matrix
-   localNumberOfCols::Int64
-   numberOfExternalValues::Int64
-   numberOfSendNeighbors::Int64 # number of neighboring processes that will be send local data
-   totalToBeSent::Int64  # total number of entries to be sent
-   elementsToSend #elements to send to neighboring processes
-   neighbors #neighboring processes
-   receiveLength # lenghts of messages received from neighboring processes
-   sendLength # lenghts of messages sent to neighboring processes
-   sendBuffer # send buffer for non-blocking sends
-
-end
-
 mutable struct SpMatrix
-   sp_matrix
+   sp_matrix::SpMatrix_init
    title::String #name of the sparse matrix
    totalNumberOfRows::Int64 #total number of matrix rows across all processes
    totalNumberOfNonzeros::Int64  #total number of matrix nonzeros across all processes
@@ -55,6 +36,25 @@ mutable struct SpMatrix
   =#
 
 
+end
+mutable struct SpMatrix_anx
+   sp_matrix::SpMatrix
+   localNumberOfCols::Int64
+   numberOfExternalValues::Int64
+   numberOfSendNeighbors::Int64 # number of neighboring processes that will be send local data
+   totalToBeSent::Int64  # total number of entries to be sent
+   elementsToSend #elements to send to neighboring processes
+   neighbors #neighboring processes
+   receiveLength # lenghts of messages received from neighboring processes
+   sendLength # lenghts of messages sent to neighboring processes
+   sendBuffer # send buffer for non-blocking sends
+
+end
+
+mutable struct Sp_coarse
+   sp_matrix::SpMatrix_anx
+   Ac #Coarse grid matrix
+   mgData #Pointer to the coarse level data for this fine matrix
 end
 
 #=
@@ -76,12 +76,12 @@ end
 =#
 @inline function CopyMatrixDiagonal(A, diagonal) 
     curDiagA = A.matrixDiagonal
-    dv = diagonal.values
-    @assert(A.localNumberOfRows==diagonal.localLength)
+    dv = diagonal
+    @assert(A.localNumberOfRows==length(diagonal))
     for i=1:A.localNumberOfRows 
 	dv[i] = curDiagA[i]
     end
-  return
+  return diagonal
 end
 #=
   Replace specified matrix diagonal value.
@@ -91,12 +91,13 @@ end
 =#
 @inline function ReplaceMatrixDiagonal(A, diagonal) 
     curDiagA = A.matrixDiagonal
-    dv = diagonal.values
-    @assert(A.localNumberOfRows==diagonal.localLength)
+    dv = diagonal
+    @assert(A.localNumberOfRows==length(diagonal))
     for i=1:A.localNumberOfRows
 	 curDiagA[i] = dv[i]
     end
-  return
+    A.matrixDiagonal  = curDiagA
+  return A
 end
 #=
   Deallocates the members of the data structure of the known system matrix provided they are not 0.

@@ -169,5 +169,5 @@ function GenerateProblem_ref(A)
   # This assert is usually the first to fail as problem size increases beyond the 32-bit integer range.
 #  @assert(totalNumberOfNonzeros>0) # Throw an exception of the number of nonzeros is less than zero (can happen if int overflow)
   AA= SpMatrix(A, "0", totalNumberOfRows, totalNumberOfNonzeros, localNumberOfRows,localNumberOfRows, localNumberOfNonzeros, nonzerosInRow, mtxIndG, mtxIndL, matrixValues, matrixDiagonal, localToGlobalMap, globalToLocalMap) 
-  return AA
+  return AA, b, x, xexact
 end

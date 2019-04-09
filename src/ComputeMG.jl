@@ -5,6 +5,7 @@
 =#
 include("ComputeSPMV_ref.jl")
 include("ComputeRestriction_ref.jl")
+include("ComputeSYMGS_ref.jl")
 include("ComputeProlongation_ref.jl")
 
 #=
@@ -17,46 +18,54 @@ include("ComputeProlongation_ref.jl")
 
   @see ComputeMG
 =#
-function ComputeMG(A, r, x) 
-  @assert(x.localLength==A.localNumberOfColumns) #Make sure x contain space for halo values
+
+function ComputeMG(AAAA, r, x, sp) #sp_coarse passed 
+  if sp == 0
+   AAA = AAAA.Ac
+  else
+   AAA = AAAA.sp_matrix 		# sp_anx structure
+  end
+  AA = AAA.sp_matrix		#sp_matrix structure
+  #@assert(length(x)==AAA.localNumberOfCols) #Make sure x contain space for halo values
 
   x = zeros(length(x)) #initialize x to zero
 
   ierr = 0
-  if A.mgData!=0 #  Go to next coarse level if defined
-    numberOfPresmootherSteps = A.mgData.numberOfPresmootherSteps
+  # if mgdata is even defined this will result in a non zero value 
+  if sp == 1 #  Go to next coarse level if defined
+    numberOfPresmootherSteps = AAAA.mgData.numberOfPresmootherSteps
     for i=1: numberOfPresmootherSteps
-	 ierr += ComputeSYMGS_ref(A, r, x)
+	 ierr += ComputeSYMGS_ref(AAA, r, x)
     end
     if ierr!=0
 	 return ierr
     end
-    ierr = ComputeSPMV_ref(A, x, A.mgData.Axf) 
+    ierr = ComputeSPMV_ref(AAA, x, AAAA.mgData.Axf) 
     if ierr!=0
 	 return ierr
     end
     # Perform restriction operation using simple injection
-    ierr = ComputeRestriction_ref(A, r)  
+    ierr = ComputeRestriction_ref(AAAA, r)  
     if ierr!=0 
 	return ierr
     end
-    ierr = ComputeMG(A.Ac,A.mgData.rc, A.mgData.xc)  
+    ierr = ComputeMG(AAAA,AAAA.mgData.rc, AAAA.mgData.xc, 0)  
     if ierr!=0 
 	return ierr
     end
-    ierr = ComputeProlongation_ref(A, x)  
+    ierr = ComputeProlongation_ref(AAAA, x)  
     if (ierr!=0) 
 	return ierr
     end
-    numberOfPostsmootherSteps = A.mgData.numberOfPostsmootherSteps
+    numberOfPostsmootherSteps = AAAA.mgData.numberOfPostsmootherSteps
     for i= 1: numberOfPostsmootherSteps
-	ierr += ComputeSYMGS_ref(A, r, x)
+	ierr += ComputeSYMGS_ref(AAA, r, x)
     end
     if ierr!=0 
 	return ierr
-    else 
-    	ierr = ComputeSYMGS_ref(A, r, x)
-    end 
+    end
+  else 
+    ierr = ComputeSYMGS_ref(AAA, r, x)
     if ierr!=0 
 	return ierr
     end
