@@ -52,7 +52,7 @@ function TestCG(AAAA, data, b, x, count_pass, count_fail)
       b = b .* scale
      else 
       exaggeratedDiagA  = exaggeratedDiagA .* 1.0e6
-      b = b .*1.0e6)
+      b = b .* 1.0e6
     end
   end
   AA = ReplaceMatrixDiagonal(AA, exaggeratedDiagA)

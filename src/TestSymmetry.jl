@@ -21,8 +21,8 @@ include("TestSymmetry_struct.jl")
 
   @return returns 0 upon success and non-zero otherwise
 
-  @see ComputeDotProduct
-  @see ComputeDotProduct_ref
+  @see compute_dot_product!
+  @see compute_dot_product_ref!
   @see ComputeSPMV
   @see ComputeSPMV_ref
   @see ComputeMG
@@ -51,21 +51,21 @@ function TestSymmetry(A, b, xexact, testsymmetry_data)
  ANorm = 2 * 26.0
 
  # Next, compute x'*A*y
- ComputeDotProduct(nrow, y_ncol, y_ncol, yNorm2, t4, A.isDotProductOptimized)
+ compute_dot_product!(yNorm2, t4, nrow, y_ncol, y_ncol, A.isDotProductOptimized)
  ierr = ComputeSPMV(A, y_ncol, z_ncol) # z_nrow = A*y_overlap
  if ierr == 1 
 	@debug("Error in call to SpMV: $ierr.\n")
  end
 
  xtAy = 0.0
- ierr = ComputeDotProduct(nrow, x_ncol, z_ncol, xtAy, t4, A.isDotProductOptimized) # x'*A*y
+ ierr = compute_dot_product!(xtAy, t4, nrow, x_ncol, z_ncol, A.isDotProductOptimized) # x'*A*y
 
  if ierr == 1
 	@debug("Error in call to dot: $ierr .\n")
  end
 
  # Next, compute y'*A*x
- ComputeDotProduct(nrow, x_ncol, x_ncol, xNorm2, t4, A.isDotProductOptimized)
+ compute_dot_product!(xNorm2, t4, nrow, x_ncol, x_ncol, A.isDotProductOptimized)
  ierr = ComputeSPMV(A, x_ncol, z_ncol) # b_computed = A*x_overlap
 
  if ierr == 1 
@@ -73,7 +73,7 @@ function TestSymmetry(A, b, xexact, testsymmetry_data)
  end
 
  ytAx = 0.0
- ierr = ComputeDotProduct(nrow, y_ncol, z_ncol, ytAx, t4, A.isDotProductOptimized) # y'*A*x
+ ierr = compute_dot_product!(ytAx, t4, nrow, y_ncol, z_ncol, A.isDotProductOptimized) # y'*A*x
 
  if ierr == 1
 	@debug("Error in call to dot: $err .\n")
@@ -99,7 +99,7 @@ function TestSymmetry(A, b, xexact, testsymmetry_data)
  end
 
  xtMinvy = 0.0
- ierr = ComputeDotProduct(nrow, x_ncol, z_ncol, xtMinvy, t4, A.isDotProductOptimized) # x'*Minv*y
+ ierr = compute_dot_product!(xtMinvy, t4, nrow, x_ncol, z_ncol, A.isDotProductOptimized) # x'*Minv*y
 
  if ierr 
 	@debug("Error in call to dot: $ierr .\n")
@@ -113,7 +113,7 @@ function TestSymmetry(A, b, xexact, testsymmetry_data)
  end
 
  ytMinvx = 0.0
- ierr = ComputeDotProduct(nrow, y_ncol, z_ncol, ytMinvx, t4, A.isDotProductOptimized) # y'*Minv*x
+ ierr = compute_dot_product!(ytMinvx, t4, nrow, y_ncol, z_ncol, A.isDotProductOptimized) # y'*Minv*x
 
  if ierr 
     @debug("Error in call to dot: $ierr .\n")

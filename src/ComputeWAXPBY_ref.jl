@@ -11,39 +11,35 @@
   This is the reference WAXPBY impmentation.  It CANNOT be modified for the
   purposes of this benchmark.
 
+  @param[out] w the output vector.
   @param[in] n the number of vector elements (on this processor)
   @param[in] alpha, beta the scalars applied to x and y respectively.
   @param[in] x, y the input vectors
-  @param[out] w the output vector.
 
-  @return returns 0 upon success and non-zero otherwise
+  @return returns false upon success and true otherwise 
 
-  @see ComputeWAXPBY
+  @see compute_waxpby
 =#
-function ComputeWAXPBY_ref(n,alpha, x, beta, y, w) 
- 
 
-  @assert(length(x)>=n) # Test vector length
+function compute_waxpby_ref!(w, n, alpha, x, beta, y)::Bool
+
+  @assert(length(x)>=n) # Test vector length 
   @assert(length(y)>=n)
 
-  xv = x
-  yv = y
-  wv = w
-
-  if alpha==1.0
-    for i=1:n
-        println("wv[",i,"]=",wv[i],".")
-#	wv[i] = xv[i] + beta * yv[i]
+  if alpha == 1.0
+    for i = 1:n
+    	w[i] = x[i] + beta * y[i]
     end
-  elseif beta==1.0
-    for i=1:n 
-#	wv[i] = alpha * xv[i] + yv[i]
+  elseif beta == 1.0
+    for i = 1:n 
+	    w[i] = alpha * x[i] + y[i]
     end
   else  
-    for i=1:n 
-#	wv[i] = alpha * xv[i] + beta * yv[i]
+    for i = 1:n 
+	    w[i] = alpha * x[i] + beta * y[i]
     end
   end
 
-  return 0
+  return false
+
 end

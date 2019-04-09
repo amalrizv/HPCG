@@ -23,10 +23,10 @@ include("ComputeWAXPBY_ref.jl")
 
   @see ComputeWAXPBY_ref
 =#
-function ComputeWAXPBY(n, alpha, x, beta, y, w,isOptimized) 
+function compute_waxpby!(w, n, alpha, x, beta, y, isOptimized) 
 
   # This line and the next two lines should be removed and your version of ComputeWAXPBY should be used.
   isOptimized = false
-  return ComputeWAXPBY_ref(n, alpha, x, beta, y, w)
+  return compute_waxpby_ref!(w, n, alpha, x, beta, y)
 
 end

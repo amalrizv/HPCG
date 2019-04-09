@@ -94,11 +94,11 @@ function  CG(AAAA, data, b, x, max_iter, tolerance, niters, normr, normr0, times
   t3 = toc()-t3t 
   #Ap = A*p
   t2t = time_ns()
-  ComputeWAXPBY(nrow, 1.0, b, -1.0, Ap, r, A.isWaxpbyOptimized)
+  compute_waxpby!(r, nrow, 1.0, b, -1.0, Ap, A.isWaxpbyOptimized)
   t2 = time_ns()-t2t 
   # r = b - Ax (x stored in p)
   t1t = time_ns()
-  ComputeDotProduct(nrow, r, r, normr, t4, A.isDotProductOptimized)
+  compute_dot_product!(normr, t4, nrow, r, r, A.isDotProductOptimized)
   t1 = time_ns()-t1t
   normr = sqrt(normr)
 #ifdef HPCG_DEBUG
@@ -123,19 +123,19 @@ function  CG(AAAA, data, b, x, max_iter, tolerance, niters, normr, normr0, times
 
     		if k == 1
       			t2t = time_ns()
-      			ComputeWAXPBY(nrow, 1.0, z, 0.0, z, p, A.isWaxpbyOptimized)
+      			compute_waxpby!(p, nrow, 1.0, z, 0.0, z, A.isWaxpbyOptimized)
       			t2 = t2+time_ns()-t2t # Copy Mr to p
       			t1t = time_ns()
-      			ComputeDotProduct(nrow, r, z, rtz, t4, A.isDotProductOptimized)
+      			compute_dot_product!(rtz, t4, nrow, r, z, A.isDotProductOptimized)
       			t1 = t1+time_ns()- t1t # rtz = r'*z
    		else 
       			oldrtz = rtz
       			t1t = time_ns()
-      			ComputeDotProduct(nrow, r, z, rtz, t4, A.isDotProductOptimized) 
+      			compute_dot_product!(rtz, t4, nrow, r, z, A.isDotProductOptimized) 
       			t1 = t1+time_ns()-t1t # rtz = r'*z
       			beta = rtz/oldrtz
       			t2t = time_ns()
-      			ComputeWAXPBY(nrow, 1.0, z, beta, p, p, A.isWaxpbyOptimized)  
+      			compute_waxpby!(p, nrow, 1.0, z, beta, p, A.isWaxpbyOptimized)  
       			t2 = time_ns()-t2t+t2 # p = beta*p + z
    		end
 
@@ -143,15 +143,15 @@ function  CG(AAAA, data, b, x, max_iter, tolerance, niters, normr, normr0, times
     		ComputeSPMV(A, p, Ap) 
     		t3 = t3+time_ns()- t3t # Ap = A*p
     		t1t = time_ns()
-    		ComputeDotProduct(nrow, p, Ap, pAp, t4, A.isDotProductOptimized) 
+    		compute_dot_product!(pAp, t4, nrow, p, Ap, A.isDotProductOptimized) 
     		t1 = time_ns()-t1t+t1 # alpha = p'*Ap
     		alpha = rtz/pAp
     		t2t  = time_ns() 
-    		ComputeWAXPBY(nrow, 1.0, x, alpha, p, x, A.isWaxpbyOptimized)# x = x + alpha*p
-    		ComputeWAXPBY(nrow, 1.0, r, -alpha, Ap, r, A.isWaxpbyOptimized)
+    		compute_waxpby!(x, nrow, 1.0, x, alpha, p, A.isWaxpbyOptimized)# x = x + alpha*p
+    		compute_waxpby!(r, nrow, 1.0, r, -alpha, Ap, A.isWaxpbyOptimized)
     		t2 = time_ns()- t2t +t2# r = r - alpha*Ap
     		t1t = time_ns()
-		ComputeDotProduct(nrow, r, r, normr, t4, A.isDotProductOptimized)
+            compute_dot_product!(normr, t4, nrow, r, r, A.isDotProductOptimized)
     		t1 = t1+time_ns()- t1t
     		normr = sqrt(normr)
 #ifdef HPCG_DEBUG

@@ -36,7 +36,7 @@ function OptimizeProblem(A, data, b, x, xexact)
 
   for i=1:nrow 
 	if colors[i] == nrow # if color not assigned
-      		assigned = Vector(totalColors, 0)
+      		assigned = Vector{Int64}(undef, totalColors)
       		currentlyAssigned = 0
       		currentColIndices = A.mtxIndL[i, :]
       		currentNumberOfNonzeros = A.nonzerosInRow[i]

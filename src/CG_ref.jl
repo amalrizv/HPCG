@@ -76,10 +76,10 @@ function CG_ref(A, data,b, x,max_iter,tolerance, niters, normr, normr0, times, d
   ComputeSPMV_ref(A, p, Ap)  
   t3 = time_ns()-t3t # Ap = A*p
   t2t = time_ns() 
-  ComputeWAXPBY_ref(nrow, 1.0, b, -1.0, Ap, r) 
+  compute_waxpby_ref!(r, nrow, 1.0, b, -1.0, Ap) 
   t2 = time_ns()- t2t # r = b - Ax (x stored in p)
   t1t = time_ns() 
-  ComputeDotProduct_ref(nrow, r, r, normr, t4)  
+  compute_dot_product_ref!(normr, t4, nrow, r, r)
   t1 = time_ns()- t1t
   normr = sqrt(normr)
 #ifdef HPCG_DEBUG
@@ -99,7 +99,7 @@ function CG_ref(A, data,b, x,max_iter,tolerance, niters, normr, normr0, times, d
     	if doPreconditioning
       		ComputeMG_ref(A, r, z) # Apply preconditioner
     	else
-      		ComputeWAXPBY_ref(nrow, 1.0, r, 0.0, r, z) # copy r to z (no preconditioning)
+      		compute_waxpby_ref!(z, nrow, 1.0, r, 0.0, r) # copy r to z (no preconditioning)
 	end
     	t5 = time_ns()- t5t # Preconditioner apply time
 
@@ -116,7 +116,7 @@ function CG_ref(A, data,b, x,max_iter,tolerance, niters, normr, normr0, times, d
       		t1 = t1+time_ns()- t1t # rtz = r'*z
       		beta = rtz/oldrtz
       		t2t = time_ns() 
-      		ComputeWAXPBY_ref(nrow, 1.0, z, beta, p, p)  
+      		compute_waxpby_ref!(p, nrow, 1.0, z, beta, p)  
       		t2 = t2+time_ns()- t2t # p = beta*p + z
     	end
 
@@ -128,8 +128,8 @@ function CG_ref(A, data,b, x,max_iter,tolerance, niters, normr, normr0, times, d
     	t1 = time_ns()- t1t+t1 # alpha = p'*Ap
     	alpha = rtz/pAp
     	t2t = time_ns() 
-    	ComputeWAXPBY_ref(nrow, 1.0, x, alpha, p, x)# x = x + alpha*p
-    	ComputeWAXPBY_ref(nrow, 1.0, r, -alpha, Ap, r)  
+    	compute_waxpby_ref!(x, nrow, 1.0, x, alpha, p)# x = x + alpha*p
+    	compute_waxpby_ref!(r, nrow, 1.0, r, -alpha, Ap)  
     	t2 = time_ns()- t2t+t2# r = r - alpha*Ap
     	t1t = time_ns() 
     	ComputeDotProduct_ref(nrow, r, r, normr, t4) 
