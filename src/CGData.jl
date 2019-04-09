@@ -21,10 +21,10 @@ end
 @inline function InitializeSparseCGData(A, data) 
   nrow = A.localNumberOfRows
   ncol = A.localNumberOfColumns
-  r = Vector{Int64}(undef,nrow)
-  z = Vector{Int64}(undef,ncol)
-  p = Vector{Int64}(undef,ncol)
-  Ap = Vector{Int64}(undef,nrow)
+  r = Vector{Float64}(undef,nrow)
+  z = Vector{Float64}(undef,ncol)
+  p = Vector{Float64}(undef,ncol)
+  Ap = Vector{Float64}(undef,nrow)
   data = CGData(r,z,p, Ap)
   return data
 end

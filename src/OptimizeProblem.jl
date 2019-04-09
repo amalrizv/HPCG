@@ -38,6 +38,7 @@ function OptimizeProblem(A, data, b, x, xexact)
 	if colors[i] == nrow # if color not assigned
       		assigned = Vector{Int64}(undef, totalColors)
       		currentlyAssigned = 0
+              	A.mtxIndL = permutedims(reshape(hcat(A.mtxIndL...), (length(A.mtxIndL[1]), length(A.mtxIndL))))	
       		currentColIndices = A.mtxIndL[i, :]
       		currentNumberOfNonzeros = A.nonzerosInRow[i]
 

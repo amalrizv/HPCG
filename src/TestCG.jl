@@ -27,7 +27,8 @@ include("CG.jl")
   @see CG()
 =#
 function TestCG(AAAA, data, b, x, count_pass, count_fail) 
-
+  println("here")
+  println(typeof(AAAA))
   AAA = AAAA.sp_matrix #sp_anx structure
   AA = AAA.sp_matrix   #sp_matrix structure
   A = AA.sp_matrix     #sp_init structure
@@ -35,12 +36,11 @@ function TestCG(AAAA, data, b, x, count_pass, count_fail)
   # Use this array for collecting timing information
   times =  zeros(8)
   # Temporary storage for holding original diagonal and RHS
-  origDiagA = Vector{Int64}(undef,AA.localNumberOfRows)
   exaggeratedDiagA = Vector{Int64}(undef, AA.localNumberOfRows)
   origB =Vector(undef,AA.localNumberOfRows)
-  origDiagA = CopyMatrixDiagonal(AA, origDiagA)
-  origDiagA= exaggeratedDiagA
-  b = origB
+  origDiagA = CopyMatrixDiagonal(AA)
+  exaggeratedDiagA = origDiagA
+  origB = b
 
   # Modify the matrix diagonal to greatly exaggerate diagonal values.
   # CG should converge in about 10 iterations for this problem, regardless of problem size
@@ -48,7 +48,7 @@ function TestCG(AAAA, data, b, x, count_pass, count_fail)
     globalRowID = AA.localToGlobalMap[i]
     if globalRowID<9
       scale = (globalRowID+2)*1.0e6
-      exaggeratedDiagA = exaggeratedDiagA .*scale
+      exaggeratedDiagA = exaggeratedDiagA .* scale
       b = b .* scale
      else 
       exaggeratedDiagA  = exaggeratedDiagA .* 1.0e6
@@ -63,7 +63,7 @@ function TestCG(AAAA, data, b, x, count_pass, count_fail)
   maxIters = 50
   numberOfCgCalls = 2
   tolerance = 1.0e-12 # Set tolerance to reasonable value for grossly scaled diagonal terms
-  testcg_data = TestCG(count_pass, count_fail,12,2,0,0) 
+  testcg_data = TestCGData(count_pass, count_fail,12,2,0,0, normr) 
   
   # For the unpreconditioned CG call, we should take about 10 iterations, permit 12
   # For the preconditioned case, we should take about 1 iteration, permit 2
@@ -75,7 +75,8 @@ function TestCG(AAAA, data, b, x, count_pass, count_fail)
     end
     for i=0:numberOfCgCalls
       x = zeros(length(x)) # Zero out x
-      ierr = CG(AAAA, data, b, x, maxIters, tolerance, niters, normr, normr0, times[0], k==1)
+      ierr, times_add = CG(AAAA, data, b, x, maxIters, tolerance, niters, normr, normr0, times, k==1)
+      times = times_add
       if ierr==1
 	@debug("Error in call to CG:$ierr.\n")
       end
@@ -108,5 +109,5 @@ function TestCG(AAAA, data, b, x, count_pass, count_fail)
   origB = nothing
   testcg_data.normr = normr
 
-  return 0
+  return testcg_data, times
 end

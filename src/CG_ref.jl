@@ -145,8 +145,16 @@ function CG_ref(A, data,b, x,max_iter,tolerance, niters, normr, normr0, times, d
  end
 
   # Store times
-  t0  = time_ns()-t_begin
-  times= [t0, t1, t2, t3, t4, t5, t6,0,0,0]
+
+  t0 = time_ns() - t_begin  # Total time. All done...
+  times_add = Array{Any}(undef,length(times))
+  times_add[1] = t0
+  times_add[2] = t1
+  times_add[3] = t2
+  times_add[4] = t3
+  times_add[5] = t4
+  # for MPi version only
+  #times_add[6] = t5
   return 0, times
 end
 

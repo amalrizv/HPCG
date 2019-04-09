@@ -197,7 +197,8 @@ function main(hpcg_args)
   err_count = 0
   for i= 1:numberOfCalls
     x = zeros(length(x))
-    ierr, ref_times = CG_ref( AAA, data, b, x, refMaxIters, tolerance, niters, normr, normr0, ref_times[9], true)
+    ierr, ref_add = CG_ref( AAA, data, b, x, refMaxIters, tolerance, niters, normr, normr0, ref_times, true)
+    ref_times = ref_add+ref_times
     if ierr==1
 	 err_count+=1 # count the number of errors in CG
     end
@@ -228,7 +229,8 @@ function main(hpcg_args)
   t1 = time_ns()
   count_pass = 0
   count_fail = 0
-  TestCG(AAAA, data, b, x, count_pass, count_fail)
+  println(length(x))
+  TestCGdata,  times = TestCG(AAAA, data, b, x, count_pass, count_fail)
 
   testsymmetry_data = TestSymmetryData 
   TestSymmetry(A, b, xexact, testsymmetry_data)
@@ -253,13 +255,14 @@ function main(hpcg_args)
   optNiters = refMaxIters
   opt_worst_time = 0.0
 
-  opt_times =  zeros(9)
+  opt_times = zeros(9)
 
   # Compute the residual reduction and residual count for the user ordering and optimized kernels.
   for i=1:numberOfCalls
     x = zeros(length(x)) # start x at all zeros
     last_cummulative_time = opt_times[0]
-    ierr = CG( A, data, b, x, optMaxIters, refTolerance, niters, normr, normr0, opt_times[0], true)
+    ierr, opt_add = CG( A, data, b, x, optMaxIters, refTolerance, niters, normr, normr0, opt_times, true)
+    opt_times = opt_add + opt_times
     if ierr 
 	err_count +=1 # count the number of errors in CG
     end
@@ -316,7 +319,8 @@ function main(hpcg_args)
 
   for i=1: numberOfCgSets
     x = zeros(length(x)) # Zero out x
-    ierr = CG( A, data, b, x, optMaxIters, optTolerance, niters, normr, normr0, times[0], true)
+    ierr, times_add = CG( A, data, b, x, optMaxIters, optTolerance, niters, normr, normr0, times, true)
+    times = times_add+times
     if ierr 
 	@debug("Error in call to CG: $ierr.\n") 
     end
@@ -345,7 +349,7 @@ function main(hpcg_args)
   ####################
 
   # Report results to YAML file
-  ReportResults(A, numberOfMgLevels, numberOfCgSets, refMaxIters, optMaxIters, times[0], testcg_data, testsymmetry_data, testnorms_data, global_failure, quickPath)
+  times  =ReportResults(A, numberOfMgLevels, numberOfCgSets, refMaxIters, optMaxIters, times, testcg_data, testsymmetry_data, testnorms_data, global_failure, quickPath)
 
   #Clean up
   A = nothing # This delete will recursively delete all coarse grid data

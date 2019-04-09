@@ -91,7 +91,7 @@ function  CG(AAAA, data, b, x, max_iter, tolerance, niters, normr, normr0, times
   x = p
   t3t = time_ns() 
   ComputeSPMV(AAA, p, Ap) 
-  t3 = toc()-t3t 
+  t3 = time_ns()-t3t 
   #Ap = A*p
   t2t = time_ns()
   compute_waxpby!(r, nrow, 1.0, b, -1.0, Ap, A.isWaxpbyOptimized)
@@ -102,7 +102,7 @@ function  CG(AAAA, data, b, x, max_iter, tolerance, niters, normr, normr0, times
   t1 = time_ns()-t1t
   normr = sqrt(normr)
 #ifdef HPCG_DEBUG
-  if A.sp_matrix.sp_matrix.geom.rank==0 
+  if A.geom.rank==0 
   	@debug("Initial Residual = ",normr,"\n")
   end
 #endif
@@ -162,16 +162,18 @@ function  CG(AAAA, data, b, x, max_iter, tolerance, niters, normr, normr0, times
     		niters = k
   	end
   end
-  # Store times
-  times[2] += t1 # dot-product time
-  times[3] += t2 # WAXPBY time
-  times[4] += t3 # SPMV time
-  times[5] += t4 # AllReduce time
-  times[6] += t5 # preconditioner apply time
+
+  t0 = time_ns() - t_begin  # Total time. All done...
+  times[1] = times[1] +t0
+  times[2] = times[1] +t1
+  times[3] = times[1] +t2
+  times[4] = times[1] +t3
+  times[5] = times[1] +t4
+  times[6] = times[1] +t5
 ##ifndef HPCG_NO_MPI
-#  times[7] += t6 # exchange halo time
+  times[7] = times[1] +t6
+##else
 ##endif
-  times[1] += time_ns() - t_begin  # Total time. All done...
-  return 0
+  return 0, times
 end
 

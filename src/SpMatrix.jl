@@ -74,14 +74,12 @@ end
   @param[in] A the known system matrix.
   @param[inout] diagonal  Vector of diagonal values (must be allocated before call to this function).
 =#
-@inline function CopyMatrixDiagonal(A, diagonal) 
+@inline function CopyMatrixDiagonal(A) 
     curDiagA = A.matrixDiagonal
-    dv = diagonal
-    @assert(A.localNumberOfRows==length(diagonal))
-    for i=1:A.localNumberOfRows 
-	dv[i] = curDiagA[i]
-    end
-  return diagonal
+    dv = Vector{Int64}(undef, A.localNumberOfRows)
+    @assert(A.localNumberOfRows==length(dv))
+    dv = curDiagA
+  return dv
 end
 #=
   Replace specified matrix diagonal value.
@@ -89,7 +87,7 @@ end
   @param[inout] A The system matrix.
   @param[in] diagonal  Vector of diagonal values that will replace existing matrix diagonal values.
 =#
-@inline function ReplaceMatrixDiagonal(A, diagonal) 
+@inline function ReplaceMatrixDiagonal(A, diagonal ) 
     curDiagA = A.matrixDiagonal
     dv = diagonal
     @assert(A.localNumberOfRows==length(diagonal))
