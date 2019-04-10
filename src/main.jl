@@ -125,7 +125,7 @@ function main(hpcg_args)
   curxexact = xexact
 
   for level = 1:numberOfMgLevels
-     CheckProblem(AAAA, curb, curx, curxexact)
+     check_problem(A, curb, curx, curxexact)
      curLevelMatrix = AAAA.Ac # Make the nextcoarse grid the next level
      curb           = 0 # No vectors after the top level
      curx           = 0

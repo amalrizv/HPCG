@@ -19,11 +19,7 @@ include("hpcg.jl")
   @see GenerateGeometry
 =#
 
-function CheckProblem(AAAA::Sp_coarse, b, x, xexact) 
- # accepts sp_coarse structure. Lets break it down
-  AAA = AAAA.sp_matrix		#sp_anx structure ...neighbors sendBuffer etc	
-  AA = AAA.sp_matrix 		#sp_matrix structure...mIG MIL matrix values etc
-  A  = AA.sp_matrix		#sp_init structure ... geom etc
+function check_problem(A::HPCGSparseMatrix, b, x, xexact) 
   # Make local copies of geometry information.  Use global_int_t since the RHS products in the calculations
   # below may result in global range values.
   nx = A.geom.nx
@@ -61,12 +57,12 @@ function CheckProblem(AAAA::Sp_coarse, b, x, xexact)
          gix = gix0+ix
          currentLocalRow = (iz-1)*nx*ny+(iy-1)*nx+(ix-1)+1
          currentGlobalRow = giz*gnx*gny+giy*gnx+gix
-        @assert(AA.localToGlobalMap[currentLocalRow] == currentGlobalRow)
+        @assert(A.localToGlobalMap[currentLocalRow] == currentGlobalRow)
 
         #@debug(" rank, globalRow, localRow = $A.geom.rank $currentGlobalRow ",A.globalToLocalMap[currentGlobalRow])
         numberOfNonzerosInRow = 0
-        currentValuePointer = AA.matrixValues[currentLocalRow] # Pointer to current value in current row
-        currentIndexPointerG = AA.mtxIndG[currentLocalRow] # Pointer to current index in current row
+        currentValuePointer = A.matrixValues[currentLocalRow] # Pointer to current value in current row
+        currentIndexPointerG = A.mtxIndG[currentLocalRow] # Pointer to current index in current row
 	cvp = 1
 	cipg = 1
         for sz=-1 :1 
@@ -77,7 +73,7 @@ function CheckProblem(AAAA::Sp_coarse, b, x, xexact)
                   if gix+sx>0 && gix+sx<=gnx 
                      curcol = currentGlobalRow+sz*gnx*gny+sy*gnx+sx
                     if curcol==currentGlobalRow 
-                      @assert(AA.matrixDiagonal[currentLocalRow] == currentValuePointer)
+                      @assert(A.matrixDiagonal[currentLocalRow] == currentValuePointer)
 		      cvp = cvp+26.0
                      # @assert(cvp== cvp +26.0)
                      else 
@@ -93,7 +89,7 @@ function CheckProblem(AAAA::Sp_coarse, b, x, xexact)
             end # end sy loop
           end # end z bounds test
         end # end sz loop
-#        @assert(AA.nonzerosInRow[currentLocalRow] == numberOfNonzerosInRow)
+#        @assert(A.nonzerosInRow[currentLocalRow] == numberOfNonzerosInRow)
 
         localNumberOfNonzeros += numberOfNonzerosInRow # Protect this with an atomic
         if b!=0      
@@ -119,10 +115,10 @@ function CheckProblem(AAAA::Sp_coarse, b, x, xexact)
   totalNumberOfNonzeros = gnnz # Copy back
   totalNumberOfNonzeros = localNumberOfNonzeros
 
- # @assert(AA.totalNumberOfRows == totalNumberOfRows)
- # @assert(AA.totalNumberOfNonzeros == totalNumberOfNonzeros)
- # @assert(AA.localNumberOfRows == localNumberOfRows)
- # @assert(AA.localNumberOfNonzeros == localNumberOfNonzeros)
+ # @assert(A.totalNumberOfRows == totalNumberOfRows)
+ # @assert(A.totalNumberOfNonzeros == totalNumberOfNonzeros)
+ # @assert(A.localNumberOfRows == localNumberOfRows)
+ # @assert(A.localNumberOfNonzeros == localNumberOfNonzeros)
 
   return
 end

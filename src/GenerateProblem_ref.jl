@@ -4,7 +4,7 @@
 =#
 
 using MPI
-
+include("SpMatrix.jl")
 include("hpcg.jl")
 
 

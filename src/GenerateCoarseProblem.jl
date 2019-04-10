@@ -7,20 +7,18 @@ include("SetupHalo.jl")
   Routine to construct a prolongation/restriction operator for a given fine grid matrix
   solution (as computed by a direct solver).
 
-  @param[inout]  Af - The known system matrix, on output its coarse operator, fine-to-coarse operator and auxiliary vectors will be defined.
+  @param[inout]  A - The known system matrix, on output its coarse operator, fine-to-coarse operator and auxiliary vectors will be defined.
 
-  Note that the matrix Af is considered const because the attributes we are modifying are declared as mutable.
+  Note that the matrix A is considered const because the attributes we are modifying are declared as mutable.
 =#
 
-function GenerateCoarseProblem(Afff::SpMatrix_anx) #Afff is a Sp_anx structure
-  Aff = Afff.sp_matrix #Sp_matrix structure
-  Af = Aff.sp_matrix # Sp_init structure
+function generate_coarse_problem!(A)
   
   # Make local copies of geometry information.  Use global_int_t since the RHS products in the calculations
   # below may result in global range values.
-   nxf = Af.geom.nx
-   nyf = Af.geom.ny
-   nzf = Af.geom.nz
+   nxf = A.geom.nx
+   nyf = A.geom.ny
+   nzf = A.geom.nz
 
   nxc = Int64
   nyc = Int64
@@ -32,7 +30,7 @@ function GenerateCoarseProblem(Afff::SpMatrix_anx) #Afff is a Sp_anx structure
   nxc = cld(nxf,2) 
   nyc = cld(nyf,2)
   nzc = cld(nzf,2)
-  f2cOperator = Array{Int64}(undef,Aff.localNumberOfRows)
+  f2cOperator = Array{Int64}(undef,A.localNumberOfRows)
    localNumberOfRows = nxc*nyc*nzc # This is the size of our subblock
   # If this @assert fails, it most likely means that the local_int_t is set to int and should be set to long long
   @assert(localNumberOfRows>0) # Throw an exception of the number of rows is less than zero (can happen if "int" overflows)
@@ -61,24 +59,23 @@ function GenerateCoarseProblem(Afff::SpMatrix_anx) #Afff is a Sp_anx structure
   # Construct the geometry and linear system")
   zlc = 0 # Coarsen nz for the lower block in the z processor dimension
   zuc = 0 # Coarsen nz for the upper block in the z processor dimension
-  pz  = Af.geom.pz
+  pz  = A.geom.pz
 
   if pz>0
-    zlc = cld(Af.geom.partz_nz[1],2) # Coarsen nz for the lower block in the z processor dimension
-    zuc = cld(Af.geom.partz_nz[2],2) # Coarsen nz for the upper block in the z processor dimension
+    zlc = cld(A.geom.partz_nz[1],2) # Coarsen nz for the lower block in the z processor dimension
+    zuc = cld(A.geom.partz_nz[2],2) # Coarsen nz for the upper block in the z processor dimension
   end
 
-  geomc = generate_geometry(Af.geom.size, Af.geom.rank, Af.geom.numThreads, Af.geom.pz, zlc, zuc, nxc, nyc, nzc, Af.geom.npx, Af.geom.npy, Af.geom.npz)
+  geomc = generate_geometry(A.geom.size, A.geom.rank, A.geom.numThreads, A.geom.pz, zlc, zuc, nxc, nyc, nzc, A.geom.npx, A.geom.npy, A.geom.npz)
 
-  Accc        = InitializeSparseMatrix(geomc) 	#sp_init structure
-  Acc, a,b,c  = GenerateProblem(Accc)		#sp_matrix structure
-  Ac          = SetupHalo(Accc, Acc)             #sp_anx structure
+  Ac               = initialize_sparse_matrix(geomc) 	
+  ret1, ret2, ret3 =  generate_problem!(Ac)		
+  setup_halo!(Ac)
   rc          = Vector{Int64}(undef, localNumberOfRows)
   xc          = Vector{Int64}(undef, localNumberOfRows)
   Axf         = Vector{Int64}(undef, localNumberOfRows)
   mgd::MGData = InitializeMGData(f2cOperator, rc, xc, Axf)
-  AAAA        = Sp_coarse(Afff, Ac, mgd)	#sp_coarse structure where Ac is sp_anx structure
-  @debug("typeof mgData from GenerateCoarseProblem", typeof(AAAA.mgData))
-  return AAAA
+  A.Ac        = Ac 
+  A.MGData    = mgd	#sp_coarse structure where Ac is sp_anx structure
 end
 
