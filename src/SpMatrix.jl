@@ -15,21 +15,22 @@ mutable struct HPCGSparseMatrix
    is_mg_optimized::Bool
    is_waxpby_optimized::Bool
 
-   geom::Geometry #geometry associated with this matrix
+   geom::Geometry                            # geometry associated with this matrix
 
-   title::String #name of the sparse matrix
-   totalNumberOfRows::Int64 #total number of matrix rows across all processes
-   totalNumberOfNonzeros::Int64  #total number of matrix nonzeros across all processes
-   localNumberOfRows::Int64  # number of rows local to this process
-   localNumberOfColumns::Int64   #number of columns local to this process
-   localNumberOfNonzeros::Int64   # number of nonzeros local to this process
-   nonzerosInRow  # The number of nonzeros in a row will always be 27 or fewer
-   mtxIndG ::Array{Array{Int64,1}} # matrix indices as global values
-   mtxIndL ::Array{Array{Int64,1}} # matrix indices as local value
-   matrixValues :: Array{Array{Float64,1}} # values of matrix entries
-   matrixDiagonal :: Array{Array{Float64,1}} #values of matrix diagonal entries
-   localToGlobalMap #local-to-global mapping
-   globalToLocalMap #global-to-local mapping
+   title::String                             # name of the sparse matrix
+   totalNumberOfRows::Int64                  # total number of matrix rows across all processes
+   totalNumberOfNonzeros::Int64              # total number of matrix nonzeros across all processes
+   localNumberOfRows::Int64                  # number of rows local to this process
+   localNumberOfColumns::Int64               # number of columns local to this process
+   localNumberOfNonzeros::Int64              # number of nonzeros local to this process
+   nonzerosInRow                             # The number of nonzeros in a row will always be 27 or fewer
+   mtxIndG ::Array{Array{Int64,1}}           # matrix indices as global values
+   mtxIndL ::Array{Array{Int64,1}}           # matrix indices as local value
+   matrixValues :: Array{Array{Float64,1}}   # values of matrix entries
+   matrixDiagonal :: Array{Array{Float64,1}} # values of matrix diagonal entries
+   localToGlobalMap                          # local-to-global mapping
+   globalToLocalMap                          # global-to-local mapping
+
   #=
    This is for storing optimized data structres created in OptimizeProblem and
    used inside optimized ComputeSPMV().
@@ -37,31 +38,27 @@ mutable struct HPCGSparseMatrix
 
    localNumberOfCols::Int64
    numberOfExternalValues::Int64
-   numberOfSendNeighbors::Int64 # number of neighboring processes that will be send local data
-   totalToBeSent::Int64  # total number of entries to be sent
-   elementsToSend #elements to send to neighboring processes
-   neighbors #neighboring processes
-   receiveLength # lenghts of messages received from neighboring processes
-   sendLength # lenghts of messages sent to neighboring processes
-   sendBuffer # send buffer for non-blocking sends
+   numberOfSendNeighbors::Int64              # number of neighboring processes that will be send local data
+   totalToBeSent::Int64                      # total number of entries to be sent
+   elementsToSend::Nullable{Array}           # elements to send to neighboring processes
+   neighbors  				     # neighboring processes
+   receiveLength                             # lenghts of messages received from neighboring processes
+   sendLength                                # lenghts of messages sent to neighboring processes
+   sendBuffer                                # send buffer for non-blocking sends
 
-   Ac #Coarse grid matrix
-   mgData #Pointer to the coarse level data for this fine matrix
+   Ac::HPCGSparseMatrix #Coarse grid matrix
+   mgData::MGData #Pointer to the coarse level data for this fine matrix
+   HPCGSparseMatrix(is_dot_prod_optimized::Bool, 
+                    is_spmv_optimized::Bool,
+                    is_mg_optimized::Bool, 
+                    is_waxpby_optimized::Bool,
+                    geom::Geometry)          = new(is_dot_prod_optimized::Bool
+                                                  ,is_spmv_optimized::Bool  
+                                                  ,is_mg_optimized::Bool
+   				   		  ,is_waxpby_optimized::Bool
+	     					  , geom::Geometry)
 end
 
-function HPCGSparseMatrix(dot_prod,
-                 spmv,
-                 mg,
-                 waxpby,
-                 geom)
-
-   HPCGSparseMatrix(dot_prod, spmv, mg, waxpby, geom,
-                    "", 0, 0, 0, 0, 0, 0, nothing, 
-                    nothing, nothing, nothing, nothing, nothing,
-                    0, 0, 0, 0, 0, nothing, 0, 0, 
-                    nothing, nothing, nothing)
-
-end 
 
 
 
@@ -71,7 +68,8 @@ end
   @param[in] A the known system matrix
 =#
 function initialize_sparse_matrix(geom::Geometry) 
-  return HPCGSparseMatrix(true, true, true, true, geom)
+  A = HPCGSparseMatrix(true, true , true, true, geom)
+  return A
 end
 
 #=
