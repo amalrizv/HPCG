@@ -4,8 +4,6 @@
 =#
 
 
-include("SpMatrix.jl")
-
 mutable struct CGData 
   r::Vector #< pointer to residual vector
   z::Vector #< pointer to preconditioned residual vector

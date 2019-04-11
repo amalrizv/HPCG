@@ -10,57 +10,103 @@ include("MGData.jl")
 
 mutable struct HPCGSparseMatrix
 
-   is_dot_prod_optimized::Bool
-   is_spmv_optimized::Bool
-   is_mg_optimized::Bool
-   is_waxpby_optimized::Bool
+    is_dot_prod_optimized::Bool
+    is_spmv_optimized::Bool
+    is_mg_optimized::Bool
+    is_waxpby_optimized::Bool
 
-   geom::Geometry                            # geometry associated with this matrix
+    geom::Geometry                            # geometry associated with this matrix
 
-   title::String                             # name of the sparse matrix
-   totalNumberOfRows::Int64                  # total number of matrix rows across all processes
-   totalNumberOfNonzeros::Int64              # total number of matrix nonzeros across all processes
-   localNumberOfRows::Int64                  # number of rows local to this process
-   localNumberOfColumns::Int64               # number of columns local to this process
-   localNumberOfNonzeros::Int64              # number of nonzeros local to this process
-   nonzerosInRow                             # The number of nonzeros in a row will always be 27 or fewer
-   mtxIndG ::Array{Array{Int64,1}}           # matrix indices as global values
-   mtxIndL ::Array{Array{Int64,1}}           # matrix indices as local value
-   matrixValues :: Array{Array{Float64,1}}   # values of matrix entries
-   matrixDiagonal :: Array{Array{Float64,1}} # values of matrix diagonal entries
-   localToGlobalMap                          # local-to-global mapping
-   globalToLocalMap                          # global-to-local mapping
+    title::String                             # name of the sparse matrix
+    totalNumberOfRows::Int64                  # total number of matrix rows across all processes
+    totalNumberOfNonzeros::Int64              # total number of matrix nonzeros across all processes
+    localNumberOfRows::Int64                  # number of rows local to this process
+    localNumberOfColumns::Int64               # number of columns local to this process
+    localNumberOfNonzeros::Int64              # number of nonzeros local to this process
+    nonzerosInRow::Array{Any}                             # The number of nonzeros in a row will always be 27 or fewer
+    mtxIndG ::Array{Array{Int64,1}}           # matrix indices as global values
+    mtxIndL ::Array{Array{Int64,1}}           # matrix indices as local value
+    matrixValues :: Array{Array{Float64,1}}   # values of matrix entries
+    matrixDiagonal :: Array{Array{Float64,1}} # values of matrix diagonal entries
+    localToGlobalMap::Dict    # local-to-global mapping
+    globalToLocalMap::Dict    # global-to-local mapping
 
-  #=
-   This is for storing optimized data structres created in OptimizeProblem and
-   used inside optimized ComputeSPMV().
-  =#
 
-   localNumberOfCols::Int64
-   numberOfExternalValues::Int64
-   numberOfSendNeighbors::Int64              # number of neighboring processes that will be send local data
-   totalToBeSent::Int64                      # total number of entries to be sent
-   elementsToSend::Nullable{Array}           # elements to send to neighboring processes
-   neighbors  				     # neighboring processes
-   receiveLength                             # lenghts of messages received from neighboring processes
-   sendLength                                # lenghts of messages sent to neighboring processes
-   sendBuffer                                # send buffer for non-blocking sends
+    localNumberOfCols::Int64
+    numberOfExternalValues::Int64
+    numberOfSendNeighbors::Int64 # number of neighboring processes that will be send local data
+    totalToBeSent::Int64         # total number of entries to be sent
+    elementsToSend::Array{Int64} # elements to send to neighboring processes
+    neighbors::Array{Int64}      # neighboring processes
+    receiveLength::Array{Int64}  # lenghts of messages received from neighboring processes
+    sendLength::Array{Int64}     # lenghts of messages sent to neighboring processes
+    sendBuffer::Array{Float64}    # send buffer for non-blocking sends
 
-   Ac::HPCGSparseMatrix #Coarse grid matrix
-   mgData::MGData #Pointer to the coarse level data for this fine matrix
-   HPCGSparseMatrix(is_dot_prod_optimized::Bool, 
-                    is_spmv_optimized::Bool,
-                    is_mg_optimized::Bool, 
-                    is_waxpby_optimized::Bool,
-                    geom::Geometry)          = new(is_dot_prod_optimized::Bool
-                                                  ,is_spmv_optimized::Bool  
-                                                  ,is_mg_optimized::Bool
-   				   		  ,is_waxpby_optimized::Bool
-	     					  , geom::Geometry)
+    #=
+    This is for storing optimized data structres created in OptimizeProblem and
+    used inside optimized compute_spmv().
+    =#
+
+    Ac::HPCGSparseMatrix  # Coarse grid matrix
+    mgData::MGData       # Pointer to the coarse level data for this fine matrix
+
+
+    function HPCGSparseMatrix(dpopt, spmvopt, mgopt, waxpbyopt, g,
+                              ttl, tnrows, tnnz, lnrows, lncols, lnnz,
+                              nzinrow, mtxindg, mtxindl, matvals, matdiag, 
+                              l2gmap, g2lmap,
+                              nextvals, nsendneighbor, totaltosend,
+                              elmtosend, neighb, rcvlen, sendlen, sendbuf,
+                              mgd)
+
+        x = new()
+
+        x.is_dot_prod_optimized  = dpopt
+        x.is_spmv_optimized      = spmvopt
+        x.is_mg_optimized        = mgopt
+        x.is_waxpby_optimized    = waxpbyopt
+
+        x.geom                   = g
+
+        x.title                  = ttl
+        x.totalNumberOfRows      = tnrows
+        x.totalNumberOfNonzeros  = tnnz
+        x.localNumberOfRows      = lnrows
+        x.localNumberOfColumns   = lncols
+        x.localNumberOfNonzeros  = lnnz
+        x.nonzerosInRow          = nzinrow
+        x.mtxIndG                = mtxindg
+        x.mtxIndL                = mtxindl
+        x.matrixValues           = matvals
+        x.matrixDiagonal         = matdiag
+        x.localToGlobalMap       = l2gmap
+        x.globalToLocalMap       = g2lmap
+
+        x.numberOfExternalValues = nextvals
+        x.numberOfSendNeighbors  = nsendneighbor
+        x.totalToBeSent          = totaltosend
+        x.elementsToSend         = elmtosend
+        x.neighbors              = neighb
+        x.receiveLength          = rcvlen
+        x.sendLength             = sendlen
+        x.sendBuffer             = sendbuf
+
+        x.Ac                     = new()
+        x.mgData                 = mgd
+
+        return x
+
+    end 
+
 end
 
 
+function HPCGSparseMatrix(dprod_opt, spmb_opt, mg_opt, waxpby_opt, geom)
+    return HPCGSparseMatrix(dprod_opt, spmb_opt, mg_opt, waxpby_opt, geom,
+                            "", 0, 0, 0, 0, 0, [], [], [], [], [], Dict(), Dict(),
+                            0, 0, 0, [], [], [], [], [], MGData())
 
+end
 
 #=
   Initializes the known system matrix data structure members to 0.
@@ -78,89 +124,21 @@ end
   @param[in] A the known system matrix.
   @param[inout] diagonal  Vector of diagonal values (must be allocated before call to this function).
 =#
-@inline function CopyMatrixDiagonal(A) 
-    curDiagA = A.matrixDiagonal
-    dv = Vector{Int64}(undef, A.localNumberOfRows)
-    @assert(A.localNumberOfRows==length(dv))
-    dv = curDiagA
-  return dv
+@inline function copy_matrix_diagonal(A) 
+    cur_diag_a = A.matrixDiagonal
+    dv         = Vector{Int64}(undef, A.localNumberOfRows)
+    @assert(A.localNumberOfRows == length(dv))
+    dv         = cur_diag_a
+    return dv
 end
+
 #=
   Replace specified matrix diagonal value.
 
   @param[inout] A The system matrix.
   @param[in] diagonal  Vector of diagonal values that will replace existing matrix diagonal values.
 =#
-@inline function ReplaceMatrixDiagonal(A, diag) 
-    println(typeof(A))
+@inline function replace_matrix_diagonal!(A, diag) 
     @assert(A.localNumberOfRows==length(diag))
-    A.matrixDiagonal  = diag
+    A.matrixDiagonal = diag
 end
-
-
-#=
-  Deallocates the members of the data structure of the known system matrix provided they are not 0.
-
-  @param[in] A the known system matrix
-=#
-@inline function  DeleteMatrix(A) 
-
-  for i = 1:A.localNumberOfRows 
-    A.matrixValues[i] = nothing
-    A.mtxIndG[i] = nothing
-    A.mtxIndL[i] = nothing
-  end
-
-  A.matrixValues[1] = nothing
-  A.mtxIndG[1] = nothing
-  A.mtxIndL[1] = nothing
-
-  if (A.title)
-    A.titl = nothing
-  end
-  if (A.nonzerosInRow)             
-    A.nonzerosInRow = nothing
-  end
-  if (A.mtxIndG) 
-    A.mtxIndG = nothing
-  end
-  if (A.mtxIndL) 
-    A.mtxIndL = nothing
-  end
-  if (A.matrixValues) 
-    A.matrixValues = nothing
-  end
-  if (A.matrixDiagonal)           
-    A.matrixDiagonal = nothing
-  end
-  if (A.elementsToSend)       
-    A.elementsToSend = nothing
-  end
-  if (A.neighbors)              
-    A.neighbors = nothing
-  end
-  if (A.receiveLength)            
-    A.receiveLength = nothing
-  end
-  if (A.sendLength)            
-    A.sendLength = nothing
-  end
-  if (A.sendBuffer)            
-    A.sendBuffer = nothing
-  end
-  if (A.geom!=0)  
-    DeleteGeometry(A.geom) 
-    A.geom  = nothing
-  end
-  if (A.Ac!=0) 
-    DeleteMatrix(A.Ac) 
-    A.Ac = nothing # Delete coarse matrix
-  end
-  if (A.mgData!=0) 
-    DeleteMGData(A.mgData) 
-    A.mgData = nothing 
-    # Delete MG data
-  end
-  return
-end
-

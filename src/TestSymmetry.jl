@@ -6,8 +6,6 @@ include("ComputeSPMV.jl")
 include("ComputeMG.jl")
 include("ComputeDotProduct.jl")
 include("ComputeResidual.jl")
-include("Geometry.jl")
-include("SpMatrix.jl")
 include("TestSymmetry_struct.jl")
 
 #=

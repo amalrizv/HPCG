@@ -6,7 +6,6 @@
 
 
 include("hpcg.jl")
-include("SpMatrix.jl")
 include("CGData.jl")
 
 mutable struct TestSymmetryData
