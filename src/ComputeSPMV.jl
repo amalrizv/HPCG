@@ -23,9 +23,9 @@ include("ComputeSPMV_ref.jl")
 
   @see ComputeSPMV_ref
 =#
-function ComputeSPMV(A, x,y) 
+function compute_spmv(A, x,y) 
 
   # This line and the next two lines should be removed and your version of ComputeSPMV should be used.
-  A.sp_matrix.sp_matrix.isSpmvOptimized = false
-  return ComputeSPMV_ref(A, x, y)
+  A.is_spmv_optimized = false
+  return compute_spmv_ref(A, x, y)
 end

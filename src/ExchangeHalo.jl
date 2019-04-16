@@ -15,28 +15,28 @@ include("Geometry.jl")
   @param[in]    A The known system matrix
   @param[inout] x On entry: the local vector entries followed by entries to be communicated on exit: the vector with non-local entries updated by other processors
 =#
-function ExchangeHalo(AAA, x) 
+function exchange_halo(A, x) 
 
   # Extract Matrix pieces
-  AA = AAA.sp_matrix
-  A = AA.sp_matrix
 
-  localNumberOfRows = AA.localNumberOfRows
-  num_neighbors = AAA.numberOfSendNeighbors
-  receiveLength = AAA.receiveLength
-  sendLength = AAA.sendLength
-  neighbors = AAA.neighbors
-  sendBuffer = AAA.sendBuffer
-  totalToBeSent = AAA.totalToBeSent
-  elementsToSend = AAA.elementsToSend
+ @static if MPI.Initialized()
+  localNumberOfRows = A.localNumberOfRows
+  num_neighbors     = A.numberOfSendNeighbors
+  receiveLength     = A.receiveLength
+  sendLength        = A.sendLength
+  neighbors         = A.neighbors
+  sendBuffer        = A.sendBuffer
+  totalToBeSent     = A.totalToBeSent
+  elementsToSend    = A.elementsToSend
 
-  xv = x
+  xv   = x
 
-  size= Int64
+  size = Int64
   rank = Int64 # Number of MPI processes, My process ID
-  if USE_MPI == true
+
   size = MPI_Comm.size(MPI.COMM_WORLD)
   rank = MPI_Comm.rank(MPI.COMM_WORLD)
+  
 
   #
   #  first post receives, these are immediate receives

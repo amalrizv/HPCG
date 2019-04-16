@@ -9,7 +9,7 @@ include("hpcg.jl")
 include("CGData.jl")
 
 mutable struct TestSymmetryData
-  depsym_spmvi::Float64 #  //!< departure from symmetry for the SPMV kernel
+  depsym_spmv::Float64 #  //!< departure from symmetry for the SPMV kernel
   depsym_mg::Float64    #  //!< departure from symmetry for the MG kernel
-  count_fail::Float64   #  //!< number of failures in the symmetry tests
+  count_fail::Int64     #  //!< number of failures in the symmetry tests
 end

@@ -13,7 +13,7 @@ include("TestNorms_struct.jl")
 
   @return Returns 0 upon success or non-zero otherwise
 =#
-function TestNorms(testnorms_data) 
+function test_norms(testnorms_data) 
 
  mean_delta = 0.0
 

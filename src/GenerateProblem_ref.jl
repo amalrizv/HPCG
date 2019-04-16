@@ -182,7 +182,6 @@ function generate_problem_ref!(A::HPCGSparseMatrix)
     A.matrixDiagonal        = matrixDiagonal
     A.localToGlobalMap      = localToGlobalMap
     A.globalToLocalMap      = globalToLocalMap
-
     return b, x, xexact
 
 end

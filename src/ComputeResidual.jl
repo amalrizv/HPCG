@@ -17,7 +17,7 @@ include("hpcg.jl")
 
   @return Returns zero on success and a non-zero value otherwise.
 =#
-function ComputeResidual(n, v1, v2, residual) 
+function compute_residual(n, v1, v2, residual) 
 
   v1v = v1
   v2v = v2
@@ -46,7 +46,7 @@ function ComputeResidual(n, v1, v2, residual)
 
   # Use MPI's reduce function to collect all partial sums
   global_residual = 0
-  MPI.Allreduce(local_residual, global_residual,MPI_MAX, MPI.COMM_WORLD)
+#  MPI.Allreduce(local_residual, global_residual,MPI.MAX, MPI.COMM_WORLD)
   residual = global_residual
   residual = local_residual
 

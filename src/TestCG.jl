@@ -99,7 +99,7 @@ function test_cg!(A, data, b, x, count_pass, count_fail)
     end
 
     # Restore matrix diagonal and RHS
-    replace_matrix_diagonal(A, origDiagA)
+    replace_matrix_diagonal!(A, origDiagA)
 
     b = origB
 

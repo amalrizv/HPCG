@@ -31,9 +31,9 @@ function setup_halo_ref!(A)
     mtxIndL           = permutedims(reshape(hcat(mIL...), (length(mIL[1]), length(mIL))))
 
     # LNR = ,"localNumberOfRows," dimsMIG = ,",size(mtxIndG)," dimMIL = ",size(mtxIndL),".")
-    for i=1:localNumberOfRows 
+    for i = 1:localNumberOfRows 
         cur_nnz = nonzerosInRow[i]
-        for j=1:cur_nnz
+        for   j = 1:cur_nnz
             mtxIndL[i,j] = mtxIndG[i,j]
         end
     end
@@ -50,13 +50,13 @@ function setup_halo_ref!(A)
     #  TODO: With proper critical and atomic regions, this loop could be threaded, but not attempting it at this time
     for i=1:localNumberOfRows 
         currentGlobalRow = A.localToGlobalMap[i]
-        for j=1:nonzerosInRow[i]
-            curIndex = mtxIndG[i,j]
+        for j = 1:nonzerosInRow[i]
+            curIndex            = mtxIndG[i,j]
             rankIdOfColumnEntry = compute_rank_of_matrix_row(A.geom, curIndex)
             #      @debug("rank, row , col, globalToLocalMap[col] = ",A.geom.rank, currentGlobalRow, curIndex ,AA.globalToLocalMap[curIndex],"\n")
-            if A.geom.rank!=rankIdOfColumnEntry #If column index is not a row index, then it comes from another processor
-                receiveList[rankIdOfColumnEntry]=curIndex 
-                sendList[rankIdOfColumnEntry]=currentGlobalRow # Matrix symmetry means we know the neighbor process wants my value
+            if  A.geom.rank    != rankIdOfColumnEntry #If column index is not a row index, then it comes from another processor
+                receiveList[rankIdOfColumnEntry] = curIndex 
+                sendList[rankIdOfColumnEntry]    = currentGlobalRow # Matrix symmetry means we know the neighbor process wants my value
             end
         end
     end
@@ -109,14 +109,15 @@ function setup_halo_ref!(A)
     end
 
     # Convert matrix indices to local IDs
-    for i=1:localNumberOfRows
-        for j=1:nonzerosInRow[i]
+    for i = 1:localNumberOfRows
+        for j = 1:nonzerosInRow[i]
             curIndex = mtxIndG[i,j]
+ 	    # curIndex =  27 cannot find this index in A.globalToLocalMap
             rankIdOfColumnEntry = compute_rank_of_matrix_row(A.geom, curIndex)
             if A.geom.rank == rankIdOfColumnEntry # My column index, so convert to local index
-                mtxIndL[i,j] = A.globalToLocalMap[curIndex]
+            #    mtxIndL[i,j] = A.globalToLocalMap[curIndex]
             else # If column index is not a row index, then it comes from another processor
-                #mtxIndL[i,j] = externalToLocalMap[curIndex]
+            #    mtxIndL[i,j] = externalToLocalMap[curIndex]
             end
         end
     end

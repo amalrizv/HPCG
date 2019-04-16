@@ -48,10 +48,7 @@ include("ComputeWAXPBY.jl")
   @return Returns zero on success and a non-zero value otherwise.
   @see CG_ref()
 =#
-function  CG(AAAA, data, b, x, max_iter, tolerance, niters, normr, normr0, times, doPreconditioning) 
-  AAA = AAAA.sp_matrix #spMatrix_anx structure
-  AA = AAA.sp_matrix  #sp_matrix structure
-  A = AA.sp_matrix  #sp_init structure
+function  cg(A, data, b, x, max_iter, tolerance, niters, normr, normr0, times, doPreconditioning) 
   t_begin = time_ns()  # Start timing right away
   normr = 0.0
   rtz = 0.0
@@ -71,7 +68,7 @@ function  CG(AAAA, data, b, x, max_iter, tolerance, niters, normr, normr0, times
 ##ifndef HPCG_NO_MPI
 # t6 = 0.0
 ##endif
-  nrow = AA.localNumberOfRows 
+  nrow = A.localNumberOfRows 
   r = data.r # Residual vector
   p = data.p # Direction vector (in MPI mode ncol>=nrow)
   Ap = data.Ap
@@ -91,15 +88,15 @@ function  CG(AAAA, data, b, x, max_iter, tolerance, niters, normr, normr0, times
   # p is of length ncols, copy x to p for sparse MV operation
   x = p
   t3t = time_ns() 
-  ComputeSPMV(AAA, p, Ap) 
+  compute_spmv(A, p, Ap) 
   t3 = time_ns()-t3t 
   #Ap = A*p
   t2t = time_ns()
-  compute_waxpby!(r, nrow, 1.0, b, -1.0, Ap, A.isWaxpbyOptimized)
+  compute_waxpby!(r, nrow, 1.0, b, -1.0, Ap, A.is_waxpby_optimized)
   t2 = time_ns()-t2t 
   # r = b - Ax (x stored in p)
   t1t = time_ns()
-  compute_dot_product!(normr, t4, nrow, r, r, A.isDotProductOptimized)
+  compute_dot_product!(normr, t4, nrow, r, r, A.is_dot_prod_optimized)
   t1 = time_ns()-t1t
   normr = sqrt(normr)
 #ifdef HPCG_DEBUG
@@ -116,7 +113,7 @@ function  CG(AAAA, data, b, x, max_iter, tolerance, niters, normr, normr0, times
   	for k=1:max_iter+1
     		t5t = time_ns()
     		if doPreconditioning
-      			ComputeMG(AAAA, r, z) # Apply preconditioner
+      			compute_mg(A, r, z) # Apply preconditioner
     		else
       			z = r # copy r to z (no preconditioning)
     		end
@@ -124,35 +121,35 @@ function  CG(AAAA, data, b, x, max_iter, tolerance, niters, normr, normr0, times
 
     		if k == 1
       			t2t = time_ns()
-      			compute_waxpby!(p, nrow, 1.0, z, 0.0, z, A.isWaxpbyOptimized)
+      			compute_waxpby!(p, nrow, 1.0, z, 0.0, z, A.is_waxpby_optimized)
       			t2 = t2+time_ns()-t2t # Copy Mr to p
       			t1t = time_ns()
-      			compute_dot_product!(rtz, t4, nrow, r, z, A.isDotProductOptimized)
+      			compute_dot_product!(rtz, t4, nrow, r, z, A.is_dot_prod_optimized)
       			t1 = t1+time_ns()- t1t # rtz = r'*z
    		else 
       			oldrtz = rtz
       			t1t = time_ns()
-      			compute_dot_product!(rtz, t4, nrow, r, z, A.isDotProductOptimized) 
+      			compute_dot_product!(rtz, t4, nrow, r, z, A.is_dot_prod_optimized) 
       			t1 = t1+time_ns()-t1t # rtz = r'*z
       			beta = rtz/oldrtz
       			t2t = time_ns()
-      			compute_waxpby!(p, nrow, 1.0, z, beta, p, A.isWaxpbyOptimized)  
+      			compute_waxpby!(p, nrow, 1.0, z, beta, p, A.is_waxpby_optimized)  
       			t2 = time_ns()-t2t+t2 # p = beta*p + z
    		end
 
     		t3t = time_ns()
-    		ComputeSPMV(A, p, Ap) 
+    		compute_spmv(A, p, Ap) 
     		t3 = t3+time_ns()- t3t # Ap = A*p
     		t1t = time_ns()
-    		compute_dot_product!(pAp, t4, nrow, p, Ap, A.isDotProductOptimized) 
+    		compute_dot_product!(pAp, t4, nrow, p, Ap, A.is_dot_prod_optimized) 
     		t1 = time_ns()-t1t+t1 # alpha = p'*Ap
     		alpha = rtz/pAp
     		t2t  = time_ns() 
-    		compute_waxpby!(x, nrow, 1.0, x, alpha, p, A.isWaxpbyOptimized)# x = x + alpha*p
-    		compute_waxpby!(r, nrow, 1.0, r, -alpha, Ap, A.isWaxpbyOptimized)
+    		compute_waxpby!(x, nrow, 1.0, x, alpha, p, A.is_waxpby_optimized)# x = x + alpha*p
+    		compute_waxpby!(r, nrow, 1.0, r, -alpha, Ap, A.is_waxpby_optimized)
     		t2 = time_ns()- t2t +t2# r = r - alpha*Ap
     		t1t = time_ns()
-            compute_dot_product!(normr, t4, nrow, r, r, A.isDotProductOptimized)
+                compute_dot_product!(normr, t4, nrow, r, r, A.is_dot_prod_optimized)
     		t1 = t1+time_ns()- t1t
     		normr = sqrt(normr)
 #ifdef HPCG_DEBUG

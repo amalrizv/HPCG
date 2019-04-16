@@ -20,7 +20,7 @@
   @see GenerateGeometry
   @see GenerateProblem
 =#
-function OptimizeProblem(A, data, b, x, xexact) 
+function optimize_problem(A, data, b, x, xexact) 
   
 
   # This function can be used to completely transform any part of the data structures.
@@ -48,7 +48,7 @@ function OptimizeProblem(A, data, b, x, xexact)
           			if assigned[colors[curCol]] == 0
             				currentlyAssigned += 1
 				end
-          		assigned[colors[curCol]] = 1 # this color has been used before by `curCol' point
+	          		assigned[colors[curCol]] = 1 # this color has been used before by `curCol' point
         		end # else  could take advantage of indices being sorted
       		end # end scanning neighbours
 

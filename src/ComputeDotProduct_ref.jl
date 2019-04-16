@@ -29,7 +29,7 @@ function compute_dot_product_ref!(result, time_allreduce, n, x, y)
 
   local_result = 0.0
 
-  if x == y
+  if x==y
     for i=1:n
         local_result += x[i]*x[i]
     end

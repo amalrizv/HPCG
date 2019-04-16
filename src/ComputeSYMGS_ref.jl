@@ -33,16 +33,15 @@ Computes one step of symmetric Gauss-Seidel:
 
   @see ComputeSYMGS
 =#
-function ComputeSYMGS_ref(AAA, r, x) 
-  AA = AAA.sp_matrix
-  #@assert(length(x)==AAA.localNumberOfCols) # Make sure x contain space for halo values
+function compute_symgs_ref(A, r, x) 
+  #@assert(length(x)==A.localNumberOfCols) # Make sure x contain space for halo values
 
-  ExchangeHalo(AAA,x)
+  exchange_halo(A,x)
 
-  nrow = AA.localNumberOfRows
-  matrixDiagonal = AA.matrixDiagonal  # An array of pointers to the diagonal entries A.matrixValues
-  matrixValues = AA.matrixValues
-  mtxIndL = AA.mtxIndL
+  nrow = A.localNumberOfRows
+  matrixDiagonal = A.matrixDiagonal  # An array of pointers to the diagonal entries A.matrixValues
+  matrixValues = A.matrixValues
+  mtxIndL = A.mtxIndL
   matrixDiagonal = permutedims(reshape(hcat(matrixDiagonal...), (length(matrixDiagonal[1]), length(matrixDiagonal))))
   matrixValues = permutedims(reshape(hcat(matrixValues ...), (length(matrixValues[1]), length(matrixValues))))
   mtxIndL = permutedims(reshape(hcat(mtxIndL...), (length(mtxIndL[1]), length(mtxIndL))))
@@ -52,7 +51,7 @@ function ComputeSYMGS_ref(AAA, r, x)
   for i=1:nrow
     currentValues = matrixValues[i, :]
     currentColIndices = mtxIndL[i, :]
-    currentNumberOfNonzeros = AA.nonzerosInRow[i]
+    currentNumberOfNonzeros = A.nonzerosInRow[i]
     currentDiagonal = matrixDiagonal[i,1] # Current diagonal value
     sum = rv[i] # RHS value
 
@@ -72,7 +71,7 @@ function ComputeSYMGS_ref(AAA, r, x)
   for i=Iterators.reverse(1:nrow)
     currentValues = matrixValues[i, :]
     currentColIndices = mtxIndL[i,:]
-    currentNumberOfNonzeros = AA.nonzerosInRow[i]
+    currentNumberOfNonzeros = A.nonzerosInRow[i]
     currentDiagonal = matrixDiagonal[i,1] # Current diagonal value
     sum = rv[i] # RHS value
 

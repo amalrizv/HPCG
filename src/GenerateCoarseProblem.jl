@@ -34,14 +34,14 @@ function generate_coarse_problem!(A)
     nzc = div(nzf, 2)
 
     f2c_operator = Array{Int64}(undef,A.localNumberOfRows)
-    local_num_rows = nxc*nyc*nzc # This is the size of our subblock
+    local_num_rows = nxc*nyc*nzc # This is the size of our subblock:
     # If this @assert fails, it most likely means that the local_int_t is set to int and should be set to long long
-    @assert(localNumberOfRows>0) # Throw an exception of the number of rows is less than zero (can happen if "int" overflows)
+    @assert(local_num_rows>0) # Throw an exception of the number of rows is less than zero (can happen if "int" overflows)
 
     # NOTE: originally omp_parallel_for
     # Use a parallel loop to do initial assignment:")
     # distributes the physical placement of arrays of pointers across the memory system
-    for  i=1:localNumberOfRows 
+    for  i=1:local_num_rows 
         f2c_operator[i] = 0
     end
 
@@ -57,7 +57,7 @@ function generate_coarse_problem!(A)
                 ixf = 2*(ixc-1)+1
                 currentCoarseRow = izc*nxc*nyc+iyc*nxc+ixc
                 currentFineRow = izf*nxf*nyf+iyf*nxf+ixf
-                f2cOperator[currentCoarseRow] = currentFineRow
+                f2c_operator[currentCoarseRow] = currentFineRow
             end # end iy loop
         end # end even iz if statement
     end # end iz loop
@@ -79,11 +79,11 @@ function generate_coarse_problem!(A)
 
     setup_halo!(Ac)
 
-    rc          = Vector{Int64}(undef, localNumberOfRows)
-    xc          = Vector{Int64}(undef, localNumberOfRows)
-    Axf         = Vector{Int64}(undef, localNumberOfRows)
+    rc          = Vector{Int64}(undef, local_num_rows)
+    xc          = Vector{Int64}(undef, local_num_rows)
+    Axf         = Vector{Int64}(undef, local_num_rows)
 
-    mgd::MGData = init_mg_data(f2cOperator, rc, xc, Axf)
+    mgd::MGData = init_mg_data(f2c_operator, rc, xc, Axf)
 
     A.Ac        = Ac
     A.mgData    = mgd
