@@ -92,7 +92,7 @@ function main(hpcg_args)
     t1 = time_ns() #INCLUDE CORRECT TIMER 
 
     # Construct the geometry and linear system
-    geom = generate_geometry(size, rank, params.numThreads, params.pz, params.zl, params.zu, nx, ny, nz, params.npx, params.npy, params.npz)
+    geom = generate_geometry!(size, rank, params.numThreads, params.pz, params.zl, params.zu, nx, ny, nz, params.npx, params.npy, params.npz)
 
     ierr = check_aspect_ratio(0.125, geom.npx, geom.npy, geom.npz, "process grid", rank==0)
 
@@ -111,10 +111,15 @@ function main(hpcg_args)
 
     cur_level_matrix::HPCGSparseMatrix = A
 
-    for level=1:num_mg_levels
+    for level=1:num_mg_levels-1
         @debug("level=$level")
         generate_coarse_problem!(cur_level_matrix) 	
-        cur_level_matrix = A.Ac 		#  Make the just-constructed coarse grid the next level
+
+        # calls generate_geometry & calls generate_problem 
+	#   but is not able to retain values of nx, ny, nz 
+	#   because it is not retaining those values.
+
+        cur_level_matrix = cur_level_matrix.Ac 		#  Make the just-constructed coarse grid the next level
     end
     @debug("All levels done")
 
@@ -126,8 +131,9 @@ function main(hpcg_args)
     curx             = x
     curxexact        = xexact
 
-    for level = 1:num_mg_levels
+    for level = 1:num_mg_levels-1
         check_problem(cur_level_matrix, curb, curx, curxexact)
+	
         curLevelMatrix = A.Ac # Make the nextcoarse grid the next level
         curb           = 0    # No vectors after the top level
         curx           = 0
@@ -145,6 +151,7 @@ function main(hpcg_args)
 
     nrow = A.localNumberOfRows
     ncol = A.localNumberOfCols
+    println(nrow, ncol)
 
     x_overlap  = Vector{Int64}(undef, ncol) #  Overlapped copy of x vector
     b_computed = Vector{Int64}(undef, nrow) #  Computed RHS vector
@@ -162,6 +169,7 @@ function main(hpcg_args)
 
     for i = 1:num_calls
         ierr = compute_spmv_ref(A, x_overlap, b_computed) # b_computed = A*x_overlap
+	println("killed after_spmv_ref")
         if ierr == 1 
             @debug("Error in call to SpMV: $ierr .\n")
         end

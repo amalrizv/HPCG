@@ -22,10 +22,11 @@ include("hpcg.jl")
   @param[in]  pz z-dimension processor ID where second zone of nz values start
   @param[in]  nx, ny, nz number of grid points for each local block in the x, y, and z dimensions, respectively
 =#
-function generate_geometry(size, rank, numThreads,pz, zl, zu,
+function generate_geometry!(size, rank, numThreads,pz, zl, zu,
   			nx, ny, nz, npx, npy, npz)
 
   if npx * npy * npz <= 0 || npx * npy * npz > size
+    println("do i go in there")
     npx, npy, npz = compute_optimal_shape_xyz(size, npx, npy, npz)
   end
 
@@ -54,15 +55,17 @@ function generate_geometry(size, rank, numThreads,pz, zl, zu,
 
 #  partz_ids[npartz-1] = npz # The last element of this array is always npz
   ipartz_ids = 0
+  
   for i=1 :npartz 
 #    @assert(ipartz_ids<partz_ids[i])  # Make sure that z partitioning is consistent with computed npz value
     ipartz_ids = partz_ids[i]
   end
 
   # Now compute this process's indices in the 3D cube
-  ipz = rank/(npx*npy)
-  ipy = (rank-ipz*npx*npy)/npx
+  ipz = div(rank, (npx*npy))
+  ipy = div((rank-ipz*npx*npy),npx)
   ipx = rank%npx # will gice division error because npx is zero 
+  println("npx, npy, npz, nx, ny, nz, ipx, ipy, ipz=> $npx, $npy, $npz, $nx, $ny, $nz, $ipx, $ipy, $ipz")
 
   if rank==0
     @debug("size = $size\n

@@ -59,6 +59,7 @@ end
 function compute_optimal_shape_xyz(xyz, x, y, z) 
 
   factors = compute_prime_factors(xyz) # factors are sorted: ascending order
+  println(factors[x], factors[y], factors[z])
   # there is at least one prime factor
   keyss = collect(keys(factors))     # cache the first factor, move to the next one
   vals  = collect(values(factors))

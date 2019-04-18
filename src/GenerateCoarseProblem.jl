@@ -55,8 +55,8 @@ function generate_coarse_problem!(A)
             iyf = 2*(iyc-1)+1
             for ixc=1:nxc 
                 ixf = 2*(ixc-1)+1
-                currentCoarseRow = izc*nxc*nyc+iyc*nxc+ixc
-                currentFineRow = izf*nxf*nyf+iyf*nxf+ixf
+                currentCoarseRow = (izc-1)*nxc*nyc+(iyc-1)*nxc+(ixc-1)+1
+                currentFineRow = izf*nxf*nyf+iyf*nxf+ixf+1
                 f2c_operator[currentCoarseRow] = currentFineRow
             end # end iy loop
         end # end even iz if statement
@@ -72,7 +72,7 @@ function generate_coarse_problem!(A)
         zuc = div(A.geom.partz_nz[2],2) # Coarsen nz for the upper block in the z processor dimension
     end
 
-    geomc = generate_geometry(A.geom.size, A.geom.rank, A.geom.numThreads, A.geom.pz, zlc, zuc, nxc, nyc, nzc, A.geom.npx, A.geom.npy, A.geom.npz)
+    geomc = generate_geometry!(A.geom.size, A.geom.rank, A.geom.numThreads, A.geom.pz, zlc, zuc, nxc, nyc, nzc, A.geom.npx, A.geom.npy, A.geom.npz)
 
     Ac               = initialize_sparse_matrix(geomc)
     ret1, ret2, ret3 = generate_problem!(Ac)

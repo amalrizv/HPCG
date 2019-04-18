@@ -50,13 +50,13 @@ function check_problem(A::HPCGSparseMatrix, b, x, xexact)
    localNumberOfNonzeros = 0
   # TODO:  This triply nested loop could be flattened or use nested parallelism
   for iz=1:nz 
-     giz = giz0+iz
+     giz = giz0+(iz-1)
     for iy=1:ny  
-       giy = giy0+iy
+       giy = giy0+(iy-1)
       for ix=1:nx  
-         gix = gix0+ix
+         gix = gix0+(ix-1)
          currentLocalRow = (iz-1)*nx*ny+(iy-1)*nx+(ix-1)+1
-         currentGlobalRow = giz*gnx*gny+giy*gnx+gix
+         currentGlobalRow = giz*gnx*gny+giy*gnx+gix+1
         @assert(A.localToGlobalMap[currentLocalRow] == currentGlobalRow)
 
         #@debug(" rank, globalRow, localRow = $A.geom.rank $currentGlobalRow ",A.globalToLocalMap[currentGlobalRow])

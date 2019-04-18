@@ -90,20 +90,20 @@ function generate_problem_ref!(A::HPCGSparseMatrix)
     #else
     =#
     for i=1:localNumberOfRows
-        mtxIndL[i] = mtxIndL[1] .+ i * numberOfNonzerosPerRow
-        matrixValues[i] = matrixValues[1] .+ i * numberOfNonzerosPerRow
-        mtxIndG[i] = mtxIndG[1] .+ i * numberOfNonzerosPerRow
+        mtxIndL[i] = mtxIndL[1] .+ (i-1) * numberOfNonzerosPerRow
+        matrixValues[i] = matrixValues[1] .+ (i-1) * numberOfNonzerosPerRow
+        mtxIndG[i] = mtxIndG[1] .+ (i-1) * numberOfNonzerosPerRow
     end
     localNumberOfNonzeros = 0
     # TODO:  This triply nested loop could be flattened or use nested parallelism
     for iz=1:nz
-        giz = giz0+iz
+        giz = giz0+(iz-1)
         for iy=1:ny 
-            giy = giy0+iy
+            giy = giy0+(iy-1)
             for  ix=1:nx 
-                gix = gix0+ix
+                gix = gix0+(ix-1)
                 currentLocalRow = (iz-1)*nx*ny+(iy-1)*nx+(ix-1) +1
-                currentGlobalRow = giz*gnx*gny+giy*gnx+gix
+                currentGlobalRow = giz*gnx*gny+giy*gnx+gix + 1
                 globalToLocalMap[currentGlobalRow] = currentLocalRow
 
                 localToGlobalMap[currentLocalRow] = currentGlobalRow

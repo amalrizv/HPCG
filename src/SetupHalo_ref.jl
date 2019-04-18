@@ -29,23 +29,24 @@ function setup_halo_ref!(A)
     mIL               = A.mtxIndL
     mtxIndG           = permutedims(reshape(hcat(mIG...), (length(mIG[1]), length(mIG))))
     mtxIndL           = permutedims(reshape(hcat(mIL...), (length(mIL[1]), length(mIL))))
-
-    # LNR = ,"localNumberOfRows," dimsMIG = ,",size(mtxIndG)," dimMIL = ",size(mtxIndL),".")
-    for i = 1:localNumberOfRows 
-        cur_nnz = nonzerosInRow[i]
-        for   j = 1:cur_nnz
-            mtxIndL[i,j] = mtxIndG[i,j]
-        end
-    end
+    @static if MPI.Initialized()
+	    # LNR = ,"localNumberOfRows," dimsMIG = ,",size(mtxIndG)," dimMIL = ",size(mtxIndL),".")
+	    for i = 1:localNumberOfRows 
+        	cur_nnz = nonzerosInRow[i]
+        	for   j = 1:cur_nnz
+            		mtxIndL[i,j] = mtxIndG[i,j]
+        	end
+    	    end
+    else
 
     # Scan global IDs of the nonzeros in the matrix.  Determine if the column ID matches a row ID.  If not:
     # 1) We call the compute_rank_of_matrix_row function, which tells us the rank of the processor owning the row ID.
     #  We need to receive this value of the x vector during the halo exchange.
     # 2) We record our row ID since we know that the other processor will need this value from us, due to symmetry.
 
-    sendList           = Dict()
-    receiveList        = Dict()
-    externalToLocalMap = Dict()
+    sendList           = Dict{Int64, Set{Int64}}()
+    receiveList        = Dict{Int64, Set{Int64}}()
+    externalToLocalMap = Dict{Int64, Int64}()
 
     #  TODO: With proper critical and atomic regions, this loop could be threaded, but not attempting it at this time
     for i=1:localNumberOfRows 
@@ -55,8 +56,17 @@ function setup_halo_ref!(A)
             rankIdOfColumnEntry = compute_rank_of_matrix_row(A.geom, curIndex)
             #      @debug("rank, row , col, globalToLocalMap[col] = ",A.geom.rank, currentGlobalRow, curIndex ,AA.globalToLocalMap[curIndex],"\n")
             if  A.geom.rank    != rankIdOfColumnEntry #If column index is not a row index, then it comes from another processor
-                receiveList[rankIdOfColumnEntry] = curIndex 
-                sendList[rankIdOfColumnEntry]    = currentGlobalRow # Matrix symmetry means we know the neighbor process wants my value
+		if haskey(receiveList, rankIdOfColumnEntry)
+	                push!(receiveList[rankIdOfColumnEntry] ,curIndex) 
+		else
+			receiveList[rankIdOfColumnEntry] = Set(curIndex)
+		end
+		if haskey(sendList, rankIdOfColumnEntry)
+	                push!(sendList[rankIdOfColumnEntry] ,curIndex) 
+		else
+			sendList[rankIdOfColumnEntry] = Set(curIndex)
+		end
+
             end
         end
     end
@@ -112,12 +122,12 @@ function setup_halo_ref!(A)
     for i = 1:localNumberOfRows
         for j = 1:nonzerosInRow[i]
             curIndex = mtxIndG[i,j]
- 	    # curIndex =  27 cannot find this index in A.globalToLocalMap
+ 	    curIndex =  27 #cannot find this index in A.globalToLocalMap
             rankIdOfColumnEntry = compute_rank_of_matrix_row(A.geom, curIndex)
             if A.geom.rank == rankIdOfColumnEntry # My column index, so convert to local index
-            #    mtxIndL[i,j] = A.globalToLocalMap[curIndex]
+                mtxIndL[i,j] = A.globalToLocalMap[curIndex]
             else # If column index is not a row index, then it comes from another processor
-            #    mtxIndL[i,j] = externalToLocalMap[curIndex]
+                mtxIndL[i,j] = externalToLocalMap[curIndex]
             end
         end
     end
@@ -150,5 +160,5 @@ function setup_halo_ref!(A)
             @debug("       rank = ", A.geom.rank," elementsToSend[$j] =", elementsToSend[j],".")
         end
     end
-
+    end
 end
