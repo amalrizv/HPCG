@@ -14,27 +14,32 @@ using MPI
 
   @see ComputeSPMV
 =#
-function compute_spmv_ref(A, x, y) #takes SpMatrix_anx structure
+function compute_spmv_ref!(A, x, y) # takes SpMatrix_anx structure
 
-  #@assert(length(x)>=A.localNumberOfCols) # Test vector lengths
-  #@assert(length(y)>=A.localNumberOfRows)
+  @assert(length(x)>=A.localNumberOfCols) # Test vector lengths
+  @assert(length(y)>=A.localNumberOfRows)
 
-  exchange_halo(A,x)
-  xv = x
-  yv = y
+  @static if MPI.Initialized()
+      exchange_halo(A, x)
+  end
+
+  xv   = x
+  yv   = y
   nrow = A.localNumberOfRows
-  for i=1:nrow
-    sum = 0
-    cur_vals = A.matrixValues[i]
-    cur_inds = A.mtxIndL[i]
-    cur_nnz = A.nonzerosInRow[i]
 
-    for j=1:cur_nnz
-       
-#      sum = sum+(cur_vals[j]*xv[cur_inds[j]])
-    end
-#    yv[i] = sum
+  for i = 1:nrow
+      sum      = 0
+      cur_vals = A.matrixValues[i]
+      cur_inds = A.mtxIndL[i]
+      cur_nnz  = A.nonzerosInRow[i]
+
+      for j= 1:cur_nnz
+          sum = sum + (cur_vals[j]*xv[cur_inds[j]])
+      end
+
+      yv[i] = sum
   end
   
   return 0
+
 end

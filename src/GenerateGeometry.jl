@@ -26,7 +26,6 @@ function generate_geometry!(size, rank, numThreads,pz, zl, zu,
   			nx, ny, nz, npx, npy, npz)
 
   if npx * npy * npz <= 0 || npx * npy * npz > size
-    println("do i go in there")
     npx, npy, npz = compute_optimal_shape_xyz(size, npx, npy, npz)
   end
 
@@ -65,9 +64,10 @@ function generate_geometry!(size, rank, numThreads,pz, zl, zu,
   ipz = div(rank, (npx*npy))
   ipy = div((rank-ipz*npx*npy),npx)
   ipx = rank%npx # will gice division error because npx is zero 
-  println("npx, npy, npz, nx, ny, nz, ipx, ipy, ipz=> $npx, $npy, $npz, $nx, $ny, $nz, $ipx, $ipy, $ipz")
 
-  if rank==0
+  @debug("Generate Geometry: npx, npy, npz, nx, ny, nz, ipx, ipy, ipz => $npx, $npy, $npz, $nx, $ny, $nz, $ipx, $ipy, $ipz")
+
+  if rank == 0
     @debug("size = $size\n
         nx  = $nx\n
         ny  = $ny\n

@@ -48,7 +48,7 @@ include("ComputeWAXPBY.jl")
   @return Returns zero on success and a non-zero value otherwise.
   @see CG_ref()
 =#
-function  cg(A, data, b, x, max_iter, tolerance, niters, normr, normr0, times, doPreconditioning) 
+function cg!(A, data, b, x, max_iter, tolerance, niters, normr, normr0, times, doPreconditioning) 
   t_begin = time_ns()  # Start timing right away
   normr = 0.0
   rtz = 0.0

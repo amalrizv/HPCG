@@ -25,55 +25,57 @@ include("ReadHpcgDat.jl")
 
 function hpcg_init!(params, arg_hpcg)
 
-  opts = collect(keys(arg_hpcg))
-  vals = collect(values(arg_hpcg))
+    opts = collect(keys(arg_hpcg))
+    vals = collect(values(arg_hpcg))
 
-  #Documentation asks us to only provide nx ny nz np and rt not pz zl zu npx npy npz
-  # If these are not provided in command line then assign them zero, therefore last 6 values are 0
-  # TODO :Add option for pz zl zu npz npy npz
-  #      :Add option to read from File
+    #Documentation asks us to only provide nx ny nz np and rt not pz zl zu npx npy npz
+    # If these are not provided in command line then assign them zero, therefore last 6 values are 0
+    # TODO :Add option for pz zl zu npz npy npz
+    #      :Add option to read from File
 
-  iparams = [arg_hpcg["nx"], arg_hpcg["ny"], arg_hpcg["nz"], arg_hpcg["rt"],arg_hpcg["pz"], arg_hpcg["zl"], arg_hpcg["zu"], arg_hpcg["npx"], arg_hpcg["npy"], arg_hpcg["npz"] ]
-  cparams = ["--nx=", "--ny=", "--nz=", "--rt=", "--pz=", "--zl=", "--zu=", "--npx=", "--npy=", "--npz="]
-  nparams = length(cparams)
-  broadcastParams = false # Make true if parameters read from file.
+    iparams = [arg_hpcg["nx"], arg_hpcg["ny"], arg_hpcg["nz"], arg_hpcg["rt"],arg_hpcg["pz"], arg_hpcg["zl"], arg_hpcg["zu"], arg_hpcg["npx"], arg_hpcg["npy"], arg_hpcg["npz"] ]
+    cparams = ["--nx=", "--ny=", "--nz=", "--rt=", "--pz=", "--zl=", "--zu=", "--npx=", "--npy=", "--npz="]
+    nparams = length(cparams)
+    broadcastParams = false # Make true if parameters read from file.
 
-  # Check for small or unspecified nx, ny, nz values
-  # If any dimension is less than 16, make it the max over the other two dimensions, or 16, whichever is largest
+    # Check for small or unspecified nx, ny, nz values
+    # If any dimension is less than 16, make it the max over the other two dimensions, or 16, whichever is largest
 
-  for i =1:3 
-    if iparams[i] < 16
-      for j = 1:2 
-        if iparams[(i+j)%3] > iparams[i]
-          iparams[i] = iparams[(i+j)%3]
-	end
-      end
-    end 		
-    if iparams[i] < 16
-      iparams[i] = 16
+    for i =1:3 
+        if iparams[i] < 16
+            for j = 1:2 
+                if iparams[(i+j)%3] > iparams[i]
+                    iparams[i] = iparams[(i+j)%3]
+                end
+            end
+        end 		
+        if iparams[i] < 16
+            iparams[i] = 16
+        end
     end
-  end
 
-#Broadcast values of iparams to all MPI processes
-  @static if MPI.Initialized()
-    if broadcastParams == true 
-      MPI.Bcast( iparams, nparams, 0, MPI.COMM_WORLD )
+    #Broadcast values of iparams to all MPI processes
+    @static if MPI.Initialized()
+        if broadcastParams == true 
+            MPI.Bcast( iparams, nparams, 0, MPI.COMM_WORLD )
+        end
     end
-  end
 
-  @static if MPI.Initialized()
-    params = HPCG_Params(MPI.size(MPI.COMM_WORLD), MPI.rank(MPI.COMM_WORLD), 1, iparams[1], iparams[2], iparams[3], iparams[4], iparams[8], iparams[9], iparams[10], iparams[5], iparams[6], iparams[7])
-  else
-    params = HPCG_Params(1, 0, 1, iparams[1], iparams[2], iparams[3], iparams[4], iparams[8], iparams[9], iparams[10], iparams[5], iparams[6], iparams[7])
-  end 
 
-  date      = now()
-  fname     = "hpcg"*"_"*string(date)*".txt"
-  io        = open(fname, "w+")
-  hpcg_fout = SimpleLogger(io, Logging.Debug)
-  hpcg_fout = global_logger(hpcg_fout)
+    @static if MPI.Initialized()
+        params = HPCG_Params(MPI.size(MPI.COMM_WORLD), MPI.rank(MPI.COMM_WORLD), 1, iparams[1], iparams[2], iparams[3], iparams[4], iparams[8], iparams[9], iparams[10], iparams[5], iparams[6], iparams[7])
+    else
+        params = HPCG_Params(1, 0, 1, iparams[1], iparams[2], iparams[3], iparams[4], iparams[8], iparams[9], iparams[10], iparams[5], iparams[6], iparams[7])
+    end 
 
-  iparams  = nothing
+    date      = now()
+    fname     = "hpcg"*"_"*string(date)*".txt"
+    io        = open(fname, "w+")
+    hpcg_fout = SimpleLogger(io, Logging.Debug)
+    hpcg_fout = global_logger(hpcg_fout)
 
-  return params
+    iparams  = nothing
+
+    return params
+
 end

@@ -45,11 +45,13 @@ include("TestNorms.jl")
 
 =#
 
+
 function main(hpcg_args) 
 
     # retrieve arguments:
     opts = collect(keys(hpcg_args))
     vals = collect(values(hpcg_args))
+
     if hpcg_args["USE_MPI"] == true 
         MPI.Init()
     end
@@ -59,16 +61,14 @@ function main(hpcg_args)
 
     # Check if QuickPath option is enabled.
     # If the running time is set to zero, we minimize all paths through the program
-    @debug(typeof(params))
-
-    quickPath::Bool = (params.runningTime==0)
+    quickPath::Bool = (params.runningTime == 0)
 
     size = params.comm_size
     rank = params.comm_rank # Number of MPI processes, My process ID
 
-    if size < 100 && rank==0 
-        @debug("Process ",rank, " of ",size," is alive with " , params.numThreads , " threads.") 
-    end 
+    if size < 100 && rank == 0
+        @debug("Process $rank of size $size is alive with $(params.numThreads) threads") 
+    end
 
     @static if MPI.Initialized()
         MPI.Barrier(MPI.COMM_WORLD)
@@ -79,24 +79,24 @@ function main(hpcg_args)
     nz = params.nz
 
     ierr = 0  # Used to check return codes on function calls
-    ierr = check_aspect_ratio(0.125, nx, ny, nz, "local problem", rank==0)
+    ierr = check_aspect_ratio(0.125, nx, ny, nz, "local problem", rank == 0)
 
-    if ierr!=0
+    if ierr != 0
         return ierr
     end
 
     #########################
-    ## Problem setup Phase ##
+    ## Problem Setup Phase ##
     #########################
 
-    t1 = time_ns() #INCLUDE CORRECT TIMER 
+    t1 = time_ns() # TODO: INCLUDE CORRECT TIMER 
 
     # Construct the geometry and linear system
     geom = generate_geometry!(size, rank, params.numThreads, params.pz, params.zl, params.zu, nx, ny, nz, params.npx, params.npy, params.npz)
 
     ierr = check_aspect_ratio(0.125, geom.npx, geom.npy, geom.npz, "process grid", rank==0)
 
-    if ierr!=0
+    if ierr != 0
         return ierr
     end
 
@@ -111,19 +111,20 @@ function main(hpcg_args)
 
     cur_level_matrix::HPCGSparseMatrix = A
 
-    for level=1:num_mg_levels-1
-        @debug("level=$level")
+    for level = 1:num_mg_levels-1
+        @debug("Generating course problem for level=$level")
         generate_coarse_problem!(cur_level_matrix) 	
 
         # calls generate_geometry & calls generate_problem 
-	#   but is not able to retain values of nx, ny, nz 
-	#   because it is not retaining those values.
-
+        #   but is not able to retain values of nx, ny, nz 
+        #   because it is not retaining those values.
         cur_level_matrix = cur_level_matrix.Ac 		#  Make the just-constructed coarse grid the next level
     end
-    @debug("All levels done")
+
+    @debug("All levels generated")
 
     setup_time = time_ns() - setup_time #Capture total time of setup
+    # TODO: Why is the below commented out?
     #  times[9] = setup_time #Save it for reporting
 
     cur_level_matrix = A
@@ -132,6 +133,7 @@ function main(hpcg_args)
     curxexact        = xexact
 
     for level = 1:num_mg_levels-1
+
         check_problem(cur_level_matrix, curb, curx, curxexact)
 	
         curLevelMatrix = A.Ac # Make the nextcoarse grid the next level
@@ -168,24 +170,28 @@ function main(hpcg_args)
     t_begin = time_ns()
 
     for i = 1:num_calls
-        ierr = compute_spmv_ref(A, x_overlap, b_computed) # b_computed = A*x_overlap
-	println("killed after_spmv_ref")
-        if ierr == 1 
-            @debug("Error in call to SpMV: $ierr .\n")
+
+        ierr = compute_spmv_ref!(A, x_overlap, b_computed) # b_computed = A*x_overlap
+        if ierr != 0
+            @error("Error in call to SpMV: $ierr .\n")
         end
+
         @debug("typeof mgData from main sent to ComputeMG  ", typeof(A.mgData))
-        #ierr = compute_mg(A, b_computed, x_overlap) # b_computed = Minv*y_overlap
 
-        if ierr==1 
-            @debug("Error in call to MG: $ierr .\n") 
+        ierr = compute_mg!(A, b_computed, x_overlap) # b_computed = Minv*y_overlap
+
+        if ierr != 0
+            @error("Error in call to MG: $ierr .\n") 
         end
     end 
 
-    times[8] = (time_ns() - t_begin)/( num_calls) # Total time divided by number of calls.
+    times[8] = (time_ns() - t_begin)/num_calls # Total time divided by number of calls.
 
-    if rank==0
-        @debug("Total SpMV+MG timing phase execution time in main (sec) = $(time_ns()-t1)\n")
-    end 
+    @debug begin
+        if rank == 0
+            @debug("Total SpMV+MG timing phase execution time in main (sec) = $(time_ns()-t1)\n")
+        end 
+    end
 
     ###############################
     ## Reference CG Timing Phase ##
@@ -199,7 +205,7 @@ function main(hpcg_args)
     normr           = 0.0
     normr0          = 0.0
     refMaxIters     = 50
-    num_calls   = 1 # Only need to run the residual reduction analysis once
+    num_calls       = 1 # Only need to run the residual reduction analysis once
 
     # Compute the residual reduction for the natural ordering and reference kernels
     ref_times = zeros(9)
@@ -208,18 +214,21 @@ function main(hpcg_args)
 
     for i = 1:num_calls
         x = zeros(length(x))
-        println("In     ## Reference CG Timing Phase ## ")
-        ierr, ref_add = cg_ref(A, data, b, x, refMaxIters, tolerance, niters, normr, normr0, ref_times, true)
-        ref_times = ref_add+ref_times
-        if ierr == 1
-            err_count+=1 # count the number of errors in CG
+        @debug("In     ## Reference CG Timing Phase ## ")
+        ierr, ref_add = cg_ref!(A, data, b, x, refMaxIters, tolerance, niters, normr, normr0, ref_times, true)
+        ref_times = ref_add + ref_times
+
+        if ierr != 0
+            err_count += 1 # count the number of errors in CG
         end
 
         totalNiters_ref += niters
     end
 
-    if rank == 0 
-        @debug("$err_count error(s) in call(s) to reference CG.")
+    @debug begin
+        if rank == 0 
+            @debug("$err_count error(s) in call(s) to reference CG.")
+        end
     end
 
     refTolerance::Float64 = normr / normr0
@@ -230,8 +239,10 @@ function main(hpcg_args)
     t7 = time_ns() - t7
     times[7] = t7
 
-    if rank==0
-        @debug("Total problem setup time in main (sec) = $(time_ns()-t1)") 
+    @debug begin
+        if rank==0
+            @debug("Total problem setup time in main (sec) = $(time_ns()-t1)") 
+        end
     end
 
     if geom.size == 1
@@ -247,14 +258,15 @@ function main(hpcg_args)
     count_pass = 0
     count_fail = 0
 
-    @debug(length(x))
+    @debug "Length of solution vector: " length(x)
+
     TestCGdata, times = test_cg!(A, data, b, x, count_pass, count_fail)
 
     testsymmetry_data = TestSymmetryData 
 #    test_symmetry(A, b, xexact, testsymmetry_data)
 
     if (rank==0) 
-        @debug("Total validation (TestCG and TestSymmetry) execution time in main (sec) = $(time_ns() - t1)")
+        @debug "Total validation (TestCG and TestSymmetry) execution time in main (sec) = " (time_ns() - t1)
     end
 
     t1 = time_ns()
@@ -277,21 +289,29 @@ function main(hpcg_args)
 
     # Compute the residual reduction and residual count for the user ordering and optimized kernels.
     for i=1:num_calls
+
         x = zeros(length(x)) # start x at all zeros
         last_cummulative_time = opt_times[1]
-        ierr, opt_add = cg( A, data, b, x, optMaxIters, refTolerance, niters, normr, normr0, opt_times, true)
+
+        ierr, opt_add = cg(A, data, b, x, optMaxIters, refTolerance, niters, normr, normr0, opt_times, true)
+
         opt_times = opt_add + opt_times
-	if ierr==1 
+
+        if ierr != 0
             err_count +=1 # count the number of errors in CG
         end
+
         if normr / normr0 > refTolerance
-            tolerance_failures+=1 # the number of failures to reduce residual
+            tolerance_failures += 1 # the number of failures to reduce residual
         end
+
         # pick the largest number of iterations to guarantee convergence
         if niters > optNiters
             optNiters = niters
         end
+
         current_time = opt_times[1] - last_cummulative_time
+
         if current_time > opt_worst_time
             opt_worst_time = current_time
         end
@@ -302,9 +322,10 @@ function main(hpcg_args)
     #MPI.Allreduce(local_opt_worst_time, opt_worst_time, MPI.MAX, MPI.COMM_WORLD)
 
     if rank == 0 && err_count == 1
-        @debug("$err_count  error(s) in call(s) to optimized CG.") 
+        @error("$err_count  error(s) in call(s) to optimized CG.") 
     end
-    if tolerance_failures==1 
+
+    if tolerance_failures == 1 
         global_failure = 1
         if rank == 0
             @debug("Failed to reduce the residual $tolerance_failures times.")
@@ -322,40 +343,46 @@ function main(hpcg_args)
     numberOfCgSets = floor(total_runtime / opt_worst_time) + 1 # Run at least once, account for rounding
     numberOfCgSets = Int(numberOfCgSets)
 
-    if rank==0 
+    if rank == 0 
         @debug("Projected running time: $total_runtime seconds") 
         @debug("Number of CG sets: $numberOfCgSets") 
     end
 
     # This is the timed run for a specified amount of time. 
 
-    optMaxIters            = optNiters
-    optTolerance           = 0.0  # Force optMaxIters iterations
-    vals		   = Array{Float64, 1}(undef, numberOfCgSets)
-    testnorms_data         = TestNormsData(vals, 0.0, 0.0, numberOfCgSets, true)
+    optMaxIters    = optNiters
+    optTolerance   = 0.0  # Force optMaxIters iterations
+    vals           = Array{Float64, 1}(undef, numberOfCgSets)
+    testnorms_data = TestNormsData(vals, 0.0, 0.0, numberOfCgSets, true)
 
     for i=1: numberOfCgSets
+
         x = zeros(length(x)) # Zero out x
-        ierr, times_add = cg( A, data, b, x, optMaxIters, optTolerance, niters, normr, normr0, times, true)
+        ierr, times_add = cg(A, data, b, x, optMaxIters, optTolerance, niters, normr, normr0, times, true)
         times = times_add+times
-	if ierr==1 
-            @debug("Error in call to CG: $ierr.\n") 
+
+        if ierr != 0
+            @error("Error in call to CG: $ierr.\n") 
         end
-        if rank==0 
+
+        if rank == 0 
             @debug("Call [$i] Scaled Residual [$(normr/normr0)]") 
         end
+
         testnorms_data.values[i] = normr/normr0 # Record scaled residual from this run
     end
 
     # Compute difference between known exact solution and computed solution
     # All processors are needed here.
     residual::Float64 = 0
-    ierr = compute_residual(A.localNumberOfRows, x, xexact, residual)
-    if ierr ==1
-        @debug("Error in call to compute_residual: $ierr.\n") 
+    ierr              = compute_residual(A.localNumberOfRows, x, xexact, residual)
+
+    if ierr != 0
+        @error("Error in call to compute_residual: $ierr.\n") 
     end
-    if rank==0 
-        @debug("Difference between computed and exact  = $residual .\n") 
+
+    if rank == 0 
+        @debug("Difference between computed and exact  = $residual.\n") 
     end
 
     ## Test Norm Results
@@ -369,19 +396,19 @@ function main(hpcg_args)
 #    times  = ReportResults(A, numberOfMgLevels, numberOfCgSets, refMaxIters, optMaxIters, times, testcg_data, testsymmetry_data, testnorms_data, global_failure, quickPath)
 
     # Clean up
-    A                     = nothing # This delete will recursively delete all coarse grid data
-    data                  = nothing
-    x                     = nothing
-    b                     = nothing
-    xexact                = nothing
-    x_overlap             = nothing
-    b_computed            = nothing
-    testnorms_data	  = nothing
-
+    A              = nothing # This delete will recursively delete all coarse grid data
+    data           = nothing
+    x              = nothing
+    b              = nothing
+    xexact         = nothing
+    x_overlap      = nothing
+    b_computed     = nothing
+    testnorms_data = nothing
 
     # Finish up
     @static if MPI.Initialized()
     	MPI.Finalize()
     end
+
     return 0
 end
