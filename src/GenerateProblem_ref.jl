@@ -72,30 +72,20 @@ function generate_problem_ref!(A::HPCGSparseMatrix)
     #Use a parallel loop to do initial assignment:
     #distributes the physical placement of arrays of pointers across the memory system
     for i=1:localNumberOfRows 
-        matrixValues[i] = zeros(numberOfNonzerosPerRow)
         matrixDiagonal[i] = zeros(numberOfNonzerosPerRow)
-        mtxIndG[i] = zeros(numberOfNonzerosPerRow)
-        mtxIndL[i] = zeros(numberOfNonzerosPerRow)
     end
-    #=  if HPCG_CONTIGUOUS_ARRAYS==1	Consider making HPCG_CONTIGUOS_ARRAYS A Bool 
-    for i=1:localNumberOfRows 
-    mtxIndL[i] = Array{Float64}(undef,numberOfNonzerosPerRow)
-    end
-    for i=1:localNumberOfRows 
-    matrixValues[i] = Array{Float64}(undef,numberOfNonzerosPerRow)
-    end
-    for i=1:localNumberOfRows
-    mtxIndG[i] = Array{Float64}(undef,numberOfNonzerosPerRow)
-    end
-    #else
-    =#
-    for i=1:localNumberOfRows
-        mtxIndL[i] = mtxIndL[1] .+ (i-1) * numberOfNonzerosPerRow
-        matrixValues[i] = matrixValues[1] .+ (i-1) * numberOfNonzerosPerRow
-        mtxIndG[i] = mtxIndG[1] .+ (i-1) * numberOfNonzerosPerRow
+    matrixValues[1] = zeros(numberOfNonzerosPerRow)
+    mtxIndG[1] = zeros(numberOfNonzerosPerRow)
+    mtxIndL[1] = zeros(numberOfNonzerosPerRow)
+    for i=2:localNumberOfRows
+        mtxIndL[i] = mtxIndL[1] .+ ((i-1) * numberOfNonzerosPerRow)
+        matrixValues[i] = matrixValues[1] .+ ((i-1) * numberOfNonzerosPerRow)
+        mtxIndG[i] = mtxIndG[1] .+ ((i-1) * numberOfNonzerosPerRow)
     end
     localNumberOfNonzeros = 0
     # TODO:  This triply nested loop could be flattened or use nested parallelism
+    cvp = 1
+    cipg = 1
     for iz=1:nz
         giz = giz0+(iz-1)
         for iy=1:ny 
@@ -103,34 +93,32 @@ function generate_problem_ref!(A::HPCGSparseMatrix)
             for  ix=1:nx 
                 gix = gix0+(ix-1)
                 currentLocalRow = (iz-1)*nx*ny+(iy-1)*nx+(ix-1) +1
-                currentGlobalRow = giz*gnx*gny+giy*gnx+gix + 1
+                currentGlobalRow = giz*gnx*gny+giy*gnx+gix+1
                 globalToLocalMap[currentGlobalRow] = currentLocalRow
 
                 localToGlobalMap[currentLocalRow] = currentGlobalRow
                 @debug(" rank, globalRow, localRow = $A.geom.rank $currentGlobalRow ",globalToLocalMap[currentGlobalRow])
                 numberOfNonzerosInRow = 0
                 currentValuePointer = matrixValues[currentLocalRow]  #Pointer to current value in current row
+		@show typeof(currentValuePointer)
                 currentIndexPointerG = mtxIndG[currentLocalRow] # Pointer to current index in current row
-                cvp = 1
-                cipg = 1
                 for sz=-1:1 
                     if giz+sz>0 && giz+sz<=gnz
                         for sy=-1:1 
                             if giy+sy>0 && giy+sy<=gny
                                 for sx=-1:1 
                                     if gix+sx>0 && gix+sx<=gnx
-                                        curcol = currentGlobalRow+sz*gnx*gny+sy*gnx+sx
+                                        curcol = currentGlobalRow+sz*gnx*gny+sy*gnx+sx 
                                         if curcol==currentGlobalRow
                                             matrixDiagonal[currentLocalRow] = currentValuePointer
-
-                                            cvp = cvp + 26
+					    currentValuePointer[cvp] = 26    
+                                            cvp = cvp + 1
                                         else 
-                                            cvp = cvp - 1
-                                            if cvp ==0
-
-                                            end	
+                                            currentValuePointer[cvp] = -1
+					    cvp +=1
                                         end
-                                        cipg = cipg + curcol
+					currentIndexPointerG[cipg] = curcol
+                                        cipg = cipg + 1
                                         numberOfNonzerosInRow = numberOfNonzerosInRow +1
                                     end #  stop x bounds test
                                 end # stop sx loop
@@ -139,6 +127,7 @@ function generate_problem_ref!(A::HPCGSparseMatrix)
                     end #stop z bounds test
                 end # stop sz loop
                 nonzerosInRow[currentLocalRow] = numberOfNonzerosInRow
+		localNumberOfNonzeros += numberOfNonzerosInRow 
                 if b!=0
                     bv[currentLocalRow] = 26.0 - (numberOfNonzerosInRow-1)
                 end
@@ -155,14 +144,14 @@ function generate_problem_ref!(A::HPCGSparseMatrix)
 
     totalNumberOfNonzeros = 0
     # Use MPI's reduce function to sum all nonzeros
-    #  if USE_MPI == true
-    #	  MPI.Allreduce(localNumberOfNonzeros, totalNumberOfNonzeros, MPI.SUM, MPI.COMM_WORLD)
-    #  end
-    lnnz = localNumberOfNonzeros 
+    @static if MPI.Initialized == true
+   	  MPI.Allreduce(localNumberOfNonzeros, totalNumberOfNonzeros, MPI.SUM, MPI.COMM_WORLD)
+    end
+    lnnz = localNumberOfNonzeros
     gnnz = 0 # convert to 64 bit for MPI call
-    #  if USE_MPI==true
-    #  	MPI.Allreduce(lnnz, gnnz, MPI.SUM, MPI.COMM_WORLD)
-    #  end
+    @static if MPI.Initialized==true
+      	MPI.Allreduce(lnnz, gnnz, MPI.SUM, MPI.COMM_WORLD)
+     end
     totalNumberOfNonzeros = gnnz # Copy back
     totalNumberOfNonzeros = localNumberOfNonzeros
     # If this assert fails, it most likely means that the global_int_t is set to int and should be set to long long
