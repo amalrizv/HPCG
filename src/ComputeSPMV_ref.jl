@@ -16,8 +16,8 @@ using MPI
 =#
 function compute_spmv_ref!(A, x, y) # takes SpMatrix_anx structure
 
-  @assert(length(x)>=A.localNumberOfCols) # Test vector lengths
-  @assert(length(y)>=A.localNumberOfRows)
+  #@assert(length(x)>=A.localNumberOfCols) # Test vector lengths
+  #@assert(length(y)>=A.localNumberOfRows)
 
   @static if MPI.Initialized()
       exchange_halo(A, x)
@@ -26,7 +26,8 @@ function compute_spmv_ref!(A, x, y) # takes SpMatrix_anx structure
   xv   = x
   yv   = y
   nrow = A.localNumberOfRows
-
+  @show (length(yv))
+  @show nrow 
   for i = 1:nrow
       sum      = 0
       cur_vals = A.matrixValues[i]

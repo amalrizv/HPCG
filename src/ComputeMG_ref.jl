@@ -21,7 +21,7 @@ include("ComputeProlongation_ref.jl")
 
 function compute_mg_ref!(A, r, x) #sp_coarse passed 
 
-  @assert(length(x)==A.localNumberOfCols) #Make sure x contain space for halo values
+  #@assert(length(x)==A.localNumberOfColumns) #Make sure x contain space for halo values
 
   x = zeros(length(x)) #initialize x to zero
 
@@ -39,7 +39,7 @@ function compute_mg_ref!(A, r, x) #sp_coarse passed
           return ierr
       end
 
-      ierr = compute_spmv_ref(A, x, A.mgData.Axf) 
+      ierr = compute_spmv_ref!(A, x, A.mgData.Axf) 
       if ierr!=0
           return ierr
       end

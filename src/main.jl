@@ -107,6 +107,7 @@ function main(hpcg_args)
 
     b, x, xexact = generate_problem!(A)	
     setup_halo!(A)	
+    @show(A.localNumberOfColumns)
     num_mg_levels  = 4 #Number of levels including first
 
     cur_level_matrix::HPCGSparseMatrix = A
@@ -121,6 +122,7 @@ function main(hpcg_args)
         cur_level_matrix = cur_level_matrix.Ac 		#  Make the just-constructed coarse grid the next level
     end
 
+    @show(A.localNumberOfColumns)
     @debug("All levels generated")
 
     setup_time = time_ns() - setup_time #Capture total time of setup
@@ -142,6 +144,7 @@ function main(hpcg_args)
         curxexact      = 0
     end
 
+    @show(A.localNumberOfColumns)
     data = CGData
     data = InitializeSparseCGData(A, data)
 
@@ -152,8 +155,8 @@ function main(hpcg_args)
     # Call Reference SpMV and MG. Compute Optimization time as ratio of times in these routines
 
     nrow = A.localNumberOfRows
-    ncol = A.localNumberOfCols
-    println(nrow, ncol)
+    ncol = A.localNumberOfColumns
+    @show (nrow, ncol)
 
     x_overlap  = Vector{Int64}(undef, ncol) #  Overlapped copy of x vector
     b_computed = Vector{Int64}(undef, nrow) #  Computed RHS vector

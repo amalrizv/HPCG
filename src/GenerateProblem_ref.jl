@@ -33,7 +33,6 @@ function generate_problem_ref!(A::HPCGSparseMatrix)
     gix0 = A.geom.gix0
     giy0 = A.geom.giy0
     giz0 = A.geom.giz0
-
     localNumberOfRows = nx*ny*nz # This is the size of our subblock
     # If this assert fails, it most likely means that the local_int_t is set to int and should be set to long long
     @assert(localNumberOfRows>0) # Throw an exception of the number of rows is less than zero (can happen if int overflow)
@@ -100,7 +99,6 @@ function generate_problem_ref!(A::HPCGSparseMatrix)
                 @debug(" rank, globalRow, localRow = $A.geom.rank $currentGlobalRow ",globalToLocalMap[currentGlobalRow])
                 numberOfNonzerosInRow = 0
                 currentValuePointer = matrixValues[currentLocalRow]  #Pointer to current value in current row
-		@show typeof(currentValuePointer)
                 currentIndexPointerG = mtxIndG[currentLocalRow] # Pointer to current index in current row
                 for sz=-1:1 
                     if giz+sz>0 && giz+sz<=gnz
@@ -108,7 +106,20 @@ function generate_problem_ref!(A::HPCGSparseMatrix)
                             if giy+sy>0 && giy+sy<=gny
                                 for sx=-1:1 
                                     if gix+sx>0 && gix+sx<=gnx
-                                        curcol = currentGlobalRow+sz*gnx*gny+sy*gnx+sx 
+                                        curcol = currentGlobalRow+sz*gnx*gny+sy*gnx+sx+1 
+					if cvp==28 && cipg ==28
+					 	cvp =1
+						cipg = 1
+						currentLocalRow+=1
+					elseif cipg==28 && cvp <28
+						cipg = 1
+						currentLocalRow+=1
+					elseif cvp==28 && cipg <28
+						cvp = 1  	
+						currentLocalRow+=1
+					else
+						continue
+					end
                                         if curcol==currentGlobalRow
                                             matrixDiagonal[currentLocalRow] = currentValuePointer
 					    currentValuePointer[cvp] = 26    

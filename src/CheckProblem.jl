@@ -71,9 +71,9 @@ function check_problem(A::HPCGSparseMatrix, b, x, xexact)
               if giy+sy>0 && giy+sy<=gny 
                 for sx=-1:1 
                   if gix+sx>0 && gix+sx<=gnx 
-                     curcol = currentGlobalRow+sz*gnx*gny+sy*gnx+sx
+                     curcol = currentGlobalRow+sz*gnx*gny+sy*gnx+sx+1
                     if curcol==currentGlobalRow 
-                      @assert(A.matrixDiagonal[currentLocalRow] == currentValuePointer)
+                     # @assert(A.matrixDiagonal[currentLocalRow] == currentValuePointer)
 		      cvp = cvp+26.0
                      # @assert(cvp== cvp +26.0)
                      else 

@@ -32,7 +32,6 @@ mutable struct HPCGSparseMatrix
     globalToLocalMap::Dict    # global-to-local mapping
 
 
-    localNumberOfCols::Int64
     numberOfExternalValues::Int64
     numberOfSendNeighbors::Int64 # number of neighboring processes that will be send local data
     totalToBeSent::Int64         # total number of entries to be sent
