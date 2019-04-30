@@ -41,9 +41,9 @@ function generate_coarse_problem!(A)
     # NOTE: originally omp_parallel_for
     # Use a parallel loop to do initial assignment:")
     # distributes the physical placement of arrays of pointers across the memory system
-    for  i=1:local_num_rows 
-        f2c_operator[i] = 0
-    end
+#    for  i=1:local_num_rows 
+#        f2c_operator[i] = 0
+#    end
 
 
     # TODO:  This triply nested loop could be flattened or use nested parallelism
@@ -56,7 +56,8 @@ function generate_coarse_problem!(A)
             for ixc=1:nxc 
                 ixf = 2*(ixc-1)+1
                 currentCoarseRow = (izc-1)*nxc*nyc+(iyc-1)*nxc+(ixc-1)+1
-                currentFineRow = izf*nxf*nyf+iyf*nxf+ixf+1
+                currentFineRow = (izf-1)*nxf*nyf+(iyf-1)*nxf+(ixf-1)+1
+#		@show (currentCoarseRow, currentFineRow)
                 f2c_operator[currentCoarseRow] = currentFineRow
             end # end iy loop
         end # end even iz if statement

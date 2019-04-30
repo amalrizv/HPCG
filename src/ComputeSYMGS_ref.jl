@@ -58,7 +58,7 @@ function compute_symgs_ref(A, r, x)
     for j=1:currentNumberOfNonzeros 
       curCol = currentColIndices[j]
      
-#      sum = sum - currentValues[j] * xv[curCol]
+      sum = sum - currentValues[j] * xv[curCol]
     end
     sum =sum + xv[i]*currentDiagonal # Remove diagonal contribution from previous loop
 
@@ -77,7 +77,7 @@ function compute_symgs_ref(A, r, x)
 
     for j = 1:currentNumberOfNonzeros
       curCol = currentColIndices[j]
- #     sum = sum - currentValues[j]*xv[curCol]
+      sum = sum - currentValues[j]*xv[curCol]
     end
     sum = sum + xv[i]*currentDiagonal # Remove diagonal contribution from previous loop
 

@@ -75,7 +75,7 @@ function cg_ref!(A , data , b , x , max_iter ,
     p   = x
     t3t = time_ns()
 
-    compute_spmv_ref!(A, p, Ap)  
+    compute_spmv_ref(A, p, Ap)  
 
     t3  = time_ns()-t3t # Ap = A*p
     t2t = time_ns()
@@ -124,7 +124,7 @@ function cg_ref!(A , data , b , x , max_iter ,
             end
 
             t3t = time_ns() 
-            compute_spmv_ref!(A, p, Ap) 
+            compute_spmv_ref(A, p, Ap) 
             t3  = time_ns()- t3t+t3 # Ap = A*p
             t1t = time_ns()
             compute_dot_product_ref(nrow, p, Ap, pAp, t4) 

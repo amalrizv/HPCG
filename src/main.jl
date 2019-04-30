@@ -114,11 +114,9 @@ function main(hpcg_args)
 
     for level = 1:num_mg_levels-1
         @debug("Generating course problem for level=$level")
-        generate_coarse_problem!(cur_level_matrix) 	
 
-        # calls generate_geometry & calls generate_problem 
-        #   but is not able to retain values of nx, ny, nz 
-        #   because it is not retaining those values.
+        generate_coarse_problem!(cur_level_matrix) 	
+	A = cur_level_matrix
         cur_level_matrix = cur_level_matrix.Ac 		#  Make the just-constructed coarse grid the next level
     end
 
@@ -137,8 +135,8 @@ function main(hpcg_args)
     for level = 1:num_mg_levels-1
 
         check_problem(cur_level_matrix, curb, curx, curxexact)
-	
-        curLevelMatrix = A.Ac # Make the nextcoarse grid the next level
+	A = cur_level_matrix
+        cur_level_matrix = A.Ac # Make the nextcoarse grid the next level
         curb           = 0    # No vectors after the top level
         curx           = 0
         curxexact      = 0
@@ -174,13 +172,14 @@ function main(hpcg_args)
 
     for i = 1:num_calls
 
-        ierr = compute_spmv_ref!(A, x_overlap, b_computed) # b_computed = A*x_overlap
+        ierr = compute_spmv_ref(A, x_overlap, b_computed) # b_computed = A*x_overlap
         if ierr != 0
             @error("Error in call to SpMV: $ierr .\n")
         end
-
+	@show length(x_overlap)	
         @debug("typeof mgData from main sent to ComputeMG  ", typeof(A.mgData))
-
+	println("In ComputeMG")
+	@show (nrow,ncol)
         ierr = compute_mg!(A, b_computed, x_overlap) # b_computed = Minv*y_overlap
 
         if ierr != 0

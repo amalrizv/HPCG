@@ -14,10 +14,10 @@ using MPI
 
   @see ComputeSPMV
 =#
-function compute_spmv_ref!(A, x, y) # takes SpMatrix_anx structure
+function compute_spmv_ref(A, x, y) # takes SpMatrix_anx structure
 
-  #@assert(length(x)>=A.localNumberOfCols) # Test vector lengths
-  #@assert(length(y)>=A.localNumberOfRows)
+#  @assert(length(x)>=A.localNumberOfColumns) # Test vector lengths
+#  @assert(length(y)>=A.localNumberOfRows)
 
   @static if MPI.Initialized()
       exchange_halo(A, x)
