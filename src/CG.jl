@@ -88,7 +88,7 @@ function cg!(A, data, b, x, max_iter, tolerance, niters, normr, normr0, times, d
   # p is of length ncols, copy x to p for sparse MV operation
   x = p
   t3t = time_ns() 
-  compute_spmv(A, p, Ap) 
+  compute_spmv!(A, p, Ap) 
   t3 = time_ns()-t3t 
   #Ap = A*p
   t2t = time_ns()
@@ -113,7 +113,7 @@ function cg!(A, data, b, x, max_iter, tolerance, niters, normr, normr0, times, d
   	for k=1:max_iter+1
     		t5t = time_ns()
     		if doPreconditioning
-      			compute_mg(A, r, z) # Apply preconditioner
+      			compute_mg!(A, r, z) # Apply preconditioner
     		else
       			z = r # copy r to z (no preconditioning)
     		end
@@ -138,7 +138,7 @@ function cg!(A, data, b, x, max_iter, tolerance, niters, normr, normr0, times, d
    		end
 
     		t3t = time_ns()
-    		compute_spmv(A, p, Ap) 
+    		compute_spmv!(A, p, Ap) 
     		t3 = t3+time_ns()- t3t # Ap = A*p
     		t1t = time_ns()
     		compute_dot_product!(pAp, t4, nrow, p, Ap, A.is_dot_prod_optimized) 

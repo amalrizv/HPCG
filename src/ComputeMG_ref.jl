@@ -29,7 +29,7 @@ function compute_mg_ref!(A, r, x) #sp_coarse passed
 
   println("rx")
   # if mgdata is even defined this will result in a non zero value 
-  if A.mgData != 0 #  Go to next coarse level if defined
+  if length(A.mgData.Axf) != 0 #  Go to next coarse level if defined
       numberOfPresmootherSteps = A.mgData.numberOfPresmootherSteps
 
       for i = 1:numberOfPresmootherSteps
@@ -40,7 +40,7 @@ function compute_mg_ref!(A, r, x) #sp_coarse passed
       end
 
       @show length(A.mgData.Axf)
-      ierr = compute_spmv_ref(A, x, A.mgData.Axf) 
+      ierr = compute_spmv_ref!(A, x, A.mgData.Axf) 
       if ierr!=0
           return ierr
       end

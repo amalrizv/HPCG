@@ -112,11 +112,11 @@ function main(hpcg_args)
 
     cur_level_matrix::HPCGSparseMatrix = A
 
+    @show length(A.mgData.Axf)
     for level = 1:num_mg_levels-1
         @debug("Generating course problem for level=$level")
 
         generate_coarse_problem!(cur_level_matrix) 	
-	A = cur_level_matrix
         cur_level_matrix = cur_level_matrix.Ac 		#  Make the just-constructed coarse grid the next level
     end
 
@@ -135,7 +135,6 @@ function main(hpcg_args)
     for level = 1:num_mg_levels-1
 
         check_problem(cur_level_matrix, curb, curx, curxexact)
-	A = cur_level_matrix
         cur_level_matrix = A.Ac # Make the nextcoarse grid the next level
         curb           = 0    # No vectors after the top level
         curx           = 0
@@ -172,7 +171,7 @@ function main(hpcg_args)
 
     for i = 1:num_calls
 
-        ierr = compute_spmv_ref(A, x_overlap, b_computed) # b_computed = A*x_overlap
+        ierr = compute_spmv_ref!(A, x_overlap, b_computed) # b_computed = A*x_overlap
         if ierr != 0
             @error("Error in call to SpMV: $ierr .\n")
         end
@@ -189,11 +188,11 @@ function main(hpcg_args)
 
     times[8] = (time_ns() - t_begin)/num_calls # Total time divided by number of calls.
 
-    @debug begin
-        if rank == 0
-            @debug("Total SpMV+MG timing phase execution time in main (sec) = $(time_ns()-t1)\n")
-        end 
-    end
+    #@debug begin
+    #    if rank == 0
+    #        @debug("Total SpMV+MG timing phase execution time in main (sec) = $(time_ns()-t1)\n")
+    #    end 
+    #end
 
     ###############################
     ## Reference CG Timing Phase ##
@@ -227,11 +226,11 @@ function main(hpcg_args)
         totalNiters_ref += niters
     end
 
-    @debug begin
-        if rank == 0 
-            @debug("$err_count error(s) in call(s) to reference CG.")
-        end
-    end
+    #@debug begin
+    #    if rank == 0 
+    #        @debug("$err_count error(s) in call(s) to reference CG.")
+    #    end
+    #end
 
     refTolerance::Float64 = normr / normr0
 
@@ -241,11 +240,11 @@ function main(hpcg_args)
     t7 = time_ns() - t7
     times[7] = t7
 
-    @debug begin
-        if rank==0
-            @debug("Total problem setup time in main (sec) = $(time_ns()-t1)") 
-        end
-    end
+    #@debug begin
+    #    if rank==0
+    #        @debug("Total problem setup time in main (sec) = $(time_ns()-t1)") 
+    #    end
+    #end
 
     if geom.size == 1
         # WriteProblem(geom, A, b, x, xexact)
@@ -295,7 +294,7 @@ function main(hpcg_args)
         x = zeros(length(x)) # start x at all zeros
         last_cummulative_time = opt_times[1]
 
-        ierr, opt_add = cg(A, data, b, x, optMaxIters, refTolerance, niters, normr, normr0, opt_times, true)
+        ierr, opt_add = cg!(A, data, b, x, optMaxIters, refTolerance, niters, normr, normr0, opt_times, true)
 
         opt_times = opt_add + opt_times
 
@@ -360,7 +359,7 @@ function main(hpcg_args)
     for i=1: numberOfCgSets
 
         x = zeros(length(x)) # Zero out x
-        ierr, times_add = cg(A, data, b, x, optMaxIters, optTolerance, niters, normr, normr0, times, true)
+        ierr, times_add = cg!(A, data, b, x, optMaxIters, optTolerance, niters, normr, normr0, times, true)
         times = times_add+times
 
         if ierr != 0

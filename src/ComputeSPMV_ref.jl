@@ -14,7 +14,7 @@ using MPI
 
   @see ComputeSPMV
 =#
-function compute_spmv_ref(A, x, y) # takes SpMatrix_anx structure
+function compute_spmv_ref!(A, x, y) # takes SpMatrix_anx structure
 
 #  @assert(length(x)>=A.localNumberOfColumns) # Test vector lengths
 #  @assert(length(y)>=A.localNumberOfRows)
@@ -23,10 +23,8 @@ function compute_spmv_ref(A, x, y) # takes SpMatrix_anx structure
       exchange_halo(A, x)
   end
 
-  xv   = x
-  yv   = y
   nrow = A.localNumberOfRows
-  @show (length(yv))
+  @show (length(y))
   @show nrow 
   for i = 1:nrow
       sum      = 0
@@ -35,10 +33,10 @@ function compute_spmv_ref(A, x, y) # takes SpMatrix_anx structure
       cur_nnz  = A.nonzerosInRow[i]
 
       for j= 1:cur_nnz
-          sum = sum + (cur_vals[j]*xv[cur_inds[j]])
+          sum = sum + (cur_vals[j]*x[cur_inds[j]])
       end
 
-      yv[i] = sum
+      y[i] = sum
   end
   
   return 0

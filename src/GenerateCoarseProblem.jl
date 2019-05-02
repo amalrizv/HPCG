@@ -35,6 +35,7 @@ function generate_coarse_problem!(A)
 
     f2c_operator = Array{Int64}(undef,A.localNumberOfRows)
     local_num_rows = nxc*nyc*nzc # This is the size of our subblock:
+    @show local_num_rows
     # If this @assert fails, it most likely means that the local_int_t is set to int and should be set to long long
     @assert(local_num_rows>0) # Throw an exception of the number of rows is less than zero (can happen if "int" overflows)
 
@@ -80,13 +81,14 @@ function generate_coarse_problem!(A)
 
     setup_halo!(Ac)
 
-    rc          = Vector{Int64}(undef, local_num_rows)
-    xc          = Vector{Int64}(undef, local_num_rows)
-    Axf         = Vector{Int64}(undef, local_num_rows)
+    rc          = Vector{Int64}(undef, Ac.localNumberOfRows)
+    xc          = Vector{Int64}(undef, Ac.localNumberOfColumns)
+    Axf         = Vector{Int64}(undef, A.localNumberOfColumns)
 
     mgd::MGData = init_mg_data(f2c_operator, rc, xc, Axf)
 
     A.Ac        = Ac
     A.mgData    = mgd
+    @show length(A.mgData.Axf)
 end
 

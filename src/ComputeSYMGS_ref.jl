@@ -35,8 +35,9 @@ Computes one step of symmetric Gauss-Seidel:
 =#
 function compute_symgs_ref(A, r, x) 
   #@assert(length(x)==A.localNumberOfCols) # Make sure x contain space for halo values
-
-  exchange_halo(A,x)
+  @static if MPI.Initialized()== true
+	  exchange_halo(A,x)
+  end
 
   nrow = A.localNumberOfRows
   matrixDiagonal = A.matrixDiagonal  # An array of pointers to the diagonal entries A.matrixValues
