@@ -54,17 +54,11 @@ s = ArgParseSettings()
         nargs    = '?'
         arg_type = Int
         default  = 10
-    "--USE_MPI"
-        help   = "mpi"
-        action = :store_true
-        default = false
 end
 
 parsed_args = parse_args(s)
 
 @info "Arguments" parsed_args
-
-const USE_MPI =  parsed_args["USE_MPI"]
 
 ENV["JULIA_DEBUG"] = "all"
 

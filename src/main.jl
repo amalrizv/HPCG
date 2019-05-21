@@ -52,8 +52,9 @@ function main(hpcg_args)
     opts = collect(keys(hpcg_args))
     vals = collect(values(hpcg_args))
 
-    if hpcg_args["USE_MPI"] == true 
+    if hpcg_args["np"] != 1
         MPI.Init()
+        hpcg_args["np"] = MPI.Comm_size(MPI.COMM_WORLD)
     end
 
     params = HPCG_Params
@@ -107,12 +108,10 @@ function main(hpcg_args)
 
     b, x, xexact = generate_problem!(A)	
     setup_halo!(A)	
-    @show(A.localNumberOfColumns)
     num_mg_levels  = 4 #Number of levels including first
 
     cur_level_matrix::HPCGSparseMatrix = A
 
-    @show length(A.mgData.Axf)
     for level = 1:num_mg_levels-1
         @debug("Generating course problem for level=$level")
 
@@ -120,7 +119,6 @@ function main(hpcg_args)
         cur_level_matrix = cur_level_matrix.Ac 		#  Make the just-constructed coarse grid the next level
     end
 
-    @show(A.localNumberOfColumns)
     @debug("All levels generated")
 
     setup_time = time_ns() - setup_time #Capture total time of setup
@@ -141,7 +139,6 @@ function main(hpcg_args)
         curxexact      = 0
     end
 
-    @show(A.localNumberOfColumns)
     data = CGData
     data = InitializeSparseCGData(A, data)
 
@@ -153,7 +150,6 @@ function main(hpcg_args)
 
     nrow = A.localNumberOfRows
     ncol = A.localNumberOfColumns
-    @show (nrow, ncol)
 
     x_overlap  = Vector{Int64}(undef, ncol) #  Overlapped copy of x vector
     b_computed = Vector{Int64}(undef, nrow) #  Computed RHS vector
@@ -175,10 +171,8 @@ function main(hpcg_args)
         if ierr != 0
             @error("Error in call to SpMV: $ierr .\n")
         end
-	@show length(x_overlap)	
         @debug("typeof mgData from main sent to ComputeMG  ", typeof(A.mgData))
 	println("In ComputeMG")
-	@show (nrow,ncol)
         ierr = compute_mg!(A, b_computed, x_overlap) # b_computed = Minv*y_overlap
 
         if ierr != 0
@@ -320,7 +314,9 @@ function main(hpcg_args)
 
     # Get the absolute worst time across all MPI ranks (time in CG can be different)
     local_opt_worst_time = opt_worst_time
-    #MPI.Allreduce(local_opt_worst_time, opt_worst_time, MPI.MAX, MPI.COMM_WORLD)
+    @static if MPI.Initialized==true
+	    MPI.Allreduce(local_opt_worst_time, opt_worst_time, MPI.MAX, MPI.COMM_WORLD)
+    end
 
     if rank == 0 && err_count == 1
         @error("$err_count  error(s) in call(s) to optimized CG.") 
@@ -408,7 +404,9 @@ function main(hpcg_args)
 
     # Finish up
     @static if MPI.Initialized()
-    	MPI.Finalize()
+	if MPI.Comm_rank(MPI.COMM_WORLD)==1
+    		MPI.Abort()
+	end
     end
 
     return 0
