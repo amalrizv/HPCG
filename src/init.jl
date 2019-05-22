@@ -55,15 +55,15 @@ function hpcg_init!(params, arg_hpcg)
     end
 
     #Broadcast values of iparams to all MPI processes
-    @static if MPI.Initialized()
+    if MPI.Initialized()
         if broadcastParams == true 
             MPI.Bcast( iparams, nparams, 0, MPI.COMM_WORLD )
         end
     end
 
 
-    @static if MPI.Initialized()
-        params = HPCG_Params(MPI.size(MPI.COMM_WORLD), MPI.rank(MPI.COMM_WORLD), 1, iparams[1], iparams[2], iparams[3], iparams[4], iparams[8], iparams[9], iparams[10], iparams[5], iparams[6], iparams[7])
+    if MPI.Initialized()
+        params = HPCG_Params(MPI.Comm_size(MPI.COMM_WORLD), MPI.Comm_rank(MPI.COMM_WORLD), 1, iparams[1], iparams[2], iparams[3], iparams[4], iparams[8], iparams[9], iparams[10], iparams[5], iparams[6], iparams[7])
     else
         params = HPCG_Params(1, 0, 1, iparams[1], iparams[2], iparams[3], iparams[4], iparams[8], iparams[9], iparams[10], iparams[5], iparams[6], iparams[7])
     end 

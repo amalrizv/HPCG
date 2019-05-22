@@ -19,7 +19,7 @@ function exchange_halo(A, x)
 
   # Extract Matrix pieces
 
- @static if MPI.Initialized()
+ if MPI.Initialized()== true
   localNumberOfRows = A.localNumberOfRows
   num_neighbors     = A.numberOfSendNeighbors
   receiveLength     = A.receiveLength
@@ -34,8 +34,8 @@ function exchange_halo(A, x)
   size = Int64
   rank = Int64 # Number of MPI processes, My process ID
 
-  size = MPI_Comm.size(MPI.COMM_WORLD)
-  rank = MPI_Comm.rank(MPI.COMM_WORLD)
+  size = MPI.Comm_size(MPI.COMM_WORLD)
+  rank = MPI.Comm_rank(MPI.COMM_WORLD)
   
 
   #

@@ -39,7 +39,7 @@ function compute_dot_product_ref!(result, time_allreduce, n, x, y)
     end
   end
 
-@static if MPI.Initialized()
+if MPI.Initialized()
   #Use MPI's reduce function to collect all partial sums
   t0 = time_ns()
   global_result = 0.0

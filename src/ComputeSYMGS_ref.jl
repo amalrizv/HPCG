@@ -35,7 +35,7 @@ Computes one step of symmetric Gauss-Seidel:
 =#
 function compute_symgs_ref(A, r, x) 
   #@assert(length(x)==A.localNumberOfCols) # Make sure x contain space for halo values
-  @static if MPI.Initialized()== true
+  if MPI.Initialized()== true
 	  exchange_halo(A,x)
   end
 

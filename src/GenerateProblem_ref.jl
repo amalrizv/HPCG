@@ -155,12 +155,12 @@ function generate_problem_ref!(A::HPCGSparseMatrix)
 
     totalNumberOfNonzeros = 0
     # Use MPI's reduce function to sum all nonzeros
-    @static if MPI.Initialized == true
+    if MPI.Initialized == true
    	  MPI.Allreduce(localNumberOfNonzeros, totalNumberOfNonzeros, MPI.SUM, MPI.COMM_WORLD)
     end
     lnnz = localNumberOfNonzeros
     gnnz = 0 # convert to 64 bit for MPI call
-    @static if MPI.Initialized==true
+    if MPI.Initialized==true
       	MPI.Allreduce(lnnz, gnnz, MPI.SUM, MPI.COMM_WORLD)
      end
     totalNumberOfNonzeros = gnnz # Copy back

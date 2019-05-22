@@ -29,7 +29,7 @@ function setup_halo_ref!(A)
     mtxIndL           = permutedims(reshape(hcat(mIL...), (length(mIL[1]), length(mIL))))
 
     # In the non-MPI case we simply copy global indices to local index storage
-    @static if MPI.Initialized() == 0
+    if MPI.Initialized() == 0
         # LNR = ,"localNumberOfRows," dimsMIG = ,",size(mtxIndG)," dimMIL = ",size(mtxIndL),".")
         for i = 1:localNumberOfRows 
             cur_nnz = nonzerosInRow[i]

@@ -52,8 +52,9 @@ function main(hpcg_args)
     opts = collect(keys(hpcg_args))
     vals = collect(values(hpcg_args))
 
-    if hpcg_args["np"] != 1
+    if hpcg_args["np"] > 1
         MPI.Init()
+	println("initialized")
         hpcg_args["np"] = MPI.Comm_size(MPI.COMM_WORLD)
     end
 
@@ -71,7 +72,7 @@ function main(hpcg_args)
         @debug("Process $rank of size $size is alive with $(params.numThreads) threads") 
     end
 
-    @static if MPI.Initialized()
+    if MPI.Initialized()
         MPI.Barrier(MPI.COMM_WORLD)
     end
 
@@ -314,7 +315,7 @@ function main(hpcg_args)
 
     # Get the absolute worst time across all MPI ranks (time in CG can be different)
     local_opt_worst_time = opt_worst_time
-    @static if MPI.Initialized==true
+     if MPI.Initialized==true
 	    MPI.Allreduce(local_opt_worst_time, opt_worst_time, MPI.MAX, MPI.COMM_WORLD)
     end
 
@@ -403,10 +404,9 @@ function main(hpcg_args)
     testnorms_data = nothing
 
     # Finish up
-    @static if MPI.Initialized()
-	if MPI.Comm_rank(MPI.COMM_WORLD)==1
-    		MPI.Abort()
-	end
+    if MPI.Initialized()
+	println("message")
+  	MPI.Finalize()
     end
 
     return 0
