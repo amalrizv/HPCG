@@ -45,19 +45,19 @@ function exchange_halo(A, x)
   #
 
   MPI_MY_TAG = 99
-
-  request = MPI.Request[num_neighbors]
+  #array of requests
+  reqs = Array{MPI.Request}(undef, num_neighbors)
 
   #
   # Externals are at end of locals
   #
-  x_external = (Float64)xv + localNumberOfRows
+  x_external = resize!(xv , length(xv)+ localNumberOfRows)
 
   # Post receives first
   # TODO: Thread this loop
   for i = 1 : num_neighbors
     n_recv = receiveLength[i]
-    request+i = MPI.Irecv!(x_external, neighbors[i], MPI.MY_TAG, MPI.COMM_WORLD)
+    reqs[i]  = MPI.Irecv!(x_external, neighbors[i], MPI.MY_TAG, MPI.COMM_WORLD)
     x_external += n_recv
   end
 
@@ -89,12 +89,12 @@ function exchange_halo(A, x)
   status = MPI.Status
   # TODO: Thread this loop
   for i = 1: num_neighbors
-    if MPI.Wait(request+i) 
+    if MPI.Wait(request[i]) 
       exit(-1) #TODO: have better error exit
     end
   end
 
-  free(request)
+  request = nothing
   end
   return
 end

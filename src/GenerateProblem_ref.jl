@@ -160,8 +160,8 @@ function generate_problem_ref!(A::HPCGSparseMatrix)
     end
     lnnz = localNumberOfNonzeros
     gnnz = 0 # convert to 64 bit for MPI call
-    if MPI.Initialized==true
-      	MPI.Allreduce(lnnz, gnnz, MPI.SUM, MPI.COMM_WORLD)
+    if MPI.Initialized()==true
+      	gnnz = MPI.Allreduce(lnnz, MPI.SUM, MPI.COMM_WORLD)
      end
     totalNumberOfNonzeros = gnnz # Copy back
     totalNumberOfNonzeros = localNumberOfNonzeros

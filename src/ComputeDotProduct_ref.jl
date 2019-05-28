@@ -28,7 +28,6 @@ function compute_dot_product_ref!(result, time_allreduce, n, x, y)
   @assert(length(y)>=n)
 
   local_result = 0.0
-
   if x==y
     for i=1:n
         local_result += x[i]*x[i]
@@ -39,17 +38,18 @@ function compute_dot_product_ref!(result, time_allreduce, n, x, y)
     end
   end
 
-if MPI.Initialized()
-  #Use MPI's reduce function to collect all partial sums
-  t0 = time_ns()
-  global_result = 0.0
-  MPI.Allreduce!(local_result, global_result, 1, MPI.DOUBLE, MPI.SUM, MPI.COMM_WORLD)
-  result = global_result
-  time_allreduce += time_ns() - t0
-else 
-  time_allreduce += 0.0
-  result = local_result
-end
+  if MPI.Initialized()
+ 	#Use MPI's reduce function to collect all partial sums
+  	t0 = time_ns()
+  	global_result = 0.0
+  
+  	global_result = MPI.Allreduce(local_result, MPI.SUM, MPI.COMM_WORLD)
+  	result = global_result
+  	time_allreduce += time_ns() - t0
+  else 
+  	time_allreduce += 0.0
+   	result = local_result
+  end
 
   return false
 

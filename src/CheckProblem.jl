@@ -106,15 +106,14 @@ function check_problem(A::HPCGSparseMatrix, b, x, xexact)
   end # end iz loop
   @debug("Process $A.geom.rank  of $A.geom.size has $localNumberOfRows rows.\n Process $A.geom.rank of $A.geom.size has $localNumberOfNonzeros nonzeros.\n") 
 
-   totalNumberOfNonzeros = 0
-  # Use MPI's reduce function to sum all nonzeros
-  #MPI.Allreduce(localNumberOfNonzeros, totalNumberOfNonzeros, MPI.SUM, MPI.COMM_WORLD)
-  lnnz = localNumberOfNonzeros
-  gnnz = 0 # convert to 64 bit for MPI call
-  #MPI.Allreduce(lnnz, gnnz,MPI.SUM, MPI_COMM_WORLD)
-  totalNumberOfNonzeros = gnnz # Copy back
-  totalNumberOfNonzeros = localNumberOfNonzeros
+  totalNumberOfNonzeros = 0
+  if MPI.Initialized()== true 
+     # Use MPI's reduce function to sum all nonzeros
 
+     totalNumberOfNonzeros = MPI.Allreduce(localNumberOfNonzeros, MPI.SUM, MPI.COMM_WORLD)
+  else 
+     totalNumberOfNonzeros = localNumberOfNonzeros
+  end 
  # @assert(A.totalNumberOfRows == totalNumberOfRows)
  # @assert(A.totalNumberOfNonzeros == totalNumberOfNonzeros)
  # @assert(A.localNumberOfRows == localNumberOfRows)

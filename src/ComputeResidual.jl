@@ -44,11 +44,13 @@ function compute_residual(n, v1, v2, residual)
     @debug(" Computed, exact, diff = $v1v[i] $v2v[i] $diff")
    end
 
-  # Use MPI's reduce function to collect all partial sums
-  global_residual = 0
-#  MPI.Allreduce(local_residual, global_residual,MPI.MAX, MPI.COMM_WORLD)
-  residual = global_residual
-  residual = local_residual
-
+  if MPI.Initialized()== true
+	  # Use MPI's reduce function to collect all partial sums
+  	global_residual = 0
+  	global_residue = MPI.Allreduce(local_residual, MPI.MAX, MPI.COMM_WORLD)
+  	residual = global_residual
+  else
+ 	 residual = local_residual
+  end
   return 0
 end

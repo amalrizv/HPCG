@@ -1,4 +1,4 @@
-#=
+#
  @file main.jl
 
  HPCG routine
@@ -389,10 +389,10 @@ function main(hpcg_args)
     ####################
     ## Report Results ##
     ####################
+    @show x
 
     # Report results to YAML file
 #    times  = ReportResults(A, numberOfMgLevels, numberOfCgSets, refMaxIters, optMaxIters, times, testcg_data, testsymmetry_data, testnorms_data, global_failure, quickPath)
-
     # Clean up
     A              = nothing # This delete will recursively delete all coarse grid data
     data           = nothing
