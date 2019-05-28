@@ -1,4 +1,4 @@
-#
+#=
  @file main.jl
 
  HPCG routine
@@ -315,8 +315,8 @@ function main(hpcg_args)
 
     # Get the absolute worst time across all MPI ranks (time in CG can be different)
     local_opt_worst_time = opt_worst_time
-     if MPI.Initialized==true
-	    MPI.Allreduce(local_opt_worst_time, opt_worst_time, MPI.MAX, MPI.COMM_WORLD)
+     if MPI.Initialized()==true
+	    opt_worst_time = MPI.Allreduce(local_opt_worst_time, MPI.MAX, MPI.COMM_WORLD)
     end
 
     if rank == 0 && err_count == 1
@@ -390,7 +390,7 @@ function main(hpcg_args)
     ## Report Results ##
     ####################
     @show x
-
+    @show length(x)
     # Report results to YAML file
 #    times  = ReportResults(A, numberOfMgLevels, numberOfCgSets, refMaxIters, optMaxIters, times, testcg_data, testsymmetry_data, testnorms_data, global_failure, quickPath)
     # Clean up
@@ -404,7 +404,7 @@ function main(hpcg_args)
     testnorms_data = nothing
 
     # Finish up
-    if MPI.Initialized()
+    if MPI.Initialized()==true
 	println("message")
   	MPI.Finalize()
     end

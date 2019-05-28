@@ -155,16 +155,15 @@ function generate_problem_ref!(A::HPCGSparseMatrix)
 
     totalNumberOfNonzeros = 0
     # Use MPI's reduce function to sum all nonzeros
-    if MPI.Initialized == true
-   	  MPI.Allreduce(localNumberOfNonzeros, totalNumberOfNonzeros, MPI.SUM, MPI.COMM_WORLD)
+    if MPI.Initialized() == true
+      lnnz = localNumberOfNonzeros
+      gnnz = 0 # convert to 64 bit for MPI call
+      gnnz = MPI.Allreduce(lnnz, MPI.SUM, MPI.COMM_WORLD)
+   
+      totalNumberOfNonzeros = gnnz # Copy back
+    else
+      totalNumberOfNonzeros = localNumberOfNonzeros
     end
-    lnnz = localNumberOfNonzeros
-    gnnz = 0 # convert to 64 bit for MPI call
-    if MPI.Initialized()==true
-      	gnnz = MPI.Allreduce(lnnz, MPI.SUM, MPI.COMM_WORLD)
-     end
-    totalNumberOfNonzeros = gnnz # Copy back
-    totalNumberOfNonzeros = localNumberOfNonzeros
     # If this assert fails, it most likely means that the global_int_t is set to int and should be set to long long
     # This assert is usually the first to fail as problem size increases beyond the 32-bit integer range.
     #  @assert(totalNumberOfNonzeros>0) # Throw an exception of the number of nonzeros is less than zero (can happen if int overflow)

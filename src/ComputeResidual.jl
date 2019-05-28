@@ -47,7 +47,7 @@ function compute_residual(n, v1, v2, residual)
   if MPI.Initialized()== true
 	  # Use MPI's reduce function to collect all partial sums
   	global_residual = 0
-  	global_residue = MPI.Allreduce(local_residual, MPI.MAX, MPI.COMM_WORLD)
+  	global_residual = MPI.Allreduce(local_residual, MPI.MAX, MPI.COMM_WORLD)
   	residual = global_residual
   else
  	 residual = local_residual

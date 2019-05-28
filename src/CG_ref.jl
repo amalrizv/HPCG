@@ -49,7 +49,8 @@ function cg_ref!(A , data , b , x , max_iter ,
     t3 = 0.0 
     t4 = 0.0
     t5 = 0.0
-    t6 = 0.0
+ 
+    #t6 = 0.0
 
     nrow = A.localNumberOfRows
 
@@ -139,6 +140,7 @@ function cg_ref!(A , data , b , x , max_iter ,
             t1    = time_ns()- t1t+t1
             normr = sqrt(normr)
 
+            @show normr
             if A.geom.rank==0 & k%print_freq == 0 || k == max_iter
                 @debug("Iteration = $k Scaled Residual = $(normr/normr0)")
             end
@@ -159,7 +161,6 @@ function cg_ref!(A , data , b , x , max_iter ,
     times_add[5] = t4
     # for MPi version only
     #times_add[6] = t5
-    
     return 0, times
 end
 
