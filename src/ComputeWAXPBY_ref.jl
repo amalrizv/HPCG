@@ -21,7 +21,7 @@
   @see compute_waxpby
 =#
 
-function compute_waxpby_ref!(w, n, alpha, x, beta, y)::Bool
+function compute_waxpby_ref!(w, n, alpha, x, beta, y)
 
   @assert(length(x)>=n) # Test vector length 
   @assert(length(y)>=n)
@@ -40,6 +40,6 @@ function compute_waxpby_ref!(w, n, alpha, x, beta, y)::Bool
     end
   end
 
-  return false
+  return false, w
 
 end

@@ -19,7 +19,7 @@ include("ComputeProlongation_ref.jl")
   @see ComputeMG
 =#
 
-function compute_mg_ref!(A, r, x) #sp_coarse passed 
+function compute_mg_ref!(x, A, r) #sp_coarse passed 
 
   #@assert(length(x)==A.localNumberOfColumns) #Make sure x contain space for halo values
 
@@ -33,49 +33,49 @@ function compute_mg_ref!(A, r, x) #sp_coarse passed
       numberOfPresmootherSteps = A.mgData.numberOfPresmootherSteps
 
       for i = 1:numberOfPresmootherSteps
-          ierr += compute_symgs_ref(A, r, x)
+          ierr, x = compute_symgs_ref!(x, A, r )
       end
       if ierr!=0
           return ierr
       end
 
       @show length(A.mgData.Axf)
-      ierr = compute_spmv_ref!(A, x, A.mgData.Axf) 
+      ierr, A.mgData.Axf = compute_spmv_ref!(A.mgData.Axf, A, x) 
       if ierr!=0
           return ierr
       end
 
       # Perform restriction operation using simple injection
-      ierr = compute_restriction_ref(A, r)  
+      ierr, A= compute_restriction_ref!(A, r)  
       if ierr!=0 
           return ierr
       end
 
-      ierr = compute_mg!(A.Ac, A.mgData.rc, A.mgData.xc)  
+      ierr, A.mgData.xc = compute_mg!(A.mgData.xc, A.Ac, A.mgData.rc)  
       if ierr!=0 
           return ierr
       end
 
-      ierr = compute_prolongation_ref!(A, x)  
+      ierr, x = compute_prolongation_ref!(x,A)  
       if (ierr!=0) 
           return ierr
       end
 
       numberOfPostsmootherSteps = A.mgData.numberOfPostsmootherSteps
       for i= 1: numberOfPostsmootherSteps
-          ierr += compute_symgs_ref(A, r, x)
+          ierr, x = compute_symgs_ref!(x,A, r)
       end
 
       if ierr!=0 
           return ierr
       end
   else 
-      ierr = compute_symgs_ref(A, r, x)
+      ierr, x = compute_symgs_ref!(x, A, r)
       if ierr!=0 
           return ierr
       end
   end
 
-  return 0
+  return 0, x
 end
 

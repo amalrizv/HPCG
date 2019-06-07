@@ -127,7 +127,6 @@ function setup_halo_ref!(A)
         for i = 1:localNumberOfRows
             for j = 1:nonzerosInRow[i]
                 curIndex = mtxIndG[i,j]
-                #curIndex =  27 #cannot find this index in A.globalToLocalMap
                 rankIdOfColumnEntry = compute_rank_of_matrix_row(A.geom, curIndex)
                 if A.geom.rank == rankIdOfColumnEntry # My column index, so convert to local index
                     mtxIndL[i,j] = A.globalToLocalMap[curIndex]
@@ -147,7 +146,7 @@ function setup_halo_ref!(A)
         receiveLength          = receiveLength
         sendLength             = sendLength
         sendBuffer             = sendBuffer
-
+	
         A.localNumberOfColumns   = localNumberOfColumns
         A.numberOfExternalValues = numberOfExternalValues
         A.numberOfSendNeighbors  = numberOfSendNeighbors
@@ -158,6 +157,7 @@ function setup_halo_ref!(A)
         A.sendLength             = sendLength
         A.sendBuffer             = sendBuffer
 
+	@show totalToBeSent
         @debug(" For rank $A.geom.rank of $A.geom.size number of neighbors $A.numberOfSendNeighbors")
         for i = 1:numberOfSendNeighbors
             @debug("     rank = ", A.geom.rank," neighbor = ",neighbors[i]," send/recv length = ", sendLength[i]/receiveLength[i],".")

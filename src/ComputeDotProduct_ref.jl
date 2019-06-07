@@ -30,7 +30,7 @@ function compute_dot_product_ref!(result, time_allreduce, n, x, y)
   local_result = 0.0
   if x==y
     for i=1:n
-        local_result += x[i]*x[i]
+        local_result = local_result+x[i]*x[i]
     end
   else 
     for i=1:n
@@ -50,7 +50,7 @@ function compute_dot_product_ref!(result, time_allreduce, n, x, y)
   	time_allreduce += 0.0
    	result = local_result
   end
-
-  return false
+  @show result 
+  return false, result
 
 end

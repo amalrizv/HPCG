@@ -32,8 +32,8 @@ include("ComputeWAXPBY_ref.jl")
   @see CG()
 =#
 function cg_ref!(A , data , b , x , max_iter , 
-                tolerance, niters, normr , 
-                normr0 , times, doPreconditioning) 
+                  tolerance, niters, normr , 
+                  normr0 , times, doPreconditioning) 
 
     t_begin = time_ns()  # Start timing right away
     normr   = 0.0
@@ -76,17 +76,17 @@ function cg_ref!(A , data , b , x , max_iter ,
     p   = x
     t3t = time_ns()
 
-    compute_spmv_ref!(A, p, Ap)  
+    flag, Ap = compute_spmv_ref!(Ap, A , p)  
 
     t3  = time_ns()-t3t # Ap = A*p
     t2t = time_ns()
 
-    compute_waxpby_ref!(r, nrow, 1.0, b, -1.0, Ap) 
+    flag, r = compute_waxpby_ref!(r, nrow, 1.0, b, -1.0, Ap) 
 
     t2  = time_ns()- t2t # r = b - Ax (x stored in p)
     t1t = time_ns()
 
-    compute_dot_product_ref!(normr, t4, nrow, r, r)
+    flag, normr = compute_dot_product_ref!(normr, t4, nrow, r, r)
 
     t1    = time_ns()- t1t
     normr = sqrt(normr)
@@ -101,9 +101,9 @@ function cg_ref!(A , data , b , x , max_iter ,
         for k=1:max_iter 
             t5t = time_ns()
             if doPreconditioning
-                compute_mg_ref(A, r, z) # Apply preconditioner
+                flag, z  =compute_mg_ref!(z,A, r) # Apply preconditioner
             else
-                compute_waxpby_ref!(z, nrow, 1.0, r, 0.0, r) # copy r to z (no preconditioning)
+                flag, z = compute_waxpby_ref!(z, nrow, 1.0, r, 0.0, r) # copy r to z (no preconditioning)
             end
             t5 = time_ns()- t5t # Preconditioner apply time
 
@@ -111,32 +111,32 @@ function cg_ref!(A , data , b , x , max_iter ,
                 p = z 
                 t2= t2+time_ns()-t5t # Copy Mr to p
                 t1t = time_ns() 
-                compute_dot_product_ref(rtz, t4, nrow, r, z) 
+                flag, rtz = compute_dot_product_ref!(rtz, t4, nrow, r, z) 
                 t1 = t1+time_ns()- t1t # rtz = r'*z
             else 
                 oldrtz = rtz
                 t1t = time_ns() 
-                compute_dot_product_ref(rtz, t4, nrow, r, z) 
+                flag, rtz = compute_dot_product_ref!(rtz, t4, nrow, r, z) 
                 t1 = t1+time_ns()- t1t # rtz = r'*z
                 beta = rtz/oldrtz
                 t2t = time_ns() 
-                compute_waxpby_ref!(p, nrow, 1.0, z, beta, p)  
+                flag, p = compute_waxpby_ref!(p, nrow, 1.0, z, beta, p)  
                 t2 = t2+time_ns()- t2t # p = beta*p + z
             end
 
             t3t = time_ns() 
-            compute_spmv_ref!(A, p, Ap) 
+            flag, Ap = compute_spmv_ref!(Ap, A, p) 
             t3  = time_ns()- t3t+t3 # Ap = A*p
             t1t = time_ns()
-            compute_dot_product_ref(nrow, p, Ap, pAp, t4) 
+            flag, pAp = compute_dot_product_ref!(pAp, t4, nrow, p, Ap) 
             t1    = time_ns()- t1t+t1 # alpha = p'*Ap
             alpha = rtz/pAp
             t2t   = time_ns()
-            compute_waxpby_ref!(x, nrow, 1.0, x, alpha, p)# x = x + alpha*p
-            compute_waxpby_ref!(r, nrow, 1.0, r, -alpha, Ap)  
+            flag, x = compute_waxpby_ref!(x, nrow, 1.0, x, alpha, p)# x = x + alpha*p
+            flag, y = compute_waxpby_ref!(r, nrow, 1.0, r, -alpha, Ap)  
             t2  = time_ns()- t2t+t2# r = r - alpha*Ap
             t1t = time_ns()
-            compute_dot_product_ref(normr, t4, nrow, r, r, normr) 
+            flag, normr = compute_dot_product_ref!(normr, t4, nrow, r, r) 
             t1    = time_ns()- t1t+t1
             normr = sqrt(normr)
 
@@ -161,6 +161,5 @@ function cg_ref!(A , data , b , x , max_iter ,
     times_add[5] = t4
     # for MPi version only
     #times_add[6] = t5
-    return 0, times
+    return 0, A , data , x , niters, normr , normr0 , times 
 end
-

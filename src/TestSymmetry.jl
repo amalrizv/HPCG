@@ -49,29 +49,29 @@ function test_symmetry(A, b, xexact, testsymmetry_data)
  ANorm = 2 * 26.0
 
  # Next, compute x'*A*y
- compute_dot_product!(yNorm2, t4, nrow, y_ncol, y_ncol, A.is_dot_prod_optimized)
- ierr = compute_spmv(A, y_ncol, z_ncol) # z_nrow = A*y_overlap
+ flag, yNorm2 = compute_dot_product!(yNorm2, t4, nrow, y_ncol, y_ncol, A.is_dot_prod_optimized)
+ ierr, z_ncol = compute_spmv!(z_ncol, A, y_ncol) # z_nrow = A*y_overlap
  if ierr == 1 
 	@debug("Error in call to SpMV: $ierr.\n")
  end
 
  xtAy = 0.0
- ierr = compute_dot_product!(xtAy, t4, nrow, x_ncol, z_ncol, A.is_dot_prod_optimized) # x'*A*y
+ ierr, xtAy = compute_dot_product!(xtAy, t4, nrow, x_ncol, z_ncol, A.is_dot_prod_optimized) # x'*A*y
 
  if ierr == 1
 	@debug("Error in call to dot: $ierr .\n")
  end
 
  # Next, compute y'*A*x
- compute_dot_product!(xNorm2, t4, nrow, x_ncol, x_ncol, A.is_dot_prod_optimized)
- ierr = compute_spmv(A, x_ncol, z_ncol) # b_computed = A*x_overlap
+ flag, xNorm2 = compute_dot_product!(xNorm2, t4, nrow, x_ncol, x_ncol, A.is_dot_prod_optimized)
+ ierr , z_ncol= compute_spmv!(z_ncol, A, x_ncol) # b_computed = A*x_overlap
 
  if ierr == 1 
 	@debug("Error in call to SpMV: $ierr .\n")
  end
 
  ytAx = 0.0
- ierr = compute_dot_product!(ytAx, t4, nrow, y_ncol, z_ncol, A.is_dot_prod_optimized) # y'*A*x
+ ierr, ytAx= compute_dot_product!(ytAx, t4, nrow, y_ncol, z_ncol, A.is_dot_prod_optimized) # y'*A*x
 
  if ierr == 1
 	@debug("Error in call to dot: $err .\n")
@@ -90,28 +90,28 @@ function test_symmetry(A, b, xexact, testsymmetry_data)
  # Test symmetry of multi-grid
 
  # Compute x'*Minv*y
- ierr = compute_mg(A, y_ncol, z_ncol) # z_ncol = Minv*y_ncol
+ ierr , z_ncol = compute_mg!(z_ncol, A, y_ncol) # z_ncol = Minv*y_ncol
 
  if ierr == 1
 	@debug("Error in call to MG: $ierr .\n")
  end
 
  xtMinvy = 0.0
- ierr = compute_dot_product!(xtMinvy, t4, nrow, x_ncol, z_ncol, A.is_dot_prod_optimized) # x'*Minv*y
+ ierr, xtMinvy = compute_dot_product!(xtMinvy, t4, nrow, x_ncol, z_ncol, A.is_dot_prod_optimized) # x'*Minv*y
 
  if ierr == 1
 	@debug("Error in call to dot: $ierr .\n")
  end
 
  # Next, compute z'*Minv*x
- ierr = compute_mg(A, x_ncol, z_ncol) # z_ncol = Minv*x_ncol
+ ierr ,z_ncol = compute_mg!(z_ncol, A, x_ncol) # z_ncol = Minv*x_ncol
 
  if ierr == 1
   @debug("Error in call to MG: $ierr .\n")
  end
 
  ytMinvx = 0.0
- ierr = compute_dot_product!(ytMinvx, t4, nrow, y_ncol, z_ncol, A.is_dot_prod_optimized) # y'*Minv*x
+ ierr, ytMinvx = compute_dot_product!(ytMinvx, t4, nrow, y_ncol, z_ncol, A.is_dot_prod_optimized) # y'*Minv*x
 
  if ierr == 1 
     @debug("Error in call to dot: $ierr .\n")
@@ -133,13 +133,13 @@ function test_symmetry(A, b, xexact, testsymmetry_data)
  residual = 0.0
 
  for i=0:numberOfCalls 
-   ierr = compute_spmv(A, x_ncol, z_ncol) # b_computed = A*x_overlap
+   ierr, z_ncol= compute_spmv!(z_ncol, A, x_ncol) # b_computed = A*x_overlap
 
    if ierr==1
 	@debug("Error in call to SpMV: $ierr .\n")
    end
 
-   ierr = compute_residual(A.localNumberOfRows, b, z_ncol, residual)
+   ierr, residual = compute_residual!(residual, A.localNumberOfRows, b, z_ncol)
 
    if err==1
      @debug("Error in call to compute_residual: $ierr .\n")

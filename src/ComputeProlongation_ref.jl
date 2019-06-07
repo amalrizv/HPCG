@@ -16,7 +16,7 @@
 
   @return Returns zero on success and a non-zero value otherwise.
 =#
-function compute_prolongation_ref!(Af, xf) 
+function compute_prolongation_ref!(xf, Af) 
 
   xfv = xf
   xcv = Af.mgData.xc
@@ -28,5 +28,5 @@ function compute_prolongation_ref!(Af, xf)
 	xfv[f2c[i]] += xcv[i] # This loop is safe to vectorize
   end
 
-  return 0
+  return 0, xfv
 end

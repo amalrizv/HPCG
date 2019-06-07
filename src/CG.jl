@@ -70,6 +70,7 @@ function cg!(A, data, b, x, max_iter, tolerance, niters, normr, normr0, times, d
 ##endif
   nrow = A.localNumberOfRows 
   r = data.r # Residual vector
+  z = data.z # Preconditioned residual vector
   p = data.p # Direction vector (in MPI mode ncol>=nrow)
   Ap = data.Ap
 
@@ -88,17 +89,18 @@ function cg!(A, data, b, x, max_iter, tolerance, niters, normr, normr0, times, d
   # p is of length ncols, copy x to p for sparse MV operation
   x = p
   t3t = time_ns() 
-  compute_spmv!(A, p, Ap) 
+  flag, Ap = compute_spmv!(Ap, A, p) 
   t3 = time_ns()-t3t 
   #Ap = A*p
   t2t = time_ns()
-  compute_waxpby!(r, nrow, 1.0, b, -1.0, Ap, A.is_waxpby_optimized)
+  flag, r = compute_waxpby!(r, nrow, 1.0, b, -1.0, Ap, A.is_waxpby_optimized)
   t2 = time_ns()-t2t 
   # r = b - Ax (x stored in p)
   t1t = time_ns()
-  compute_dot_product!(normr, t4, nrow, r, r, A.is_dot_prod_optimized)
+  flag, normr = compute_dot_product!(normr, t4, nrow, r, r, A.is_dot_prod_optimized)
   t1 = time_ns()-t1t
   normr = sqrt(normr)
+  @show normr
 #ifdef HPCG_DEBUG
   if A.geom.rank==0 
   	@debug("Initial Residual = ",normr,"\n")
@@ -113,7 +115,7 @@ function cg!(A, data, b, x, max_iter, tolerance, niters, normr, normr0, times, d
   	for k=1:max_iter+1
     		t5t = time_ns()
     		if doPreconditioning
-      			compute_mg!(A, r, z) # Apply preconditioner
+      			flag, z = compute_mg!(z,A, r) # Apply preconditioner
     		else
       			z = r # copy r to z (no preconditioning)
     		end
@@ -121,35 +123,35 @@ function cg!(A, data, b, x, max_iter, tolerance, niters, normr, normr0, times, d
 
     		if k == 1
       			t2t = time_ns()
-      			compute_waxpby!(p, nrow, 1.0, z, 0.0, z, A.is_waxpby_optimized)
+      			flag, p = compute_waxpby!(p, nrow, 1.0, z, 0.0, z, A.is_waxpby_optimized)
       			t2 = t2+time_ns()-t2t # Copy Mr to p
       			t1t = time_ns()
-      			compute_dot_product!(rtz, t4, nrow, r, z, A.is_dot_prod_optimized)
+      			flag, rtz = compute_dot_product!(rtz, t4, nrow, r, z, A.is_dot_prod_optimized)
       			t1 = t1+time_ns()- t1t # rtz = r'*z
    		else 
       			oldrtz = rtz
       			t1t = time_ns()
-      			compute_dot_product!(rtz, t4, nrow, r, z, A.is_dot_prod_optimized) 
+      			flag, rtz = compute_dot_product!(rtz, t4, nrow, r, z, A.is_dot_prod_optimized) 
       			t1 = t1+time_ns()-t1t # rtz = r'*z
       			beta = rtz/oldrtz
       			t2t = time_ns()
-      			compute_waxpby!(p, nrow, 1.0, z, beta, p, A.is_waxpby_optimized)  
+      			flag, p = compute_waxpby!(p, nrow, 1.0, z, beta, p, A.is_waxpby_optimized)  
       			t2 = time_ns()-t2t+t2 # p = beta*p + z
    		end
 
     		t3t = time_ns()
-    		compute_spmv!(A, p, Ap) 
+    		flag, Ap = compute_spmv!(Ap, A, p) 
     		t3 = t3+time_ns()- t3t # Ap = A*p
     		t1t = time_ns()
-    		compute_dot_product!(pAp, t4, nrow, p, Ap, A.is_dot_prod_optimized) 
+    		flag, pAp = compute_dot_product!(pAp, t4, nrow, p, Ap, A.is_dot_prod_optimized) 
     		t1 = time_ns()-t1t+t1 # alpha = p'*Ap
     		alpha = rtz/pAp
     		t2t  = time_ns() 
-    		compute_waxpby!(x, nrow, 1.0, x, alpha, p, A.is_waxpby_optimized)# x = x + alpha*p
-    		compute_waxpby!(r, nrow, 1.0, r, -alpha, Ap, A.is_waxpby_optimized)
+    		flag, x = compute_waxpby!(x, nrow, 1.0, x, alpha, p, A.is_waxpby_optimized)# x = x + alpha*p
+    		flag, r = compute_waxpby!(r, nrow, 1.0, r, -alpha, Ap, A.is_waxpby_optimized)
     		t2 = time_ns()- t2t +t2# r = r - alpha*Ap
     		t1t = time_ns()
-                compute_dot_product!(normr, t4, nrow, r, r, A.is_dot_prod_optimized)
+                flag, normr = compute_dot_product!(normr, t4, nrow, r, r, A.is_dot_prod_optimized)
     		t1 = t1+time_ns()- t1t
     		normr = sqrt(normr)
 #ifdef HPCG_DEBUG
@@ -162,16 +164,16 @@ function cg!(A, data, b, x, max_iter, tolerance, niters, normr, normr0, times, d
   end
 
   t0 = time_ns() - t_begin  # Total time. All done...
-  times[1] = times[1] +t0
-  times[2] = times[1] +t1
-  times[3] = times[1] +t2
-  times[4] = times[1] +t3
-  times[5] = times[1] +t4
-  times[6] = times[1] +t5
+  times[1] += t0
+  times[2] += t1
+  times[3] += t2
+  times[4] += t3
+  times[5] += t4
+  times[6] += t5
 ##ifndef HPCG_NO_MPI
-## times[7] = times[1] +t6
+## times[7] = t6
 ##else
 ##endif
-  return 0, times
+  
+  return 0 ,A , data , x , niters, normr , normr0 , times
 end
-

@@ -168,13 +168,13 @@ function main(hpcg_args)
 
     for i = 1:num_calls
 
-        ierr = compute_spmv_ref!(A, x_overlap, b_computed) # b_computed = A*x_overlap
+        ierr, b_computed = compute_spmv_ref!(b_computed,A, x_overlap) # b_computed = A*x_overlap
         if ierr != 0
             @error("Error in call to SpMV: $ierr .\n")
         end
         @debug("typeof mgData from main sent to ComputeMG  ", typeof(A.mgData))
 	println("In ComputeMG")
-        ierr = compute_mg!(A, b_computed, x_overlap) # b_computed = Minv*y_overlap
+        ierr, x_overlap= compute_mg!(x_overlap, A, b_computed) # b_computed = Minv*y_overlap
 
         if ierr != 0
             @error("Error in call to MG: $ierr .\n") 
@@ -211,7 +211,7 @@ function main(hpcg_args)
     for i = 1:num_calls
         x = zeros(length(x))
         @debug("In     ## Reference CG Timing Phase ## ")
-        ierr, ref_add = cg_ref!(A, data, b, x, refMaxIters, tolerance, niters, normr, normr0, ref_times, true)
+        ierr, A, data, x, niters, normr, normr0, ref_add = cg_ref!(A, data, b, x, refMaxIters, tolerance, niters, normr, normr0, ref_times, true)
         ref_times = ref_add + ref_times
 
         if ierr != 0
@@ -281,7 +281,7 @@ function main(hpcg_args)
     optNiters      = refMaxIters
     opt_worst_time = 0.0
 
-    opt_times = zeros(9)
+   opt_times = zeros(9)
 
     # Compute the residual reduction and residual count for the user ordering and optimized kernels.
     for i=1:num_calls
@@ -289,9 +289,9 @@ function main(hpcg_args)
         x = zeros(length(x)) # start x at all zeros
         last_cummulative_time = opt_times[1]
 
-        ierr, opt_add = cg!(A, data, b, x, optMaxIters, refTolerance, niters, normr, normr0, opt_times, true)
+        ierr, A, data, x, niters, normr, normr0, opt_add = cg!(A, data, b, x, optMaxIters, refTolerance, niters, normr, normr0, opt_times, true)
 
-        opt_times = opt_add + opt_times
+        opt_times += opt_add
 
         if ierr != 0
             err_count +=1 # count the number of errors in CG
@@ -339,8 +339,7 @@ function main(hpcg_args)
 
     total_runtime  = params.runningTime
     numberOfCgSets = floor(total_runtime / opt_worst_time) + 1 # Run at least once, account for rounding
-    numberOfCgSets = Int(numberOfCgSets)
-
+    
     if rank == 0 
         @debug("Projected running time: $total_runtime seconds") 
         @debug("Number of CG sets: $numberOfCgSets") 
@@ -350,13 +349,13 @@ function main(hpcg_args)
 
     optMaxIters    = optNiters
     optTolerance   = 0.0  # Force optMaxIters iterations
-    vals           = Array{Float64, 1}(undef, numberOfCgSets)
+    vals           = Array{Float64, 1}(undef, Int(numberOfCgSets))
     testnorms_data = TestNormsData(vals, 0.0, 0.0, numberOfCgSets, true)
 
-    for i=1: numberOfCgSets
+    for i=1: Int(numberOfCgSets)
 
         x = zeros(length(x)) # Zero out x
-        ierr, times_add = cg!(A, data, b, x, optMaxIters, optTolerance, niters, normr, normr0, times, true)
+        ierr, A, data, x, niters, normr, normr0, times_add = cg!(A, data, b, x, optMaxIters, optTolerance, niters, normr, normr0, times, true)
         times = times_add+times
 
         if ierr != 0
@@ -372,8 +371,8 @@ function main(hpcg_args)
 
     # Compute difference between known exact solution and computed solution
     # All processors are needed here.
-    residual::Float64 = 0
-    ierr              = compute_residual(A.localNumberOfRows, x, xexact, residual)
+    residual::Float64 = 0.0
+    ierr , residual   = compute_residual!(residual ,A.localNumberOfRows, x, xexact)
 
     if ierr != 0
         @error("Error in call to compute_residual: $ierr.\n") 
@@ -389,7 +388,6 @@ function main(hpcg_args)
     ####################
     ## Report Results ##
     ####################
-    @show x
     @show length(x)
     # Report results to YAML file
 #    times  = ReportResults(A, numberOfMgLevels, numberOfCgSets, refMaxIters, optMaxIters, times, testcg_data, testsymmetry_data, testnorms_data, global_failure, quickPath)

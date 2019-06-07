@@ -17,7 +17,7 @@ include("hpcg.jl")
 
   @return Returns zero on success and a non-zero value otherwise.
 =#
-function compute_residual(n, v1, v2, residual) 
+function compute_residual!(residual, n, v1, v2) 
 
   v1v = v1
   v2v = v2
@@ -52,5 +52,6 @@ function compute_residual(n, v1, v2, residual)
   else
  	 residual = local_residual
   end
-  return 0
+  @show residual
+  return 0, residual
 end

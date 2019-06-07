@@ -9,9 +9,9 @@ mutable struct MGData
   numberOfPresmootherSteps::Int64  # Call ComputeSYMGS this many times prior to coarsening
   numberOfPostsmootherSteps::Int64 # Call ComputeSYMGS this many times after coarsening
   f2cOperator::Array{Int64,1}      # 1D array containing the fine operator local IDs that will be injected into coarse space.
-  rc::Vector                               # coarse grid residual vector
-  xc::Vector                               # coarse grid solution vector
-  Axf::Vector                              # fine grid residual vector
+  rc::Vector{Float64}                               # coarse grid residual vector
+  xc::Vector{Float64}                               # coarse grid solution vector
+  Axf::Vector{Float64}                              # fine grid residual vector
 
   #=
    This is for storing optimized data structres created in OptimizeProblem and

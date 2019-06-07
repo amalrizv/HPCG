@@ -166,7 +166,7 @@ function generate_problem_ref!(A::HPCGSparseMatrix)
     end
     # If this assert fails, it most likely means that the global_int_t is set to int and should be set to long long
     # This assert is usually the first to fail as problem size increases beyond the 32-bit integer range.
-    #  @assert(totalNumberOfNonzeros>0) # Throw an exception of the number of nonzeros is less than zero (can happen if int overflow)
+      @assert(totalNumberOfNonzeros>0) # Throw an exception of the number of nonzeros is less than zero (can happen if int overflow)
     #
     A.title                 = "0"
     A.totalNumberOfRows     = totalNumberOfRows

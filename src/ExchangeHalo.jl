@@ -15,7 +15,8 @@ include("Geometry.jl")
   @param[in]    A The known system matrix
   @param[inout] x On entry: the local vector entries followed by entries to be communicated on exit: the vector with non-local entries updated by other processors
 =#
-function exchange_halo(A, x) 
+#fix call
+function exchange_halo!(x, A) 
 
   # Extract Matrix pieces
 
@@ -29,7 +30,6 @@ function exchange_halo(A, x)
   totalToBeSent     = A.totalToBeSent
   elementsToSend    = A.elementsToSend
 
-  xv   = x
 
   size = Int64
   rank = Int64 # Number of MPI processes, My process ID
@@ -51,14 +51,15 @@ function exchange_halo(A, x)
   #
   # Externals are at end of locals
   #
-  x_external = resize!(xv , length(xv)+ localNumberOfRows)
+  #x_external = x[localNumberOfRows:length(x)]
 
   # Post receives first
   # TODO: Thread this loop
   for i = 1 : num_neighbors
     n_recv = receiveLength[i]
-    reqs[i]  = MPI.Irecv!(x_external, neighbors[i], MPI.MY_TAG, MPI.COMM_WORLD)
-    x_external += n_recv
+    buff = Array{Int64,1}(undef,n_recv)
+    reqs[i]  = MPI.Irecv!(buff, neighbors[i], MPI.MY_TAG, MPI.COMM_WORLD)
+    vcat(x_external, buff)
   end
 
 
@@ -68,7 +69,7 @@ function exchange_halo(A, x)
 
   # TODO: Thread this loop
   for i=1:totalToBeSent
-	sendBuffer[i] = xv[elementsToSend[i]]
+	sendBuffer[i] = x[elementsToSend[i]]
   end
 
   #
@@ -76,10 +77,13 @@ function exchange_halo(A, x)
   #
 
   # TODO: Thread this loop
+  #AMAL:TODO: fix pointer arithmetic 
   for i = 1:num_neighbors
     n_send = sendLength[i]
-    MPI.Send(sendBuffer, neighbours[i], MPI.MY_TAG, MPI.COMM_WORLD)
-    sendBuffer += n_send
+    start = (i-1)n_send+1
+    finish = start+n_send
+    MPI.Send(sendBuffer[start:finish], neighbours[i], MPI.MY_TAG, MPI.COMM_WORLD)
+    
   end
 
   #

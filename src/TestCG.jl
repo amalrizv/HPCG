@@ -73,7 +73,7 @@ function test_cg!(A, data, b, x, count_pass, count_fail)
         end
         for i=0:numberOfCgCalls
             x = zeros(length(x)) # Zero out x
-            ierr, times_add = cg!(A, data, b, x, maxIters, tolerance, niters, normr, normr0, times, k==1)
+            ierr, A, data, x, niters, normr, normr0, times_add = cg!(A, data, b, x, maxIters, tolerance, niters, normr, normr0, times, k==1)
             times = times_add
             if ierr==1
                 @debug("Error in call to CG:$ierr.\n")

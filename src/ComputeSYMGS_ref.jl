@@ -33,10 +33,10 @@ Computes one step of symmetric Gauss-Seidel:
 
   @see ComputeSYMGS
 =#
-function compute_symgs_ref(A, r, x) 
-  #@assert(length(x)==A.localNumberOfCols) # Make sure x contain space for halo values
+function compute_symgs_ref!(x, A, r) 
+  @assert(length(x)==A.localNumberOfColumns) # Make sure x contain space for halo values
   if MPI.Initialized()== true
-	  exchange_halo(A,x)
+	  exchange_halo!(x,A)
   end
 
   nrow = A.localNumberOfRows
@@ -54,15 +54,14 @@ function compute_symgs_ref(A, r, x)
     currentColIndices = mtxIndL[i, :]
     currentNumberOfNonzeros = A.nonzerosInRow[i]
     currentDiagonal = matrixDiagonal[i,1] # Current diagonal value
+    @show currentDiagonal
     sum = rv[i] # RHS value
-
     for j=1:currentNumberOfNonzeros 
       curCol = currentColIndices[j]
      
       sum = sum - currentValues[j] * xv[curCol]
     end
     sum =sum + xv[i]*currentDiagonal # Remove diagonal contribution from previous loop
-
     xv[i] = sum/currentDiagonal
 
   end
@@ -81,10 +80,9 @@ function compute_symgs_ref(A, r, x)
       sum = sum - currentValues[j]*xv[curCol]
     end
     sum = sum + xv[i]*currentDiagonal # Remove diagonal contribution from previous loop
-
     xv[i] = sum/currentDiagonal
   end
 
-  return 0
+  return 0, xv
 end
 
