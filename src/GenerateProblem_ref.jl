@@ -77,6 +77,7 @@ function generate_problem_ref!(A::HPCGSparseMatrix)
     mtxIndG[1] = zeros(numberOfNonzerosPerRow)
     mtxIndL[1] = zeros(numberOfNonzerosPerRow)
     for i=2:localNumberOfRows
+    # non zeroes for jth row and ith processor 
         mtxIndL[i] = mtxIndL[1] .+ ((i-1) * numberOfNonzerosPerRow)
         matrixValues[i] = matrixValues[1] .+ ((i-1) * numberOfNonzerosPerRow)
         mtxIndG[i] = mtxIndG[1] .+ ((i-1) * numberOfNonzerosPerRow)
@@ -151,6 +152,7 @@ function generate_problem_ref!(A::HPCGSparseMatrix)
             end #  stop ix loop
         end # stop iy loop
     end # stop iz loop
+    @show matrixDiagonal
     @debug("Process $A.geom.rank of $A.geom.size has $localNumberOfRows rows.\n Process $A.geom.rank of $A.geom.size has $localNumberOfNonzeros nonzeros.\n") 
 
     totalNumberOfNonzeros = 0
