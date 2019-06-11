@@ -68,22 +68,23 @@ function generate_problem_ref!(A::HPCGSparseMatrix)
     localToGlobalMap = Dict()
     globalToLocalMap = Dict()
 
-    #Use a parallel loop to do initial assignment:
-    #distributes the physical placement of arrays of pointers across the memory system
-    for i=1:localNumberOfRows 
-        matrixDiagonal[i] = zeros(numberOfNonzerosPerRow)
-    end
-    matrixValues[1] = zeros(numberOfNonzerosPerRow)
-    mtxIndG[1] = zeros(numberOfNonzerosPerRow)
-    mtxIndL[1] = zeros(numberOfNonzerosPerRow)
-    for i=2:localNumberOfRows
-    # non zeroes for jth row and ith processor 
-        mtxIndL[i] = mtxIndL[1] .+ ((i-1) * numberOfNonzerosPerRow)
-        matrixValues[i] = matrixValues[1] .+ ((i-1) * numberOfNonzerosPerRow)
-        mtxIndG[i] = mtxIndG[1] .+ ((i-1) * numberOfNonzerosPerRow)
-    end
+    # mtxIndL mtxIndG and matrixValues are 2D arrays depicting values 
+
+    # for ith row and jth processor.
+
+    mtxIndG = Array{Int64, 2}(undef,localNumberOfRows, numberOfNonzerosPerRow) 
+    mtxIndL = Array{Int64, 2}(undef,localNumberOfRows, numberOfNonzerosPerRow) 
+    matrixDiagonal = Array{Int64, 2}(undef,localNumberOfRows, numberOfNonzerosPerRow) 
+    matrixValues = Array{Int64, 2}(undef,localNumberOfRows, numberOfNonzerosPerRow) 
+    fill!(mtxIndG, 1)
+    fill!(mtxIndL, 1)
+    fill!(matrixDiagonal, 0)
+    fill!(matrixValues, 0)
     localNumberOfNonzeros = 0
+
+    @show mtxIndG
     # TODO:  This triply nested loop could be flattened or use nested parallelism
+
     cvp = 1
     cipg = 1
     for iz=1:nz
@@ -99,8 +100,6 @@ function generate_problem_ref!(A::HPCGSparseMatrix)
                 localToGlobalMap[currentLocalRow] = currentGlobalRow
                 @debug(" rank, globalRow, localRow = $A.geom.rank $currentGlobalRow ",globalToLocalMap[currentGlobalRow])
                 numberOfNonzerosInRow = 0
-                currentValuePointer = matrixValues[currentLocalRow]  #Pointer to current value in current row
-                currentIndexPointerG = mtxIndG[currentLocalRow] # Pointer to current index in current row
                 for sz=-1:1 
                     if giz+sz>0 && giz+sz<=gnz
                         for sy=-1:1 
@@ -108,29 +107,17 @@ function generate_problem_ref!(A::HPCGSparseMatrix)
                                 for sx=-1:1 
                                     if gix+sx>0 && gix+sx<=gnx
                                         curcol = currentGlobalRow+sz*gnx*gny+sy*gnx+sx+1 
-					if cvp==28 && cipg ==28
-					 	cvp =1
-						cipg = 1
-						currentLocalRow+=1
-					elseif cipg==28 && cvp <28
-						cipg = 1
-						currentLocalRow+=1
-					elseif cvp==28 && cipg <28
-						cvp = 1  	
-						currentLocalRow+=1
-					else
-						continue
-					end
-                                        if curcol==currentGlobalRow
-                                            matrixDiagonal[currentLocalRow] = currentValuePointer
-					    currentValuePointer[cvp] = 26    
-                                            cvp = cvp + 1
-                                        else 
-                                            currentValuePointer[cvp] = -1
-					    cvp +=1
-                                        end
-					currentIndexPointerG[cipg] = curcol
-                                        cipg = cipg + 1
+					# Julia way
+						for currentValuePointer  = 1: numberOfNonzerosPerRow
+							if curcol == currentGlobalRow
+								matrixValues[currentLocalRow, currentValuePointer]   = 26
+								matrixDiagonal[currentLocalRow, currentValuePointer] = 26
+							else
+								matrixValues[currentLocalRow, currentValuePointer]  = -1
+								continue
+							end
+							mtxIndG[currentLocalRow,currentValuePointer] = curcol 
+						end
                                         numberOfNonzerosInRow = numberOfNonzerosInRow +1
                                     end #  stop x bounds test
                                 end # stop sx loop
@@ -152,7 +139,6 @@ function generate_problem_ref!(A::HPCGSparseMatrix)
             end #  stop ix loop
         end # stop iy loop
     end # stop iz loop
-    @show matrixDiagonal
     @debug("Process $A.geom.rank of $A.geom.size has $localNumberOfRows rows.\n Process $A.geom.rank of $A.geom.size has $localNumberOfNonzeros nonzeros.\n") 
 
     totalNumberOfNonzeros = 0
@@ -183,6 +169,7 @@ function generate_problem_ref!(A::HPCGSparseMatrix)
     A.matrixDiagonal        = matrixDiagonal
     A.localToGlobalMap      = localToGlobalMap
     A.globalToLocalMap      = globalToLocalMap
+    @show mtxIndG
     return b, x, xexact
 
 end

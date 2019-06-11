@@ -22,11 +22,6 @@ function compute_restriction_ref!(A, rf)
   rcv = A.mgData.rc     #float64 array
   f2c = A.mgData.f2cOperator #int array
   nc = length(A.mgData.rc)   #int
-  @show typeof(Axfv)
-  @show typeof(rfv)
-  @show typeof(rcv)
-  @show typeof(f2c)
-  @show typeof(nc)
   for i  = 1:nc
 	rcv[i] = rfv[Int(f2c[i])] - Axfv[Int(f2c[i])]
   end

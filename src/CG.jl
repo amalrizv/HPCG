@@ -100,7 +100,6 @@ function cg!(A, data, b, x, max_iter, tolerance, niters, normr, normr0, times, d
   flag, normr = compute_dot_product!(normr, t4, nrow, r, r, A.is_dot_prod_optimized)
   t1 = time_ns()-t1t
   normr = sqrt(normr)
-  @show normr
 #ifdef HPCG_DEBUG
   if A.geom.rank==0 
   	@debug("Initial Residual = ",normr,"\n")

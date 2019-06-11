@@ -52,6 +52,5 @@ function compute_residual!(residual, n, v1, v2)
   else
  	 residual = local_residual
   end
-  @show residual
   return 0, residual
 end

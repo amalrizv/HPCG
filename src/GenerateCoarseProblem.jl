@@ -35,7 +35,6 @@ function generate_coarse_problem!(A)
 
     f2c_operator = Array{Int64}(undef,A.localNumberOfRows)
     local_num_rows = nxc*nyc*nzc # This is the size of our subblock:
-    @show local_num_rows
     # If this @assert fails, it most likely means that the local_int_t is set to int and should be set to long long
     @assert(local_num_rows>0) # Throw an exception of the number of rows is less than zero (can happen if "int" overflows)
 
@@ -58,7 +57,6 @@ function generate_coarse_problem!(A)
                 ixf = 2*(ixc-1)+1
                 currentCoarseRow = (izc-1)*nxc*nyc+(iyc-1)*nxc+(ixc-1)+1
                 currentFineRow = (izf-1)*nxf*nyf+(iyf-1)*nxf+(ixf-1)+1
-#		@show (currentCoarseRow, currentFineRow)
                 f2c_operator[currentCoarseRow] = currentFineRow
             end # end iy loop
         end # end even iz if statement
@@ -89,6 +87,5 @@ function generate_coarse_problem!(A)
 
     A.Ac        = Ac
     A.mgData    = mgd
-    @show length(A.mgData.Axf)
 end
 

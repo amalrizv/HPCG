@@ -43,9 +43,6 @@ function compute_symgs_ref!(x, A, r)
   matrixDiagonal = A.matrixDiagonal  # An array of pointers to the diagonal entries A.matrixValues
   matrixValues = A.matrixValues
   mtxIndL = A.mtxIndL
-  matrixDiagonal = permutedims(reshape(hcat(matrixDiagonal...), (length(matrixDiagonal[1]), length(matrixDiagonal))))
-  matrixValues = permutedims(reshape(hcat(matrixValues ...), (length(matrixValues[1]), length(matrixValues))))
-  mtxIndL = permutedims(reshape(hcat(mtxIndL...), (length(mtxIndL[1]), length(mtxIndL))))
   rv = r
   xv = x
 
@@ -54,7 +51,6 @@ function compute_symgs_ref!(x, A, r)
     currentColIndices = mtxIndL[i, :]
     currentNumberOfNonzeros = A.nonzerosInRow[i]
     currentDiagonal = matrixDiagonal[i,1] # Current diagonal value
-    @show currentDiagonal
     sum = rv[i] # RHS value
     for j=1:currentNumberOfNonzeros 
       curCol = currentColIndices[j]

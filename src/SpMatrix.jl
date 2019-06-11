@@ -24,10 +24,10 @@ mutable struct HPCGSparseMatrix
     localNumberOfColumns::Int64               # number of columns local to this process
     localNumberOfNonzeros::Int64              # number of nonzeros local to this process
     nonzerosInRow::Array{Any}                             # The number of nonzeros in a row will always be 27 or fewer
-    mtxIndG ::Array{Array{Int64,1}}           # matrix indices as global values
-    mtxIndL ::Array{Array{Int64,1}}           # matrix indices as local value
-    matrixValues :: Array{Array{Float64,1}}   # values of matrix entries
-    matrixDiagonal :: Array{Array{Float64,1}} # values of matrix diagonal entries
+    mtxIndG ::Array{Int64,2}           # matrix indices as global values
+    mtxIndL ::Array{Int64,2}           # matrix indices as local value
+    matrixValues :: Array{Float64,2}   # values of matrix entries
+    matrixDiagonal :: Array{Float64,2} # values of matrix diagonal entries
     localToGlobalMap::Dict    # local-to-global mapping
     globalToLocalMap::Dict    # global-to-local mapping
 
@@ -102,7 +102,7 @@ end
 
 function HPCGSparseMatrix(dprod_opt, spmb_opt, mg_opt, waxpby_opt, geom)
     return HPCGSparseMatrix(dprod_opt, spmb_opt, mg_opt, waxpby_opt, geom,
-                            "", 0, 0, 0, 0, 0, [], [], [], [], [], Dict(), Dict(),
+                            "", 0, 0, 0, 0, 0, [], reshape([],0,2), reshape([],0,2), reshape([],0,2), reshape([],0,2), Dict(), Dict(),
                             0, 0, 0, [], [], [], [], [], MGData())
 
 end

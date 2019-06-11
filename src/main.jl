@@ -159,7 +159,7 @@ function main(hpcg_args)
     # First load vector with random values
     x_overlap = fill!(x_overlap,1)
 
-    num_calls = 10
+    num_calls = 1
     if quickPath ==1 
         num_calls = 1 # QuickPath means we do on one call of each block of repetitive code
     end
@@ -167,7 +167,7 @@ function main(hpcg_args)
     t_begin = time_ns()
 
     for i = 1:num_calls
-
+	@show num_calls
         ierr, b_computed = compute_spmv_ref!(b_computed,A, x_overlap) # b_computed = A*x_overlap
         if ierr != 0
             @error("Error in call to SpMV: $ierr .\n")

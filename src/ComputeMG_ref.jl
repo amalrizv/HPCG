@@ -21,13 +21,12 @@ include("ComputeProlongation_ref.jl")
 
 function compute_mg_ref!(x, A, r) #sp_coarse passed 
 
-  #@assert(length(x)==A.localNumberOfColumns) #Make sure x contain space for halo values
+  @assert(length(x)==A.localNumberOfColumns) #Make sure x contain space for halo values
 
   x = zeros(length(x)) #initialize x to zero
 
   ierr = 0
 
-  println("rx")
   # if mgdata is even defined this will result in a non zero value 
   if length(A.mgData.Axf) != 0 #  Go to next coarse level if defined
       numberOfPresmootherSteps = A.mgData.numberOfPresmootherSteps

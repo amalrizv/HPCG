@@ -140,7 +140,6 @@ function cg_ref!(A , data , b , x , max_iter ,
             t1    = time_ns()- t1t+t1
             normr = sqrt(normr)
 
-            @show normr
             if A.geom.rank==0 & k%print_freq == 0 || k == max_iter
                 @debug("Iteration = $k Scaled Residual = $(normr/normr0)")
             end
