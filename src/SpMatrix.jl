@@ -138,6 +138,6 @@ end
   @param[in] diagonal  Vector of diagonal values that will replace existing matrix diagonal values.
 =#
 @inline function replace_matrix_diagonal!(A, diag) 
-    @assert(A.localNumberOfRows==length(diag))
+    @assert(A.localNumberOfRows==first(size(diag)))
     A.matrixDiagonal = diag
 end

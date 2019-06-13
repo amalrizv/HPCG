@@ -19,7 +19,7 @@ function compute_spmv_ref!(y, A, x) # takes SpMatrix_anx structure
   @assert(length(x)>=A.localNumberOfColumns) # Test vector lengths
   @assert(length(y)>=A.localNumberOfRows)
 
-  if MPI.Initialized()
+  if MPI.Initialized()== true
       exchange_halo!(x,A)
   end
 

@@ -38,7 +38,6 @@ function compute_mg_ref!(x, A, r) #sp_coarse passed
           return ierr
       end
 
-      @show length(A.mgData.Axf)
       ierr, A.mgData.Axf = compute_spmv_ref!(A.mgData.Axf, A, x) 
       if ierr!=0
           return ierr

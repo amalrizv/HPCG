@@ -82,7 +82,6 @@ function generate_problem_ref!(A::HPCGSparseMatrix)
     fill!(matrixValues, 0)
     localNumberOfNonzeros = 0
 
-    @show mtxIndG
     # TODO:  This triply nested loop could be flattened or use nested parallelism
 
     cvp = 1
@@ -169,7 +168,6 @@ function generate_problem_ref!(A::HPCGSparseMatrix)
     A.matrixDiagonal        = matrixDiagonal
     A.localToGlobalMap      = localToGlobalMap
     A.globalToLocalMap      = globalToLocalMap
-    @show mtxIndG
     return b, x, xexact
 
 end

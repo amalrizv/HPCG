@@ -27,17 +27,10 @@ function setup_halo_ref!(A)
     mtxIndL               = A.mtxIndL
     @show size(mtxIndG)
     @show size(mtxIndL)
-    @show nonzerosInRow
     # In the non-MPI case we simply copy global indices to local index storage
-    if MPI.Initialized() == 0
+    if MPI.Initialized() == false
         # LNR = ,"localNumberOfRows," dimsMIG = ,",size(mtxIndG)," dimMIL = ",size(mtxIndL),".")
-        for i = 1:localNumberOfRows 
-            cur_nnz = nonzerosInRow[i]
-	    @show cur_nnz
-            for j = 1:cur_nnz
-                mtxIndL[i,j] = mtxIndG[i,j]
-            end
-        end
+        mtxIndL = mtxIndG
     else
 
         # Scan global IDs of the nonzeros in the matrix.  Determine if the column ID matches a row ID.  If not:
@@ -158,7 +151,6 @@ function setup_halo_ref!(A)
         A.sendLength             = sendLength
         A.sendBuffer             = sendBuffer
 
-	@show totalToBeSent
         @debug(" For rank $A.geom.rank of $A.geom.size number of neighbors $A.numberOfSendNeighbors")
         for i = 1:numberOfSendNeighbors
             @debug("     rank = ", A.geom.rank," neighbor = ",neighbors[i]," send/recv length = ", sendLength[i]/receiveLength[i],".")
