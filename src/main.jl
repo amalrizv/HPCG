@@ -46,17 +46,6 @@ include("TestNorms.jl")
 =#
 
 
-# KCH NOTE: the 2147483647 below was what RAND_MAX was defined in on my system's libc headers.
-# It might be different for another system!
-function fill_random_vector!(x)
-    for i = 1:len(x)
-        # KCH NOTE: this is to try to get the same pseudo-random number sequence that the libc prng generates
-        # (which is what C++ HPCG uses), once things are validated, we should use the commented out version below,
-        # which will produce a different random sequence than C++
-        x[i] = (ccall((:rand, "libc.so.6"), Int64, ()) / 2147483647) + 1.0
-        #x[i] = rand() + 1.0
-    end 
-end
 
 function main(hpcg_args) 
 
@@ -120,18 +109,15 @@ function main(hpcg_args)
     A          = initialize_sparse_matrix(geom)
 
     b, x, xexact = generate_problem!(A)	
-    setup_halo!(A)	
+    A   = setup_halo!(A)	
     num_mg_levels  = 4 #Number of levels including first
 
     cur_level_matrix::HPCGSparseMatrix = A
-
     for level = 1:num_mg_levels-1
         @debug("Generating course problem for level=$level")
-
-        generate_coarse_problem!(cur_level_matrix) 	
+        cur_level_matrix  = generate_coarse_problem!(cur_level_matrix) 	
         cur_level_matrix = cur_level_matrix.Ac 		#  Make the just-constructed coarse grid the next level
     end
-
     @debug("All levels generated")
 
     setup_time = time_ns() - setup_time #Capture total time of setup
@@ -163,14 +149,13 @@ function main(hpcg_args)
 
     nrow = A.localNumberOfRows
     ncol = A.localNumberOfColumns
-
-    x_overlap  = Vector{Int64}(undef, ncol) #  Overlapped copy of x vector
-    b_computed = Vector{Int64}(undef, nrow) #  Computed RHS vector
+    x_overlap  = Vector{Float64}(undef, ncol) #  Overlapped copy of x vector
+    b_computed = Vector{Float64}(undef, nrow) #  Computed RHS vector
 
     # Record execution time of reference SpMV and MG kernels for reporting times
     # First load vector with random values
-    x_overlap = fill_random_vector!(x_overlap)
-
+#    x_overlap = fill_random_vector!(x_overlap)
+     fill!(x_overlap,1)
     num_calls = 10
     if quickPath ==1 
         num_calls = 1 # QuickPath means we do on one call of each block of repetitive code
@@ -179,8 +164,8 @@ function main(hpcg_args)
     t_begin = time_ns()
 
     for i = 1:num_calls
-	@show num_calls
         ierr, b_computed = compute_spmv_ref!(b_computed,A, x_overlap) # b_computed = A*x_overlap
+        #wrong 
 	@show b_computed[nrow]
         if ierr != 0
             @error("Error in call to SpMV: $ierr .\n")

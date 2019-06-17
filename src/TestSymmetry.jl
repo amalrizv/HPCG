@@ -41,8 +41,8 @@ function test_symmetry(A, b, xexact, testsymmetry_data)
  # Test symmetry of matrix
 
  # First load vectors with random values
- fill!(x_ncol, 1.0)
- fill!(y_ncol, 1.0)
+ fill_random_vector!(x_ncol)
+ fill_random_vector!(y_ncol)
 
  xNorm2= Float64
  yNorm2= Float64

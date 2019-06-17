@@ -41,6 +41,7 @@ function generate_coarse_problem!(A)
     # NOTE: originally omp_parallel_for
     # Use a parallel loop to do initial assignment:")
     # distributes the physical placement of arrays of pointers across the memory system
+    fill!(f2c_operator,0)
 #    for  i=1:local_num_rows 
 #        f2c_operator[i] = 0
 #    end
@@ -77,15 +78,16 @@ function generate_coarse_problem!(A)
     Ac               = initialize_sparse_matrix(geomc)
     ret1, ret2, ret3 = generate_problem!(Ac)
 
-    setup_halo!(Ac)
+    Ac = setup_halo!(Ac)
 
-    rc          = Vector{Int64}(undef, Ac.localNumberOfRows)
-    xc          = Vector{Int64}(undef, Ac.localNumberOfColumns)
-    Axf         = Vector{Int64}(undef, A.localNumberOfColumns)
-
+    rc          = Vector{Float64}(undef, Ac.localNumberOfRows)
+    xc          = Vector{Float64}(undef, Ac.localNumberOfColumns)
+    Axf         = Vector{Float64}(undef, A.localNumberOfColumns)
+    
     mgd::MGData = init_mg_data(f2c_operator, rc, xc, Axf)
 
     A.Ac        = Ac
     A.mgData    = mgd
+    return A
 end
 

@@ -33,8 +33,8 @@ function test_cg!(A, data, b, x, count_pass, count_fail)
     times =  zeros(8)
 
     # Temporary storage for holding original diagonal and RHS
-    exaggeratedDiagA = Vector{Int64}(undef, A.localNumberOfRows)
-    origB            = Vector(undef,A.localNumberOfRows)
+    exaggeratedDiagA = Vector{Float64}(undef, A.localNumberOfRows)
+    origB            = Vector{Float64}(undef,A.localNumberOfRows)
     origDiagA        = copy_matrix_diagonal(A)
     exaggeratedDiagA = origDiagA
     origB            = b

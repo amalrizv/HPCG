@@ -20,7 +20,6 @@ include("ComputeProlongation_ref.jl")
 =#
 
 function compute_mg_ref!(x, A, r) #sp_coarse passed 
-
   @assert(length(x)==A.localNumberOfColumns) #Make sure x contain space for halo values
 
   x = zeros(length(x)) #initialize x to zero
@@ -48,7 +47,6 @@ function compute_mg_ref!(x, A, r) #sp_coarse passed
       if ierr!=0 
           return ierr
       end
-
       ierr, A.mgData.xc = compute_mg!(A.mgData.xc, A.Ac, A.mgData.rc)  
       if ierr!=0 
           return ierr

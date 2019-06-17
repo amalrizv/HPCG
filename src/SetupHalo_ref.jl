@@ -25,12 +25,12 @@ function setup_halo_ref!(A)
     nonzerosInRow     = A.nonzerosInRow
     mtxIndG               = A.mtxIndG
     mtxIndL               = A.mtxIndL
-    @show size(mtxIndG)
-    @show size(mtxIndL)
+    @show (mtxIndG)
     # In the non-MPI case we simply copy global indices to local index storage
     if MPI.Initialized() == false
         # LNR = ,"localNumberOfRows," dimsMIG = ,",size(mtxIndG)," dimMIL = ",size(mtxIndL),".")
-        mtxIndL = mtxIndG
+        A.mtxIndL = mtxIndG
+    @show mtxIndL
     else
 
         # Scan global IDs of the nonzeros in the matrix.  Determine if the column ID matches a row ID.  If not:
@@ -160,4 +160,6 @@ function setup_halo_ref!(A)
         end
 
     end # ! NO_MPI
+    println("Out of SetupHalo_ref")
+    return A
 end

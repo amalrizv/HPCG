@@ -33,14 +33,15 @@ function compute_spmv_ref!(y, A, x) # takes SpMatrix_anx structure
 
       cur_nnz  = A.nonzerosInRow[i]
 
+#	  @show cur_vals[1]
+#	  @show cur_inds
+#	  @show x[cur_inds[1]]
       for j= 1:cur_nnz
-
-
           sum = sum + (cur_vals[j]*x[cur_inds[j]])
       end
       y[i] = sum
   end
-  
+   
   return 0, y
 
 end

@@ -141,3 +141,18 @@ end
     @assert(A.localNumberOfRows==first(size(diag)))
     A.matrixDiagonal = diag
 end
+
+# KCH NOTE: the 2147483647 below was what RAND_MAX was defined in on my system's libc headers.
+# It might be different for another system!
+
+
+function fill_random_vector!(x)
+    for i = 1:length(x)
+        # KCH NOTE: this is to try to get the same pseudo-random number sequence that the libc prng generates
+        # (which is what C++ HPCG uses), once things are validated, we should use the commented out version below,
+        # which will produce a different random sequence than C++
+        #x[i] = (ccall((:rand, "libc"), Float64, ()) / 2147483647) + 1.0
+        x[i] = rand() + 1.0
+    end 
+    return x
+end

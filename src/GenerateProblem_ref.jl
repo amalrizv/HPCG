@@ -49,9 +49,9 @@ function generate_problem_ref!(A::HPCGSparseMatrix)
     matrixValues   = Array{Array{Float64,1}}(undef,localNumberOfRows)
     matrixDiagonal = Array{Array{Float64,1}}(undef,localNumberOfRows)
 
-    b       = Vector{Int64}(undef,localNumberOfRows)
-    x       = Vector{Int64}(undef,localNumberOfRows)
-    xexact  = Vector{Int64}(undef,localNumberOfRows)
+    b       = Vector{Float64}(undef,localNumberOfRows)
+    x       = Vector{Float64}(undef,localNumberOfRows)
+    xexact  = Vector{Float64}(undef,localNumberOfRows)
     bv      = zeros(localNumberOfRows)
     xv      = zeros(localNumberOfRows)
     xexactv = zeros(localNumberOfRows)
@@ -76,6 +76,9 @@ function generate_problem_ref!(A::HPCGSparseMatrix)
     mtxIndL = Array{Int64, 2}(undef,localNumberOfRows, numberOfNonzerosPerRow) 
     matrixDiagonal = Array{Int64, 2}(undef,localNumberOfRows, numberOfNonzerosPerRow) 
     matrixValues = Array{Int64, 2}(undef,localNumberOfRows, numberOfNonzerosPerRow) 
+
+    #initali values in c version are all zero but julia has no array index 0
+
     fill!(mtxIndG, 1)
     fill!(mtxIndL, 1)
     fill!(matrixDiagonal, 0)
@@ -83,7 +86,8 @@ function generate_problem_ref!(A::HPCGSparseMatrix)
     localNumberOfNonzeros = 0
 
     # TODO:  This triply nested loop could be flattened or use nested parallelism
-
+    diag_counter=0
+    other = 0
     cvp = 1
     cipg = 1
     for iz=1:nz
@@ -111,8 +115,10 @@ function generate_problem_ref!(A::HPCGSparseMatrix)
 							if curcol == currentGlobalRow
 								matrixValues[currentLocalRow, currentValuePointer]   = 26
 								matrixDiagonal[currentLocalRow, currentValuePointer] = 26
+								diag_counter += 1
 							else
 								matrixValues[currentLocalRow, currentValuePointer]  = -1
+								other  +=1 
 								continue
 							end
 							mtxIndG[currentLocalRow,currentValuePointer] = curcol 
@@ -138,6 +144,8 @@ function generate_problem_ref!(A::HPCGSparseMatrix)
             end #  stop ix loop
         end # stop iy loop
     end # stop iz loop
+    @show diag_counter
+    @show other 
     @debug("Process $A.geom.rank of $A.geom.size has $localNumberOfRows rows.\n Process $A.geom.rank of $A.geom.size has $localNumberOfNonzeros nonzeros.\n") 
 
     totalNumberOfNonzeros = 0
