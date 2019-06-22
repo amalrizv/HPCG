@@ -35,7 +35,8 @@ function test_cg!(A, data, b, x, count_pass, count_fail)
     # Temporary storage for holding original diagonal and RHS
     exaggeratedDiagA = Vector{Float64}(undef, A.localNumberOfRows)
     origB            = Vector{Float64}(undef,A.localNumberOfRows)
-    origDiagA        = copy_matrix_diagonal(A)
+    origDiagA        = Array{Float64,1}(undef, A.localNumberOfRows)
+    fill!(origDiagA, 26.0)
     exaggeratedDiagA = origDiagA
     origB            = b
 
@@ -53,7 +54,9 @@ function test_cg!(A, data, b, x, count_pass, count_fail)
         end
     end
 
-    replace_matrix_diagonal!(A, exaggeratedDiagA)
+    for i = 1: A.localNumberOfRows 
+	A.matrixValues[i, A.curcols[i]] = exaggeratedDiagA[i]
+    end
 
     niters          = 0
     normr           = 0.0
@@ -99,7 +102,9 @@ function test_cg!(A, data, b, x, count_pass, count_fail)
     end
 
     # Restore matrix diagonal and RHS
-    replace_matrix_diagonal!(A, origDiagA)
+    for i = 1: A.localNumberOfRows 
+	A.matrixValues[i, A.curcols[i]] = origDiagA[i]
+    end
 
     b = origB
 

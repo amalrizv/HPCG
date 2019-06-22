@@ -63,16 +63,18 @@ function cg_ref!(A , data , b , x , max_iter ,
         @debug("WARNING: PERFORMING UNPRECONDITIONED ITERATIONS")
     end
 
-    #ifdef HPCG_DEBUG
     print_freq = 1
+
     if print_freq > 50 
         print_freq = 50
     end
+
     if print_freq<1
         print_freq = 1
     end
-    #endif
+
     # p is of length ncols, copy x to p for sparse MV operation
+
     p   = x
     t3t = time_ns()
 
@@ -82,7 +84,6 @@ function cg_ref!(A , data , b , x , max_iter ,
     t2t = time_ns()
 
     flag, r = compute_waxpby_ref!(r, nrow, 1.0, b, -1.0, Ap) 
-
     t2  = time_ns()- t2t # r = b - Ax (x stored in p)
     t1t = time_ns()
 
@@ -97,8 +98,8 @@ function cg_ref!(A , data , b , x , max_iter ,
     normr0 = normr
 
     # Start iterations
-    while normr/normr0 > tolerance
-        for k=1:max_iter 
+     for k=1:max_iter 
+    	while normr/normr0 > tolerance
             t5t = time_ns()
             if doPreconditioning
                 flag, z  =compute_mg_ref!(z,A, r) # Apply preconditioner
@@ -136,7 +137,11 @@ function cg_ref!(A , data , b , x , max_iter ,
             flag, y = compute_waxpby_ref!(r, nrow, 1.0, r, -alpha, Ap)  
             t2  = time_ns()- t2t+t2# r = r - alpha*Ap
             t1t = time_ns()
+	    @show normr
+	    @show "before dot product"
             flag, normr = compute_dot_product_ref!(normr, t4, nrow, r, r) 
+	    @show "after dot product"
+	    @show normr
             t1    = time_ns()- t1t+t1
             normr = sqrt(normr)
 
@@ -147,7 +152,10 @@ function cg_ref!(A , data , b , x , max_iter ,
             niters = k
         end
     end
-
+    @show normr0
+    @show normr
+    sr_ref = (normr/normr0)
+    @show sr_ref
     # Store times
 
     t0        = time_ns() - t_begin  # Total time. All done...

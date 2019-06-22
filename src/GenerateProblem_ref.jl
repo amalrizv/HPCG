@@ -44,10 +44,6 @@ function generate_problem_ref!(A::HPCGSparseMatrix)
 
     # Allocate arrays that are of length localNumberOfRows
     nonzerosInRow  = Array{Any}(undef,localNumberOfRows)
-    mtxIndG        = Array{Array{Int64,1}}(undef,localNumberOfRows)
-    mtxIndL        = Array{Array{Int64,1}}(undef,localNumberOfRows)
-    matrixValues   = Array{Array{Float64,1}}(undef,localNumberOfRows)
-    matrixDiagonal = Array{Array{Float64,1}}(undef,localNumberOfRows)
 
     b       = Vector{Float64}(undef,localNumberOfRows)
     x       = Vector{Float64}(undef,localNumberOfRows)
@@ -74,22 +70,18 @@ function generate_problem_ref!(A::HPCGSparseMatrix)
 
     mtxIndG = Array{Int64, 2}(undef,localNumberOfRows, numberOfNonzerosPerRow) 
     mtxIndL = Array{Int64, 2}(undef,localNumberOfRows, numberOfNonzerosPerRow) 
-    matrixDiagonal = Array{Int64, 2}(undef,localNumberOfRows, numberOfNonzerosPerRow) 
-    matrixValues = Array{Int64, 2}(undef,localNumberOfRows, numberOfNonzerosPerRow) 
+    matrixValues = Array{Float64, 2}(undef,localNumberOfRows, numberOfNonzerosPerRow) 
+    curcols = Array{Float64,1}(undef, localNumberOfRows)
 
     #initali values in c version are all zero but julia has no array index 0
 
     fill!(mtxIndG, 1)
     fill!(mtxIndL, 1)
-    fill!(matrixDiagonal, 0)
+    fill!(curcols, 1)
     fill!(matrixValues, 0)
     localNumberOfNonzeros = 0
 
     # TODO:  This triply nested loop could be flattened or use nested parallelism
-    diag_counter=0
-    other = 0
-    cvp = 1
-    cipg = 1
     for iz=1:nz
         giz = giz0+(iz-1)
         for iy=1:ny 
@@ -103,26 +95,25 @@ function generate_problem_ref!(A::HPCGSparseMatrix)
                 localToGlobalMap[currentLocalRow] = currentGlobalRow
                 @debug(" rank, globalRow, localRow = $A.geom.rank $currentGlobalRow ",globalToLocalMap[currentGlobalRow])
                 numberOfNonzerosInRow = 0
+		currentValuePointer = 1
+		currentIndexPointer = 1
                 for sz=-1:1 
-                    if giz+sz>0 && giz+sz<=gnz
+                    if giz+sz>-1 && giz+sz<gnz
                         for sy=-1:1 
-                            if giy+sy>0 && giy+sy<=gny
+                            if giy+sy>-1 && giy+sy<gny
                                 for sx=-1:1 
-                                    if gix+sx>0 && gix+sx<=gnx
-                                        curcol = currentGlobalRow+sz*gnx*gny+sy*gnx+sx+1 
+                                    if gix+sx>-1 && gix+sx<gnx
+                                        curcol = (currentGlobalRow-1)+sz*gnx*gny+sy*gnx+sx+1 
 					# Julia way
-						for currentValuePointer  = 1: numberOfNonzerosPerRow
 							if curcol == currentGlobalRow
-								matrixValues[currentLocalRow, currentValuePointer]   = 26
-								matrixDiagonal[currentLocalRow, currentValuePointer] = 26
-								diag_counter += 1
+								matrixValues[currentLocalRow, currentValuePointer]   = 26.0
+								curcols[currentLocalRow] = currentValuePointer 
 							else
-								matrixValues[currentLocalRow, currentValuePointer]  = -1
-								other  +=1 
-								continue
+								matrixValues[currentLocalRow, currentValuePointer]  = -1.0
 							end
-							mtxIndG[currentLocalRow,currentValuePointer] = curcol 
-						end
+					mtxIndG[currentLocalRow,currentIndexPointer] = curcol 
+					currentValuePointer += 1
+					currentIndexPointer += 1
                                         numberOfNonzerosInRow = numberOfNonzerosInRow +1
                                     end #  stop x bounds test
                                 end # stop sx loop
@@ -144,8 +135,7 @@ function generate_problem_ref!(A::HPCGSparseMatrix)
             end #  stop ix loop
         end # stop iy loop
     end # stop iz loop
-    @show diag_counter
-    @show other 
+    @show curcols
     @debug("Process $A.geom.rank of $A.geom.size has $localNumberOfRows rows.\n Process $A.geom.rank of $A.geom.size has $localNumberOfNonzeros nonzeros.\n") 
 
     totalNumberOfNonzeros = 0
@@ -173,7 +163,8 @@ function generate_problem_ref!(A::HPCGSparseMatrix)
     A.mtxIndG               = mtxIndG
     A.mtxIndL               = mtxIndL
     A.matrixValues          = matrixValues
-    A.matrixDiagonal        = matrixDiagonal
+    A.curcols		    = curcols 
+    #A.matrixDiagonal        = matrixDiagonal
     A.localToGlobalMap      = localToGlobalMap
     A.globalToLocalMap      = globalToLocalMap
     return b, x, xexact

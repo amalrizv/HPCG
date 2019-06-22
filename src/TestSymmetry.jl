@@ -77,7 +77,7 @@ function test_symmetry(A, b, xexact, testsymmetry_data)
 	@debug("Error in call to dot: $err .\n")
  end
  # TODO : check if eps(Float64) is apt porting of DBL_EPSILON
- depsym_spmv = parse(Float64, ((xtAy - ytAx)/((xNorm2*ANorm*yNorm2 + yNorm2*ANorm*xNorm2) * eps(Float64))))
+ depsym_spmv = ((xtAy - ytAx)/((xNorm2*ANorm*yNorm2 + yNorm2*ANorm*xNorm2) * eps(Float64)))
 
  if depsym_spmv > 1.0
 	count_fail += 1  # If the difference is > 1, count it wrong
@@ -141,7 +141,7 @@ function test_symmetry(A, b, xexact, testsymmetry_data)
 
    ierr, residual = compute_residual!(residual, A.localNumberOfRows, b, z_ncol)
 
-   if err==1
+   if ierr==1
      @debug("Error in call to compute_residual: $ierr .\n")
    end
 

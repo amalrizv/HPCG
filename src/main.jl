@@ -165,7 +165,7 @@ function main(hpcg_args)
 
     for i = 1:num_calls
         ierr, b_computed = compute_spmv_ref!(b_computed,A, x_overlap) # b_computed = A*x_overlap
-        #wrong 
+        #after first iteration all values are wrong 
 	@show b_computed[nrow]
         if ierr != 0
             @error("Error in call to SpMV: $ierr .\n")
@@ -204,7 +204,7 @@ function main(hpcg_args)
     ref_times = zeros(9)
     tolerance = 0.0 # Set tolerance to zero to make all runs do maxIters iterations
     err_count = 0
-
+    @show "ALL RESULTS ARE CONSISTENT WITH CPP VERSION TILL HERE"
     for i = 1:num_calls
         x = zeros(length(x))
         @debug("In     ## Reference CG Timing Phase ## ")
@@ -256,7 +256,7 @@ function main(hpcg_args)
     TestCGdata, times = test_cg!(A, data, b, x, count_pass, count_fail)
 
     testsymmetry_data = TestSymmetryData 
-#    test_symmetry(A, b, xexact, testsymmetry_data)
+    test_symmetry(A, b, xexact, testsymmetry_data)
 
     if (rank==0) 
         @debug "Total validation (TestCG and TestSymmetry) execution time in main (sec) = " (time_ns() - t1)

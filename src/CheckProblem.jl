@@ -61,27 +61,23 @@ function check_problem(A::HPCGSparseMatrix, b, x, xexact)
 
         #@debug(" rank, globalRow, localRow = $A.geom.rank $currentGlobalRow ",A.globalToLocalMap[currentGlobalRow])
         numberOfNonzerosInRow = 0
-        currentValuePointer = A.matrixValues[currentLocalRow] # Pointer to current value in current row
-        currentIndexPointerG = A.mtxIndG[currentLocalRow] # Pointer to current index in current row
-	cvp = 1
-	cipg = 1
+        currentValuePointer = 1 # Pointer to current value in current row
+        currentIndexPointerG = 1 # Pointer to current index in current row
         for sz=-1 :1 
-          if giz+sz>0 && giz+sz<=gnz
+          if giz+sz>-1 && giz+sz<gnz
             for sy=-1:1  
-              if giy+sy>0 && giy+sy<=gny 
+              if giy+sy>-1 && giy+sy<gny 
                 for sx=-1:1 
-                  if gix+sx>0 && gix+sx<=gnx 
-                     curcol = currentGlobalRow+sz*gnx*gny+sy*gnx+sx+1
+                  if gix+sx>-1 && gix+sx<gnx 
+                     curcol = (currentGlobalRow-1)+sz*gnx*gny+sy*gnx+sx+1
                     if curcol==currentGlobalRow 
-                     # @assert(A.matrixDiagonal[currentLocalRow] == currentValuePointer)
-		      cvp = cvp+26.0
-                     # @assert(cvp== cvp +26.0)
+                      @assert(A.matrixValues[currentLocalRow, currentValuePointer] == 26.0)
                      else 
-		      cvp =cvp-1.0
-                     # @assert(cvp== cvp -1.0)
+		      @assert(A.matrixValues[currentLocalRow, currentValuePointer] == -1.0)
                     end
-  		      cipg  = cipg+curcol
-                    #@assert(cipg== cipg+curcol)
+		    @assert(A.mtxIndG[currentLocalRow, currentIndexPointerG] == curcol)
+                    currentValuePointer +=1
+		    currentIndexPointerG +=1
                     numberOfNonzerosInRow+=1
                   end # end x bounds test
                 end # end sx loop
@@ -89,17 +85,17 @@ function check_problem(A::HPCGSparseMatrix, b, x, xexact)
             end # end sy loop
           end # end z bounds test
         end # end sz loop
-#        @assert(A.nonzerosInRow[currentLocalRow] == numberOfNonzerosInRow)
+        @assert(A.nonzerosInRow[currentLocalRow] == numberOfNonzerosInRow)
 
         localNumberOfNonzeros += numberOfNonzerosInRow # Protect this with an atomic
         if b!=0      
-#		@assert(bv[currentLocalRow] == 26.0 - ((Float64)(numberOfNonzerosInRow-1)))
+		@assert(bv[currentLocalRow] == 26.0 - ((Float64)(numberOfNonzerosInRow-1)))
         end
         if x!=0      
-#		@assert(xv[currentLocalRow] == 0.0)
+		@assert(xv[currentLocalRow] == 0.0)
 	end
         if xexact!=0 
-#		@assert(xexactv[currentLocalRow] == 1.0)
+		@assert(xexactv[currentLocalRow] == 1.0)
 	end
       end # end ix loop
     end # end iy loop

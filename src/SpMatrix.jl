@@ -27,7 +27,8 @@ mutable struct HPCGSparseMatrix
     mtxIndG ::Array{Int64,2}           # matrix indices as global values
     mtxIndL ::Array{Int64,2}           # matrix indices as local value
     matrixValues :: Array{Float64,2}   # values of matrix entries
-    matrixDiagonal :: Array{Float64,2} # values of matrix diagonal entries
+    curcols ::Array{Int64,1}	       # column indices of matrixValues where diagonal elements are stored 
+#    matrixDiagonal :: Array{Float64,2} # values of matrix diagonal entries
     localToGlobalMap::Dict    # local-to-global mapping
     globalToLocalMap::Dict    # global-to-local mapping
 
@@ -52,7 +53,7 @@ mutable struct HPCGSparseMatrix
 
     function HPCGSparseMatrix(dpopt, spmvopt, mgopt, waxpbyopt, g,
                               ttl, tnrows, tnnz, lnrows, lncols, lnnz,
-                              nzinrow, mtxindg, mtxindl, matvals, matdiag, 
+                              nzinrow, mtxindg, mtxindl, matvals, 
                               l2gmap, g2lmap,
                               nextvals, nsendneighbor, totaltosend,
                               elmtosend, neighb, rcvlen, sendlen, sendbuf,
@@ -77,7 +78,7 @@ mutable struct HPCGSparseMatrix
         x.mtxIndG                = mtxindg
         x.mtxIndL                = mtxindl
         x.matrixValues           = matvals
-        x.matrixDiagonal         = matdiag
+ #       x.matrixDiagonal         = matdiag
         x.localToGlobalMap       = l2gmap
         x.globalToLocalMap       = g2lmap
 
@@ -102,7 +103,7 @@ end
 
 function HPCGSparseMatrix(dprod_opt, spmb_opt, mg_opt, waxpby_opt, geom)
     return HPCGSparseMatrix(dprod_opt, spmb_opt, mg_opt, waxpby_opt, geom,
-                            "", 0, 0, 0, 0, 0, [], reshape([],0,2), reshape([],0,2), reshape([],0,2), reshape([],0,2), Dict(), Dict(),
+                            "", 0, 0, 0, 0, 0, [], reshape([],0,2), reshape([],0,2), reshape([],0,2), Dict(), Dict(),
                             0, 0, 0, [], [], [], [], [], MGData())
 
 end
@@ -122,15 +123,15 @@ end
 
   @param[in] A the known system matrix.
   @param[inout] diagonal  Vector of diagonal values (must be allocated before call to this function).
-=#
+
 @inline function copy_matrix_diagonal(A) 
-    cur_diag_a = A.matrixDiagonal
+    cur_diag_a = 
     dv         = Vector{Int64}(undef, A.localNumberOfRows)
     @assert(A.localNumberOfRows == length(dv))
     dv         = cur_diag_a
     return dv
 end
-
+=#
 #=
   Replace specified matrix diagonal value.
 

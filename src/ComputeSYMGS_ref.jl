@@ -40,7 +40,7 @@ function compute_symgs_ref!(x, A, r)
   end
 
   nrow = A.localNumberOfRows
-  matrixDiagonal = A.matrixDiagonal  # An array of pointers to the diagonal entries A.matrixValues
+  #matrixDiagonal = A.matrixDiagonal  # An array of pointers to the diagonal entries A.matrixValues
   matrixValues = A.matrixValues
   mtxIndL = A.mtxIndL
   rv = r
@@ -50,7 +50,8 @@ function compute_symgs_ref!(x, A, r)
     currentValues = matrixValues[i, :]
     currentColIndices = mtxIndL[i, :]
     currentNumberOfNonzeros = A.nonzerosInRow[i]
-    currentDiagonal = matrixDiagonal[i,1] # Current diagonal value
+    curcols = A.curcols
+    currentDiagonal = matrixValues[i,curcols[i] ] # Current diagonal value
     sum = rv[i] # RHS value
     for j=1:currentNumberOfNonzeros 
       curCol = currentColIndices[j]
@@ -68,7 +69,8 @@ function compute_symgs_ref!(x, A, r)
     currentValues = matrixValues[i, :]
     currentColIndices = mtxIndL[i,:]
     currentNumberOfNonzeros = A.nonzerosInRow[i]
-    currentDiagonal = matrixDiagonal[i,1] # Current diagonal value
+    curcols = A.curcols
+    currentDiagonal = matrixValues[i,curcols[i] ] # Current diagonal value
     sum = rv[i] # RHS value
 
     for j = 1:currentNumberOfNonzeros

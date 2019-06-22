@@ -110,8 +110,8 @@ function cg!(A, data, b, x, max_iter, tolerance, niters, normr, normr0, times, d
   normr0 = normr
 
   # Start iterations
-  while normr/normr0 > tolerance
-  	for k=1:max_iter+1
+  for k=1:max_iter+1
+  	while normr/normr0 > tolerance
     		t5t = time_ns()
     		if doPreconditioning
       			flag, z = compute_mg!(z,A, r) # Apply preconditioner
@@ -161,7 +161,8 @@ function cg!(A, data, b, x, max_iter, tolerance, niters, normr, normr0, times, d
     		niters = k
   	end
   end
-
+  sr = normr/normr0 
+  @show sr
   t0 = time_ns() - t_begin  # Total time. All done...
   times[1] += t0
   times[2] += t1
