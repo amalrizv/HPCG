@@ -25,12 +25,10 @@ function setup_halo_ref!(A)
     nonzerosInRow     = A.nonzerosInRow
     mtxIndG               = A.mtxIndG
     mtxIndL               = A.mtxIndL
-    @show (mtxIndG)
     # In the non-MPI case we simply copy global indices to local index storage
     if MPI.Initialized() == false
         # LNR = ,"localNumberOfRows," dimsMIG = ,",size(mtxIndG)," dimMIL = ",size(mtxIndL),".")
         A.mtxIndL = mtxIndG
-    @show mtxIndL
     else
 
         # Scan global IDs of the nonzeros in the matrix.  Determine if the column ID matches a row ID.  If not:
@@ -50,17 +48,14 @@ function setup_halo_ref!(A)
                 rankIdOfColumnEntry = compute_rank_of_matrix_row(A.geom, curIndex)
                 #      @debug("rank, row , col, globalToLocalMap[col] = ",A.geom.rank, currentGlobalRow, curIndex ,AA.globalToLocalMap[curIndex],"\n")
                 if  A.geom.rank != rankIdOfColumnEntry # If column index is not a row index, then it comes from another processor
-                    if haskey(receiveList, rankIdOfColumnEntry)
-                        push!(receiveList[rankIdOfColumnEntry], curIndex) 
-                    else
-                        receiveList[rankIdOfColumnEntry] = Set(curIndex)
+		    if haskey(receiveList, rankIdOfColumnEntry) == false
+			receiveList[rankIdOfColumnEntry] = Set{Int64}()
+		    end
+		    push!(receiveList[rankIdOfColumnEntry], curIndex)
+                    if haskey(sendList, rankIdOfColumnEntry) == false
+                        sendList[rankIdOfColumnEntry] = Set{Int64}()
                     end
-
-                    if haskey(sendList, rankIdOfColumnEntry)
-                        push!(sendList[rankIdOfColumnEntry], curIndex) 
-                    else
-                        sendList[rankIdOfColumnEntry] = Set(curIndex)
-                    end
+                    push!(sendList[rankIdOfColumnEntry], currentGlobalRow) 
 
                 end
             end
@@ -80,20 +75,21 @@ function setup_halo_ref!(A)
         # TODO KCH: the following should only execute if debugging is enabled!
         # These are all attributes that should be true, due to symmetry
         #  @debug("totalToBeSent = $totalToBeSent totalToBeReceived = $totalToBeReceived")
-        @assert(totalToBeSent==totalToBeReceived) # Number of sent entry should equal number of received
+#        @assert(totalToBeSent==totalToBeReceived) # Number of sent entry should equal number of received
         @assert(length(sendList)==length(receiveList)) # Number of send-to neighbors should equal number of receive-from
         # Each receive-from neighbor should be a send-to neighbor, and send the same number of entries
         for (k,v) in receiveList
             @assert haskey(sendList,k)
             @assert length(sendList[k])==length(receiveList[k])
         end
-
+        len_snd_list  = length(collect(keys(sendList)))
+        len_rcv_list  = length(collect(keys(receiveList)))
         #Build the arrays and lists needed by the ExchangeHalo function.
         sendBuffer        = Array{Float64}(undef, totalToBeSent)
         elementsToSend    = Array{Int64}(undef, totalToBeSent)
-        neighbors         = Array{Int64}(undef, length(collect(keys(sendList))))
-        receiveLength     = Array{Int64}(undef, length(collect(keys(receiveList))))
-        sendLength        = Array{Int64}(undef, length(collect(keys(receiveList))))
+        neighbors         = Array{Int64}(undef, len_snd_list)
+        receiveLength     = Array{Int64}(undef, len_rcv_list)
+        sendLength        = Array{Int64}(undef, len_rcv_list)
         neighborCount     = 1
         receiveEntryCount = 1
         sendEntryCount    = 1
@@ -103,13 +99,15 @@ function setup_halo_ref!(A)
             neighbors[neighborCount]     = neighborId # store rank ID of current neighbor
             receiveLength[neighborCount] = length(receiveList[neighborId])
             sendLength[neighborCount]    = length(sendList[neighborId]) # Get count if sends/receives
-
-            for i in receiveList[neighborId]
+	    n_rcv_id = receiveList[neighborId] 
+	    n_snd_id = sendList[neighborId]
+	   @show n_rcv_id
+            for i in n_rcv_id
                 externalToLocalMap[i] = localNumberOfRows + receiveEntryCount # The remote columns are indexed at end of internals
                 receiveEntryCount += 1
             end
 
-            for i in sendList[neighborId] 
+            for i in n_snd_id
                 elementsToSend[sendEntryCount] = A.globalToLocalMap[i] # store local ids of entry to send
                 sendEntryCount += 1
             end
@@ -128,7 +126,7 @@ function setup_halo_ref!(A)
                     mtxIndL[i,j] = externalToLocalMap[curIndex]
                 end
             end
-        end
+       end
 
         # Store contents in our matrix struct
         numberOfExternalValues = length(externalToLocalMap)

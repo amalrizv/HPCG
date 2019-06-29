@@ -137,11 +137,7 @@ function cg_ref!(A , data , b , x , max_iter ,
             flag, y = compute_waxpby_ref!(r, nrow, 1.0, r, -alpha, Ap)  
             t2  = time_ns()- t2t+t2# r = r - alpha*Ap
             t1t = time_ns()
-	    @show normr
-	    @show "before dot product"
             flag, normr = compute_dot_product_ref!(normr, t4, nrow, r, r) 
-	    @show "after dot product"
-	    @show normr
             t1    = time_ns()- t1t+t1
             normr = sqrt(normr)
 
@@ -152,10 +148,7 @@ function cg_ref!(A , data , b , x , max_iter ,
             niters = k
         end
     end
-    @show normr0
-    @show normr
     sr_ref = (normr/normr0)
-    @show sr_ref
     # Store times
 
     t0        = time_ns() - t_begin  # Total time. All done...

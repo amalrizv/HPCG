@@ -162,7 +162,6 @@ function cg!(A, data, b, x, max_iter, tolerance, niters, normr, normr0, times, d
   	end
   end
   sr = normr/normr0 
-  @show sr
   t0 = time_ns() - t_begin  # Total time. All done...
   times[1] += t0
   times[2] += t1

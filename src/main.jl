@@ -108,7 +108,7 @@ function main(hpcg_args)
     setup_time = time_ns() # TODO: INCLUDE CORRECT TIMER
     A          = initialize_sparse_matrix(geom)
 
-    b, x, xexact = generate_problem!(A)	
+    A, b, x, xexact = generate_problem!(A)	
     A   = setup_halo!(A)	
     num_mg_levels  = 4 #Number of levels including first
 
@@ -165,8 +165,6 @@ function main(hpcg_args)
 
     for i = 1:num_calls
         ierr, b_computed = compute_spmv_ref!(b_computed,A, x_overlap) # b_computed = A*x_overlap
-        #after first iteration all values are wrong 
-	@show b_computed[nrow]
         if ierr != 0
             @error("Error in call to SpMV: $ierr .\n")
         end
@@ -204,7 +202,6 @@ function main(hpcg_args)
     ref_times = zeros(9)
     tolerance = 0.0 # Set tolerance to zero to make all runs do maxIters iterations
     err_count = 0
-    @show "ALL RESULTS ARE CONSISTENT WITH CPP VERSION TILL HERE"
     for i = 1:num_calls
         x = zeros(length(x))
         @debug("In     ## Reference CG Timing Phase ## ")
@@ -385,7 +382,6 @@ function main(hpcg_args)
     ####################
     ## Report Results ##
     ####################
-    @show length(x)
     # Report results to YAML file
 #    times  = ReportResults(A, numberOfMgLevels, numberOfCgSets, refMaxIters, optMaxIters, times, testcg_data, testsymmetry_data, testnorms_data, global_failure, quickPath)
     # Clean up

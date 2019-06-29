@@ -135,7 +135,6 @@ function generate_problem_ref!(A::HPCGSparseMatrix)
             end #  stop ix loop
         end # stop iy loop
     end # stop iz loop
-    @show curcols
     @debug("Process $A.geom.rank of $A.geom.size has $localNumberOfRows rows.\n Process $A.geom.rank of $A.geom.size has $localNumberOfNonzeros nonzeros.\n") 
 
     totalNumberOfNonzeros = 0
@@ -167,6 +166,6 @@ function generate_problem_ref!(A::HPCGSparseMatrix)
     #A.matrixDiagonal        = matrixDiagonal
     A.localToGlobalMap      = localToGlobalMap
     A.globalToLocalMap      = globalToLocalMap
-    return b, x, xexact
+    return A, b, x, xexact
 
 end
