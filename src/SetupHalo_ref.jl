@@ -46,16 +46,20 @@ function setup_halo_ref!(A)
             for j = 1:nonzerosInRow[i]
                 curIndex            = mtxIndG[i,j]
                 rankIdOfColumnEntry = compute_rank_of_matrix_row(A.geom, curIndex)
+		@show rankIdOfColumnEntry
                 #      @debug("rank, row , col, globalToLocalMap[col] = ",A.geom.rank, currentGlobalRow, curIndex ,AA.globalToLocalMap[curIndex],"\n")
                 if  A.geom.rank != rankIdOfColumnEntry # If column index is not a row index, then it comes from another processor
-		    if haskey(receiveList, rankIdOfColumnEntry) == false
-			receiveList[rankIdOfColumnEntry] = Set{Int64}()
+
+		    if haskey(receiveList, rankIdOfColumnEntry)
+		    	push!(receiveList[rankIdOfColumnEntry], curIndex)
+ 		    else
+			receiveList[rankIdOfColumnEntry] = Set(curIndex)
 		    end
-		    push!(receiveList[rankIdOfColumnEntry], curIndex)
-                    if haskey(sendList, rankIdOfColumnEntry) == false
-                        sendList[rankIdOfColumnEntry] = Set{Int64}()
-                    end
-                    push!(sendList[rankIdOfColumnEntry], currentGlobalRow) 
+                    if haskey(sendList, rankIdOfColumnEntry) 
+                    	push!(sendList[rankIdOfColumnEntry], currentGlobalRow) 
+		    else
+                    	sendList[rankIdOfColumnEntry] = Set(currentGlobalRow)
+		    end
 
                 end
             end
@@ -71,11 +75,12 @@ function setup_halo_ref!(A)
         for (k,v) in receiveList 
             totalToBeReceived += length(v)
         end
-
+	@show totalToBeSent
+	@show totalToBeReceived
         # TODO KCH: the following should only execute if debugging is enabled!
         # These are all attributes that should be true, due to symmetry
         #  @debug("totalToBeSent = $totalToBeSent totalToBeReceived = $totalToBeReceived")
-#        @assert(totalToBeSent==totalToBeReceived) # Number of sent entry should equal number of received
+        @assert(totalToBeSent==totalToBeReceived) # Number of sent entry should equal number of received
         @assert(length(sendList)==length(receiveList)) # Number of send-to neighbors should equal number of receive-from
         # Each receive-from neighbor should be a send-to neighbor, and send the same number of entries
         for (k,v) in receiveList
