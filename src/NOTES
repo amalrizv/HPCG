@@ -5,7 +5,7 @@ ISSUE 1-UNRESOLVED (setup_halo_ref)
 This is not happening. Sets(values) for Dictionary receiveList and sendList are different.
 Setup_halo_ref line 109 110 in cpp
 
-ISSUE 2-UNRESOLVED (setup_halo_ref)
+ISSUE 2-RESOLVED (setup_halo_ref)
  
 compute_rank_of_matrix_row has to give only 2 values 0 or 1(since np is 2) , instead it gives 0 to 15 values.
 
