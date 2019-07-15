@@ -21,13 +21,20 @@ function MBCounter(counts::Array{Any,1}, length::Int64)
   =#
 end
 
-function MBCounter(left::MixedBaseCounter , right::MixedBaseCounter) 
-  this =  MixedBaseCounter
-  this.length = left.length
+function MBCounter_lr(left::MixedBaseCounter , right::MixedBaseCounter) 
+  @show left.length
+  this =  MixedBaseCounter(left.length, [], [])
+  temp_max = Array{Int64}(undef, left.length)
+  temp_cur = Array{Int64}(undef, left.length)
   for i = 1:left.length
-    this.max_counts[i] = left.max_counts[i] - right.cur_counts[i]
-    this.cur_counts[i] = 0
+    temp_max[i] = left.max_counts[i] - right.cur_counts[i]
+    temp_cur[i] = 0
   end
+  this.max_counts = temp_max
+  this.cur_counts = temp_cur
+  temp_max = nothing
+  temp_cur = nothing
+  return this 
 end
 
 

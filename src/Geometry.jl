@@ -41,13 +41,12 @@ end
 
   @return Returns the MPI rank of the process assigned the row
 =#
-@inline function compute_rank_of_matrix_row(geom, index) 
+function compute_rank_of_matrix_row(geom, index) 
     gnx = geom.gnx
     gny = geom.gny
-
     iz = index÷(gny*gnx)
     iy = (index-iz*gny*gnx)÷gnx
-    ix = index÷gnx
+    ix = index%gnx
     # We now permit varying values for nz for any nx-by-ny plane of MPI processes.
     # npartz is the number of different groups of nx-by-ny groups of processes.
     # partz_ids is an array of length npartz where each value indicates the z process of the last process in the ith nx-by-ny group.

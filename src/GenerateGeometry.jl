@@ -24,16 +24,15 @@ include("hpcg.jl")
 =#
 function generate_geometry!(size, rank, numThreads,pz, zl, zu,
   			nx, ny, nz, npx, npy, npz)
-
+  @show nx, ny, nz, pz, zl, zu, rank, npx, npy, npz
   if npx * npy * npz <= 0 || npx * npy * npz > size
+    println("i compute optimal shape")
     npx, npy, npz = compute_optimal_shape_xyz(size, npx, npy, npz)
   end
 
   @debug("npx = $npx, npy = $npy, npz = $npz, comparing factor = $(npx*npy*npz)")
   @debug("npz = $npz")
 
-  partz_ids = 0
-  partz_nz  = 0
   npartz    = 0
 
   if pz == 0 # No variation in nz sizes
@@ -61,9 +60,13 @@ function generate_geometry!(size, rank, numThreads,pz, zl, zu,
   end
 
   # Now compute this process's indices in the 3D cube
-  ipz = div(rank, (npx*npy))
-  ipy = div((rank-ipz*npx*npy),npx)
+  println("BEFORE")
+  @show npx, npy, npz, nx, ny, nz
+  ipz = rank ÷ (npx*npy)
+  ipy = (rank-ipz*npx*npy)÷npx
   ipx = rank%npx # will gice division error because npx is zero 
+  println("AFTER")
+  @show npx, npy, npz, nx, ny, nz, ipx, ipy, ipz
 
   @debug("Generate Geometry: npx, npy, npz, nx, ny, nz, ipx, ipy, ipz => $npx, $npy, $npz, $nx, $ny, $nz, $ipx, $ipy, $ipz")
 

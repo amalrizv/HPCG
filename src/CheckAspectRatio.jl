@@ -17,11 +17,7 @@ function check_aspect_ratio(smallest_ratio, x, y, z, what, do_io)
       @debug("The shape should resemble a 3D cube. Please adjust and try again.")
     end
 
-if MPI.Initialized()
-    MPI.Abort(MPI.COMM_WORLD, 127)
-end
 
-    return 127
   end
 
   return 0

@@ -43,15 +43,16 @@ function setup_halo_ref!(A)
         #  TODO: With proper critical and atomic regions, this loop could be threaded, but not attempting it at this time
         for i = 1:localNumberOfRows 
             currentGlobalRow = A.localToGlobalMap[i]
+	    
             for j = 1:nonzerosInRow[i]
                 curIndex            = mtxIndG[i,j]
                 rankIdOfColumnEntry = compute_rank_of_matrix_row(A.geom, curIndex)
-		@show rankIdOfColumnEntry
-                #      @debug("rank, row , col, globalToLocalMap[col] = ",A.geom.rank, currentGlobalRow, curIndex ,AA.globalToLocalMap[curIndex],"\n")
-                if  A.geom.rank != rankIdOfColumnEntry # If column index is not a row index, then it comes from another processor
 
+		
+                if  A.geom.rank != rankIdOfColumnEntry # If column index is not a row index, then it comes from another processor
 		    if haskey(receiveList, rankIdOfColumnEntry)
 		    	push!(receiveList[rankIdOfColumnEntry], curIndex)
+			
  		    else
 			receiveList[rankIdOfColumnEntry] = Set(curIndex)
 		    end
@@ -64,7 +65,6 @@ function setup_halo_ref!(A)
                 end
             end
         end
-
         #Count number of matrix entries to send and receive
         totalToBeSent = 0
         for (k,v) in sendList  
@@ -106,7 +106,7 @@ function setup_halo_ref!(A)
             sendLength[neighborCount]    = length(sendList[neighborId]) # Get count if sends/receives
 	    n_rcv_id = receiveList[neighborId] 
 	    n_snd_id = sendList[neighborId]
-	   @show n_rcv_id
+#	   @show n_rcv_id
             for i in n_rcv_id
                 externalToLocalMap[i] = localNumberOfRows + receiveEntryCount # The remote columns are indexed at end of internals
                 receiveEntryCount += 1

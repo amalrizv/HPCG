@@ -4,7 +4,7 @@ function compute_prime_factors(n)
  # TODO : Operate on this using Dicts not arrays
   factors = Dict()
   d = Int64 
-  sq = Int64(sqrt(n)+1)
+  sq = round(Int64, (sqrt(n)+1))
 
   # remove 2 as a factor with shifts instead "/" and "%"
   factors[2] = 0
@@ -30,6 +30,11 @@ function compute_prime_factors(n)
   factors[n] = 0
   if n > 1 || length(factors) == 0  # left with a prime or x==1
      factors[n] = factors[n]+1
+  end
+  for (k,v) in factors 
+	if v== 0
+		pop!(factors, k)
+	end
   end
   return factors
 end
@@ -57,23 +62,24 @@ function pow_i(x,p)
 end
 
 function compute_optimal_shape_xyz(xyz, x, y, z) 
-
+  @show xyz
   factors = compute_prime_factors(xyz) # factors are sorted: ascending order
-  println(factors[x], factors[y], factors[z])
+  @show factors
   # there is at least one prime factor
   keyss = collect(keys(factors))     # cache the first factor, move to the next one
   vals  = collect(values(factors))
-
   x = keyss[1]
 
   if length(keyss)>1
       y = keyss[2] # try to cache the second factor in "y"
   end
-
+  @show x, y, factors[x]
   if length(factors) == 1  # only a single factor
-    z = pow_i(x, factors[x] / 3)
-    y = pow_i(x, factors[x] / 3 + ((factors[x] % 3) >= 2 ? 1 : 0))
-    x = pow_i(x, factors[x] / 3 + ((factors[x] % 3) >= 1 ? 1 : 0))
+    z = pow_i(x, factors[x] ÷ 3)
+    y = pow_i(x, factors[x] ÷ 3 + ((factors[x] % 3) >= 2 ? 1 : 0))
+    x = pow_i(x, factors[x] ÷ 3 + ((factors[x] % 3) >= 1 ? 1 : 0))
+   println("only a single factor")
+   @show x, y,z    
   elseif length(factors) == 2 && factors[x] == 1 && factors[y] == 1  # two distinct prime factors
     z = 1
   elseif length(factors) == 2 && factors[x] + factors[y] == 3  # three prime factors, one repeated
@@ -94,16 +100,15 @@ function compute_optimal_shape_xyz(xyz, x, y, z)
 
     next(c1) 
 
-	while is_zero(c1)==0 
-
-     	   c2 = MixedBaseCounter(c_main, c1) # "c2" gets the factors remaining in "c_main" that "c1" doesn't have
-           c2.next() 
+	while is_zero(c1)==0
+	   @show typeof(c_main), typeof(c1)
+     	   c2 = MBCounter_lr(c_main, c1) # "c2" gets the factors remaining in "c_main" that "c1" doesn't have
+           next(c2) 
 	   while is_zero(c2)==0
 
         	tf1 = Int64(product(c1,distinct_factors))
         	tf2 = Int64(product(c2,distinct_factors))
-        	tf3 = Int64(xyz / tf1/ tf2) # we derive the third dimension, we don't keep track of the factors it has
-
+        	tf3 = Int64(xyz ÷ tf1÷ tf2) # we derive the third dimension, we don't keep track of the factors it has
         	area = tf1 * Float64(tf2) + tf2 * Float(tf3) + tf1 * Float(tf3)
         	if area < min_area 
           		min_area = area

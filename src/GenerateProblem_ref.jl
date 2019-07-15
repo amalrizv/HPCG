@@ -33,6 +33,8 @@ function generate_problem_ref!(A::HPCGSparseMatrix)
     gix0 = A.geom.gix0
     giy0 = A.geom.giy0
     giz0 = A.geom.giz0
+    @show nx, ny,nz
+    @show A.geom.rank, gix0, giy0, giz0
     localNumberOfRows = nx*ny*nz # This is the size of our subblock
     # If this assert fails, it most likely means that the local_int_t is set to int and should be set to long long
     @assert(localNumberOfRows>0) # Throw an exception of the number of rows is less than zero (can happen if int overflow)
@@ -80,7 +82,6 @@ function generate_problem_ref!(A::HPCGSparseMatrix)
     fill!(curcols, 1)
     fill!(matrixValues, 0)
     localNumberOfNonzeros = 0
-
     # TODO:  This triply nested loop could be flattened or use nested parallelism
     for iz=1:nz
         giz = giz0+(iz-1)
@@ -97,6 +98,7 @@ function generate_problem_ref!(A::HPCGSparseMatrix)
                 numberOfNonzerosInRow = 0
 		currentValuePointer = 1
 		currentIndexPointer = 1
+		a = 0
                 for sz=-1:1 
                     if giz+sz>-1 && giz+sz<gnz
                         for sy=-1:1 
@@ -139,7 +141,10 @@ function generate_problem_ref!(A::HPCGSparseMatrix)
 
     totalNumberOfNonzeros = 0
     # Use MPI's reduce function to sum all nonzeros
+    @show localNumberOfNonzeros
     if MPI.Initialized() == true
+      println("$(A.geom.rank) has $localNumberOfNonzeros local number of zeros ")
+      MPI.Barrier(MPI.COMM_WORLD)
       lnnz = localNumberOfNonzeros
       gnnz = 0 # convert to 64 bit for MPI call
       gnnz = MPI.Allreduce(lnnz, MPI.SUM, MPI.COMM_WORLD)
@@ -152,6 +157,8 @@ function generate_problem_ref!(A::HPCGSparseMatrix)
     # This assert is usually the first to fail as problem size increases beyond the 32-bit integer range.
       @assert(totalNumberOfNonzeros>0) # Throw an exception of the number of nonzeros is less than zero (can happen if int overflow)
     #
+    
+    @show totalNumberOfNonzeros
     A.title                 = "0"
     A.totalNumberOfRows     = totalNumberOfRows
     A.totalNumberOfNonzeros = totalNumberOfNonzeros
@@ -166,6 +173,7 @@ function generate_problem_ref!(A::HPCGSparseMatrix)
     #A.matrixDiagonal        = matrixDiagonal
     A.localToGlobalMap      = localToGlobalMap
     A.globalToLocalMap      = globalToLocalMap
+    @show mtxIndG
     return A, b, x, xexact
 
 end

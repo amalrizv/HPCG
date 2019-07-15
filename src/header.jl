@@ -1,8 +1,8 @@
 using ArgParse
 using Logging
-include("main.jl")
-
-# TODO: USE_MPI is redundant for np
+using Distributed
+Distributed.@everywhere include("main.jl")
+#TODO: USE_MPI is redundant for np
 s = ArgParseSettings()
 @add_arg_table s begin 
     "--np"

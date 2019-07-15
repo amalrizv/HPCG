@@ -73,7 +73,7 @@ function main(hpcg_args)
         @debug("Process $rank of size $size is alive with $(params.numThreads) threads") 
     end
 
-    if MPI.Initialized()
+    if MPI.Initialized() == true
         MPI.Barrier(MPI.COMM_WORLD)
     end
 
@@ -95,6 +95,7 @@ function main(hpcg_args)
     t1 = time_ns() # TODO: INCLUDE CORRECT TIMER 
 
     # Construct the geometry and linear system
+    # MPI::VERSION passing the wrong arguments for pz zu npx npy and npz 
     geom = generate_geometry!(size, rank, params.numThreads, params.pz, params.zl, params.zu, nx, ny, nz, params.npx, params.npy, params.npz)
 
     ierr = check_aspect_ratio(0.125, geom.npx, geom.npy, geom.npz, "process grid", rank==0)

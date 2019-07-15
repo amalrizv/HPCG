@@ -44,8 +44,8 @@ function hpcg_init!(params, arg_hpcg)
     for i =1:3 
         if iparams[i] < 16
             for j = 1:2 
-                if iparams[(i+j)%3] > iparams[i]
-                    iparams[i] = iparams[(i+j)%3]
+                if iparams[(i-1+j)%3] > iparams[i]
+                    iparams[i] = iparams[(i-1+j)%3]
                 end
             end
         end 		
@@ -62,7 +62,7 @@ function hpcg_init!(params, arg_hpcg)
     end
 
 
-    if MPI.Initialized()
+    if MPI.Initialized()== true
         params = HPCG_Params(MPI.Comm_size(MPI.COMM_WORLD), MPI.Comm_rank(MPI.COMM_WORLD), 1, iparams[1], iparams[2], iparams[3], iparams[4], iparams[8], iparams[9], iparams[10], iparams[5], iparams[6], iparams[7])
     else
         params = HPCG_Params(1, 0, 1, iparams[1], iparams[2], iparams[3], iparams[4], iparams[8], iparams[9], iparams[10], iparams[5], iparams[6], iparams[7])
