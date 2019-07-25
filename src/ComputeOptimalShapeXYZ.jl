@@ -7,7 +7,7 @@ function compute_prime_factors(n)
   sq = round(Int64, (sqrt(n)+1))
 
   # remove 2 as a factor with shifts instead "/" and "%"
-  factors[2] = 0
+    factors[2] = 0
   while n > 1 & (n & 1) == 0  
     factors[2] = factors[2] + 1
     n>>=1
@@ -64,10 +64,14 @@ end
 function compute_optimal_shape_xyz(xyz, x, y, z) 
   @show xyz
   factors = compute_prime_factors(xyz) # factors are sorted: ascending order
+  if xyz == 1
+	factors[1] = 1
+  end
   @show factors
   # there is at least one prime factor
   keyss = collect(keys(factors))     # cache the first factor, move to the next one
   vals  = collect(values(factors))
+  @show keyss
   x = keyss[1]
 
   if length(keyss)>1

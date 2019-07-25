@@ -27,6 +27,9 @@ function generate_geometry!(size, rank, numThreads,pz, zl, zu,
   @show nx, ny, nz, pz, zl, zu, rank, npx, npy, npz
   if npx * npy * npz <= 0 || npx * npy * npz > size
     println("i compute optimal shape")
+    if MPI.Initialized == false
+	size = 1
+    end
     npx, npy, npz = compute_optimal_shape_xyz(size, npx, npy, npz)
   end
 

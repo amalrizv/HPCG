@@ -113,6 +113,7 @@ function generate_problem_ref!(A::HPCGSparseMatrix)
 							else
 								matrixValues[currentLocalRow, currentValuePointer]  = -1.0
 							end
+ 					@show curcol
 					mtxIndG[currentLocalRow,currentIndexPointer] = curcol 
 					currentValuePointer += 1
 					currentIndexPointer += 1
