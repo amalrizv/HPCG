@@ -53,7 +53,6 @@ function cg_ref!(A , data , b , x , max_iter ,
     #t6 = 0.0
 
     nrow = A.localNumberOfRows
-
     r  = data.r # Residual vector
     z  = data.z # Preconditioned residual vector
     p  = data.p # Direction vector (in MPI mode ncol>=nrow)
@@ -74,10 +73,9 @@ function cg_ref!(A , data , b , x , max_iter ,
     end
 
     # p is of length ncols, copy x to p for sparse MV operation
-
-    p   = x
+    x_len = length(x)
+    p[1:x_len] =x
     t3t = time_ns()
-
     flag, Ap = compute_spmv_ref!(Ap, A , p)  
 
     t3  = time_ns()-t3t # Ap = A*p
@@ -109,7 +107,7 @@ function cg_ref!(A , data , b , x , max_iter ,
             t5 = time_ns()- t5t # Preconditioner apply time
 
             if k == 1
-                p = z 
+                p[1:length(z)] = z 
                 t2= t2+time_ns()-t5t # Copy Mr to p
                 t1t = time_ns() 
                 flag, rtz = compute_dot_product_ref!(rtz, t4, nrow, r, z) 
@@ -161,5 +159,5 @@ function cg_ref!(A , data , b , x , max_iter ,
     times_add[5] = t4
     # for MPi version only
     #times_add[6] = t5
-    return 0, A , data , x , niters, normr , normr0 , times 
+    return 0, times 
 end

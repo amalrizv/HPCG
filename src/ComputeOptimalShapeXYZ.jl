@@ -62,28 +62,22 @@ function pow_i(x,p)
 end
 
 function compute_optimal_shape_xyz(xyz, x, y, z) 
-  @show xyz
   factors = compute_prime_factors(xyz) # factors are sorted: ascending order
   if xyz == 1
 	factors[1] = 1
   end
-  @show factors
   # there is at least one prime factor
   keyss = collect(keys(factors))     # cache the first factor, move to the next one
   vals  = collect(values(factors))
-  @show keyss
   x = keyss[1]
 
   if length(keyss)>1
       y = keyss[2] # try to cache the second factor in "y"
   end
-  @show x, y, factors[x]
   if length(factors) == 1  # only a single factor
     z = pow_i(x, factors[x] ÷ 3)
     y = pow_i(x, factors[x] ÷ 3 + ((factors[x] % 3) >= 2 ? 1 : 0))
     x = pow_i(x, factors[x] ÷ 3 + ((factors[x] % 3) >= 1 ? 1 : 0))
-   println("only a single factor")
-   @show x, y,z    
   elseif length(factors) == 2 && factors[x] == 1 && factors[y] == 1  # two distinct prime factors
     z = 1
   elseif length(factors) == 2 && factors[x] + factors[y] == 3  # three prime factors, one repeated
@@ -105,7 +99,6 @@ function compute_optimal_shape_xyz(xyz, x, y, z)
     next(c1) 
 
 	while is_zero(c1)==0
-	   @show typeof(c_main), typeof(c1)
      	   c2 = MBCounter_lr(c_main, c1) # "c2" gets the factors remaining in "c_main" that "c1" doesn't have
            next(c2) 
 	   while is_zero(c2)==0

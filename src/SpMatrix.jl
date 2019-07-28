@@ -125,7 +125,6 @@ end
   @param[inout] diagonal  Vector of diagonal values (must be allocated before call to this function).
 
 @inline function copy_matrix_diagonal(A) 
-    cur_diag_a = 
     dv         = Vector{Int64}(undef, A.localNumberOfRows)
     @assert(A.localNumberOfRows == length(dv))
     dv         = cur_diag_a

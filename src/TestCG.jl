@@ -37,8 +37,8 @@ function test_cg!(A, data, b, x, count_pass, count_fail)
     origB            = Vector{Float64}(undef,A.localNumberOfRows)
     origDiagA        = Array{Float64,1}(undef, A.localNumberOfRows)
     fill!(origDiagA, 26.0)
-    exaggeratedDiagA = origDiagA
-    origB            = b
+    exaggeratedDiagA[1:length(origDiagA)] = origDiagA
+    origB[1:length(b)]           = b
 
     # Modify the matrix diagonal to greatly exaggerate diagonal values.
     # CG should converge in about 10 iterations for this problem, regardless of problem size

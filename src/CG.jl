@@ -87,7 +87,7 @@ function cg!(A, data, b, x, max_iter, tolerance, niters, normr, normr0, times, d
   end
 #endif
   # p is of length ncols, copy x to p for sparse MV operation
-  x = p
+  p[1:length(x)] = x
   t3t = time_ns() 
   flag, Ap = compute_spmv!(Ap, A, p) 
   t3 = time_ns()-t3t 
@@ -116,7 +116,7 @@ function cg!(A, data, b, x, max_iter, tolerance, niters, normr, normr0, times, d
     		if doPreconditioning
       			flag, z = compute_mg!(z,A, r) # Apply preconditioner
     		else
-      			z = r # copy r to z (no preconditioning)
+      			z[1:length(r)] = r # copy r to z (no preconditioning)
     		end
     		t5 = time_ns()- t5t # Preconditioner apply time
 

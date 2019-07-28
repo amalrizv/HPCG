@@ -139,8 +139,6 @@ function main(hpcg_args)
         curxexact      = 0
     end
 
-    data = CGData
-    data = InitializeSparseCGData(A, data)
 
     ####################################
     ## Reference SpMV+MG Timing Phase ##
@@ -155,8 +153,7 @@ function main(hpcg_args)
 
     # Record execution time of reference SpMV and MG kernels for reporting times
     # First load vector with random values
-#    x_overlap = fill_random_vector!(x_overlap)
-     fill!(x_overlap,1)
+    x_overlap = fill_random_vector!(x_overlap)
     num_calls = 10
     if quickPath ==1 
         num_calls = 1 # QuickPath means we do on one call of each block of repetitive code
@@ -203,10 +200,17 @@ function main(hpcg_args)
     ref_times = zeros(9)
     tolerance = 0.0 # Set tolerance to zero to make all runs do maxIters iterations
     err_count = 0
+  nrow = A.localNumberOfRows
+  ncol = A.localNumberOfColumns
+  r    = Vector{Float64}(undef,nrow)
+  z    = Vector{Float64}(undef,ncol)
+  p    = Vector{Float64}(undef,ncol)
+  Ap   = Vector{Float64}(undef,nrow)
+  data = CGData(r,z,p, Ap)
     for i = 1:num_calls
         x = zeros(length(x))
         @debug("In     ## Reference CG Timing Phase ## ")
-        ierr, A, data, x, niters, normr, normr0, ref_add = cg_ref!(A, data, b, x, refMaxIters, tolerance, niters, normr, normr0, ref_times, true)
+        ierr , ref_add = cg_ref!(A, data, b, x, refMaxIters, tolerance, niters, normr, normr0, ref_times, true)
         ref_times = ref_add + ref_times
 
         if ierr != 0

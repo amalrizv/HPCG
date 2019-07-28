@@ -75,8 +75,6 @@ function setup_halo_ref!(A)
         for (k,v) in receiveList 
             totalToBeReceived += length(v)
         end
-	@show totalToBeSent
-	@show totalToBeReceived
         # TODO KCH: the following should only execute if debugging is enabled!
         # These are all attributes that should be true, due to symmetry
         #  @debug("totalToBeSent = $totalToBeSent totalToBeReceived = $totalToBeReceived")
@@ -106,7 +104,6 @@ function setup_halo_ref!(A)
             sendLength[neighborCount]    = length(sendList[neighborId]) # Get count if sends/receives
 	    n_rcv_id = receiveList[neighborId] 
 	    n_snd_id = sendList[neighborId]
-#	   @show n_rcv_id
             for i in n_rcv_id
                 externalToLocalMap[i] = localNumberOfRows + receiveEntryCount # The remote columns are indexed at end of internals
                 receiveEntryCount += 1

@@ -22,7 +22,6 @@ function MBCounter(counts::Array{Any,1}, length::Int64)
 end
 
 function MBCounter_lr(left::MixedBaseCounter , right::MixedBaseCounter) 
-  @show left.length
   this =  MixedBaseCounter(left.length, [], [])
   temp_max = Array{Int64}(undef, left.length)
   temp_cur = Array{Int64}(undef, left.length)

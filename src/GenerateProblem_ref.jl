@@ -33,8 +33,6 @@ function generate_problem_ref!(A::HPCGSparseMatrix)
     gix0 = A.geom.gix0
     giy0 = A.geom.giy0
     giz0 = A.geom.giz0
-    @show nx, ny,nz
-    @show A.geom.rank, gix0, giy0, giz0
     localNumberOfRows = nx*ny*nz # This is the size of our subblock
     # If this assert fails, it most likely means that the local_int_t is set to int and should be set to long long
     @assert(localNumberOfRows>0) # Throw an exception of the number of rows is less than zero (can happen if int overflow)
@@ -113,7 +111,6 @@ function generate_problem_ref!(A::HPCGSparseMatrix)
 							else
 								matrixValues[currentLocalRow, currentValuePointer]  = -1.0
 							end
- 					@show curcol
 					mtxIndG[currentLocalRow,currentIndexPointer] = curcol 
 					currentValuePointer += 1
 					currentIndexPointer += 1
@@ -142,7 +139,6 @@ function generate_problem_ref!(A::HPCGSparseMatrix)
 
     totalNumberOfNonzeros = 0
     # Use MPI's reduce function to sum all nonzeros
-    @show localNumberOfNonzeros
     if MPI.Initialized() == true
       println("$(A.geom.rank) has $localNumberOfNonzeros local number of zeros ")
       MPI.Barrier(MPI.COMM_WORLD)
@@ -159,7 +155,6 @@ function generate_problem_ref!(A::HPCGSparseMatrix)
       @assert(totalNumberOfNonzeros>0) # Throw an exception of the number of nonzeros is less than zero (can happen if int overflow)
     #
     
-    @show totalNumberOfNonzeros
     A.title                 = "0"
     A.totalNumberOfRows     = totalNumberOfRows
     A.totalNumberOfNonzeros = totalNumberOfNonzeros
@@ -174,7 +169,6 @@ function generate_problem_ref!(A::HPCGSparseMatrix)
     #A.matrixDiagonal        = matrixDiagonal
     A.localToGlobalMap      = localToGlobalMap
     A.globalToLocalMap      = globalToLocalMap
-    @show mtxIndG
     return A, b, x, xexact
 
 end

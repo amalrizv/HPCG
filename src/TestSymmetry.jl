@@ -127,7 +127,7 @@ function test_symmetry(A, b, xexact, testsymmetry_data)
 	 @debug("Departure from symmetry (scaled) for MG abs(x'*Minv*y - y'*Minv*x) = $testsymmetry_data.depsym_mg ")
  end
 
- xncol = xexact # Copy exact answer into overlap vector
+ x_ncol[1:length(xexact)] = xexact # Copy exact answer into overlap vector
 
  numberOfCalls = 2
  residual = 0.0
