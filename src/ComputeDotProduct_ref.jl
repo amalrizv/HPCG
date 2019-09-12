@@ -50,6 +50,6 @@ function compute_dot_product_ref!(result, time_allreduce, n, x, y)
   	time_allreduce += 0.0
    	result = local_result
   end
-  return false, result
+  return false
 
 end

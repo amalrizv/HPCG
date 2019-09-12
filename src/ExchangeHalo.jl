@@ -29,7 +29,14 @@ function exchange_halo!(x, A)
   sendBuffer        = A.sendBuffer
   totalToBeSent     = A.totalToBeSent
   elementsToSend    = A.elementsToSend
-
+  @show localNumberOfRows
+  @show num_neighbors
+  @show receiveLength
+  @show sendLength
+  @show neighbors
+  @show sendBuffer[1]
+  @show totalToBeSent
+  @show elementsToSend[1]
 
   size = Int64
   rank = Int64 # Number of MPI processes, My process ID
@@ -51,17 +58,21 @@ function exchange_halo!(x, A)
   #
   # Externals are at end of locals
   #
-  x_external = x[localNumberOfRows:length(x)]
+  x_external = x[localNumberOfRows+1:length(x)]
 
   # Post receives first
   # TODO: Thread this loop
   for i = 1 : num_neighbors
     n_recv = receiveLength[i]
     buff = Array{Int64,1}(undef,n_recv)
+    buff = fill!(buff,0)
     request[i]  = MPI.Irecv!(buff, neighbors[i], MPI_MY_TAG, MPI.COMM_WORLD)
+    @show buff
     vcat(x_external, buff)
   end
-
+  for i = 1:length(x_external)
+	x[localNumberOfRows+i] = x_external[i]
+  end
 
   #
   # Fill up send buffer
@@ -77,7 +88,6 @@ function exchange_halo!(x, A)
   #
 
   # TODO: Thread this loop
-  #AMAL:TODO: fix pointer arithmetic 
   for i = 1:num_neighbors
     n_send = sendLength[i]
     start = (i-1)n_send+1
@@ -97,7 +107,7 @@ function exchange_halo!(x, A)
       exit(-1) #TODO: have better error exit
     end
   end
-
+  A.sendBuffer = sendBuffer
   request = nothing
   end
   return

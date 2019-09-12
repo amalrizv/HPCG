@@ -25,5 +25,5 @@ function compute_restriction_ref!(A, rf)
 	rcv[i] = rfv[Int(f2c[i])] - Axfv[Int(f2c[i])]
   end
   A.mgData.rc = rcv
-  return 0, A 
+  return 0 
 end

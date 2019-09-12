@@ -18,15 +18,14 @@
 =#
 function compute_prolongation_ref!(xf, Af) 
 
-  xfv = xf
   xcv = Af.mgData.xc
   f2c = Af.mgData.f2cOperator
   nc = length(Af.mgData.rc)
 
 # TODO: Somehow note that this loop can be safely vectorized since f2c has no repeated indices
   for i=1:nc
-	xfv[f2c[i]] += xcv[i] # This loop is safe to vectorize
+	xf[f2c[i]] += xcv[i] # This loop is safe to vectorize
   end
-
-  return 0, xfv
+  
+  return 0
 end

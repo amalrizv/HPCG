@@ -88,20 +88,25 @@ function cg!(A, data, b, x, max_iter, tolerance, niters, normr, normr0, times, d
 #endif
   # p is of length ncols, copy x to p for sparse MV operation
   p[1:length(x)] = x
-  t3t = time_ns() 
-  flag, Ap = compute_spmv!(Ap, A, p) 
-  t3 = time_ns()-t3t 
-  #Ap = A*p
-  t2t = time_ns()
-  flag, r = compute_waxpby!(r, nrow, 1.0, b, -1.0, Ap, A.is_waxpby_optimized)
-  t2 = time_ns()-t2t 
+  t3t 		= time_ns() 
+  flag		= compute_spmv!(Ap, A, p) 
+  t3 		= time_ns()-t3t 
+
+  #Ap 	= A*p
+
+  t2t 	= time_ns()
+  flag	= compute_waxpby!(r, nrow, 1.0, b, -1.0, Ap, A.is_waxpby_optimized)
+  t2 	= time_ns()-t2t 
+
   # r = b - Ax (x stored in p)
-  t1t = time_ns()
-  flag, normr = compute_dot_product!(normr, t4, nrow, r, r, A.is_dot_prod_optimized)
-  t1 = time_ns()-t1t
+
+  t1t 	= time_ns()
+  flag	= compute_dot_product!(normr, t4, nrow, r, r, A.is_dot_prod_optimized)
+  t1 	= time_ns()-t1t
+
   normr = sqrt(normr)
 #ifdef HPCG_DEBUG
-  if A.geom.rank==0 
+  if A.geom.rank == 0 
   	@debug("Initial Residual = ",normr,"\n")
   end
 #endif
@@ -110,49 +115,56 @@ function cg!(A, data, b, x, max_iter, tolerance, niters, normr, normr0, times, d
   normr0 = normr
 
   # Start iterations
-  for k=1:max_iter+1
-  	while normr/normr0 > tolerance
+  for k	= 1:max_iter
+  	if  normr/normr0 > tolerance 
     		t5t = time_ns()
     		if doPreconditioning
-      			flag, z = compute_mg!(z,A, r) # Apply preconditioner
+      			flag	= compute_mg!(z,A, r) # Apply preconditioner
     		else
       			z[1:length(r)] = r # copy r to z (no preconditioning)
     		end
-    		t5 = time_ns()- t5t # Preconditioner apply time
+    		t5 	= time_ns()- t5t # Preconditioner apply time
 
     		if k == 1
-      			t2t = time_ns()
-      			flag, p = compute_waxpby!(p, nrow, 1.0, z, 0.0, z, A.is_waxpby_optimized)
-      			t2 = t2+time_ns()-t2t # Copy Mr to p
-      			t1t = time_ns()
-      			flag, rtz = compute_dot_product!(rtz, t4, nrow, r, z, A.is_dot_prod_optimized)
-      			t1 = t1+time_ns()- t1t # rtz = r'*z
+      			t2t   	= time_ns()
+      			flag  	= compute_waxpby!(p, nrow, 1.0, z, 0.0, z, A.is_waxpby_optimized)
+      			t2 	= t2+time_ns()-t2t # Copy Mr to p
+      			t1t 	= time_ns()
+      			flag 	= compute_dot_product!(rtz, t4, nrow, r, z, A.is_dot_prod_optimized)
+      			t1 	= t1+time_ns()- t1t # rtz = r'*z
    		else 
-      			oldrtz = rtz
-      			t1t = time_ns()
-      			flag, rtz = compute_dot_product!(rtz, t4, nrow, r, z, A.is_dot_prod_optimized) 
-      			t1 = t1+time_ns()-t1t # rtz = r'*z
-      			beta = rtz/oldrtz
-      			t2t = time_ns()
-      			flag, p = compute_waxpby!(p, nrow, 1.0, z, beta, p, A.is_waxpby_optimized)  
-      			t2 = time_ns()-t2t+t2 # p = beta*p + z
+      			oldrtz 	= rtz
+      			t1t 	= time_ns()
+      			flag	= compute_dot_product!(rtz, t4, nrow, r, z, A.is_dot_prod_optimized) 
+      			t1 	= t1+time_ns()-t1t # rtz = r'*z
+      			beta 	= rtz/oldrtz
+      			t2t 	= time_ns()
+      			flag    = compute_waxpby!(p, nrow, 1.0, z, beta, p, A.is_waxpby_optimized)  
+      			t2 	= time_ns()-t2t+t2 # p = beta*p + z
    		end
 
-    		t3t = time_ns()
-    		flag, Ap = compute_spmv!(Ap, A, p) 
-    		t3 = t3+time_ns()- t3t # Ap = A*p
-    		t1t = time_ns()
-    		flag, pAp = compute_dot_product!(pAp, t4, nrow, p, Ap, A.is_dot_prod_optimized) 
-    		t1 = time_ns()-t1t+t1 # alpha = p'*Ap
-    		alpha = rtz/pAp
-    		t2t  = time_ns() 
-    		flag, x = compute_waxpby!(x, nrow, 1.0, x, alpha, p, A.is_waxpby_optimized)# x = x + alpha*p
-    		flag, r = compute_waxpby!(r, nrow, 1.0, r, -alpha, Ap, A.is_waxpby_optimized)
-    		t2 = time_ns()- t2t +t2# r = r - alpha*Ap
-    		t1t = time_ns()
-                flag, normr = compute_dot_product!(normr, t4, nrow, r, r, A.is_dot_prod_optimized)
+    		t3t 	= time_ns()
+    		flag	= compute_spmv!(Ap, A, p) 
+    		t3	= t3+time_ns()- t3t # Ap = A*p
+
+    		t1t 	= time_ns()
+    		flag	= compute_dot_product!(pAp, t4, nrow, p, Ap, A.is_dot_prod_optimized) 
+    		t1 	= time_ns()-t1t+t1 # alpha = p'*Ap
+
+    		alpha 	= rtz/pAp
+
+    		t2t  	= time_ns() 
+    		flag 	= compute_waxpby!(x, nrow, 1.0, x, alpha, p, A.is_waxpby_optimized)# x = x + alpha*p
+    		flag	= compute_waxpby!(r, nrow, 1.0, r, -alpha, Ap, A.is_waxpby_optimized)
+    		t2 	= time_ns()- t2t +t2# r = r - alpha*Ap
+	
+    		t1t 	= time_ns()
+                flag	= compute_dot_product!(normr, t4, nrow, r, r, A.is_dot_prod_optimized)
     		t1 = t1+time_ns()- t1t
+	
     		normr = sqrt(normr)
+		sr = normr/normr0
+	#	@show k sr
 #ifdef HPCG_DEBUG
     		if A.geom.rank==0 && (k%print_freq == 0 || k == max_iter)
       			@debug("Iteration = ",k,"   Scaled Residual = ",normr/normr0, "\n")
@@ -161,7 +173,8 @@ function cg!(A, data, b, x, max_iter, tolerance, niters, normr, normr0, times, d
     		niters = k
   	end
   end
-  sr = normr/normr0 
+
+
   t0 = time_ns() - t_begin  # Total time. All done...
   times[1] += t0
   times[2] += t1

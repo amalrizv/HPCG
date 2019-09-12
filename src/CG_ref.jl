@@ -73,19 +73,20 @@ function cg_ref!(A , data , b , x , max_iter ,
     end
 
     # p is of length ncols, copy x to p for sparse MV operation
-    x_len = length(x)
-    p[1:x_len] =x
-    t3t = time_ns()
-    flag, Ap = compute_spmv_ref!(Ap, A , p)  
+    x_len 	= length(x)
+    p[1:x_len] 	= x
+    t3t 	= time_ns()
+    flag	= compute_spmv_ref!(Ap, A , p)  
+
 
     t3  = time_ns()-t3t # Ap = A*p
     t2t = time_ns()
 
-    flag, r = compute_waxpby_ref!(r, nrow, 1.0, b, -1.0, Ap) 
+    flag	= compute_waxpby_ref!(r, nrow, 1.0, b, -1.0, Ap) 
     t2  = time_ns()- t2t # r = b - Ax (x stored in p)
     t1t = time_ns()
 
-    flag, normr = compute_dot_product_ref!(normr, t4, nrow, r, r)
+    flag = compute_dot_product_ref!(normr, t4, nrow, r, r)
 
     t1    = time_ns()- t1t
     normr = sqrt(normr)
@@ -96,13 +97,13 @@ function cg_ref!(A , data , b , x , max_iter ,
     normr0 = normr
 
     # Start iterations
-     for k=1:max_iter 
-    	while normr/normr0 > tolerance
+    for k=1:max_iter 
+    	if normr/normr0 > tolerance
             t5t = time_ns()
             if doPreconditioning
-                flag, z  =compute_mg_ref!(z,A, r) # Apply preconditioner
+                flag   =compute_mg_ref!(z,A, r) # Apply preconditioner
             else
-                flag, z = compute_waxpby_ref!(z, nrow, 1.0, r, 0.0, r) # copy r to z (no preconditioning)
+                flag  = compute_waxpby_ref!(z, nrow, 1.0, r, 0.0, r) # copy r to z (no preconditioning)
             end
             t5 = time_ns()- t5t # Preconditioner apply time
 
@@ -110,34 +111,41 @@ function cg_ref!(A , data , b , x , max_iter ,
                 p[1:length(z)] = z 
                 t2= t2+time_ns()-t5t # Copy Mr to p
                 t1t = time_ns() 
-                flag, rtz = compute_dot_product_ref!(rtz, t4, nrow, r, z) 
+                flag  = compute_dot_product_ref!(rtz, t4, nrow, r, z) 
                 t1 = t1+time_ns()- t1t # rtz = r'*z
             else 
                 oldrtz = rtz
                 t1t = time_ns() 
-                flag, rtz = compute_dot_product_ref!(rtz, t4, nrow, r, z) 
+                flag = compute_dot_product_ref!(rtz, t4, nrow, r, z) 
                 t1 = t1+time_ns()- t1t # rtz = r'*z
                 beta = rtz/oldrtz
                 t2t = time_ns() 
-                flag, p = compute_waxpby_ref!(p, nrow, 1.0, z, beta, p)  
+                flag = compute_waxpby_ref!(p, nrow, 1.0, z, beta, p)  
                 t2 = t2+time_ns()- t2t # p = beta*p + z
             end
 
-            t3t = time_ns() 
-            flag, Ap = compute_spmv_ref!(Ap, A, p) 
-            t3  = time_ns()- t3t+t3 # Ap = A*p
-            t1t = time_ns()
-            flag, pAp = compute_dot_product_ref!(pAp, t4, nrow, p, Ap) 
+            t3t   = time_ns() 
+            flag  = compute_spmv_ref!(Ap, A, p) 
+            t3    = time_ns()- t3t+t3 # Ap = A*p
+
+            t1t   = time_ns()
+            flag  = compute_dot_product_ref!(pAp, t4, nrow, p, Ap) 
             t1    = time_ns()- t1t+t1 # alpha = p'*Ap
+
             alpha = rtz/pAp
+
             t2t   = time_ns()
-            flag, x = compute_waxpby_ref!(x, nrow, 1.0, x, alpha, p)# x = x + alpha*p
-            flag, y = compute_waxpby_ref!(r, nrow, 1.0, r, -alpha, Ap)  
-            t2  = time_ns()- t2t+t2# r = r - alpha*Ap
-            t1t = time_ns()
-            flag, normr = compute_dot_product_ref!(normr, t4, nrow, r, r) 
+            flag  = compute_waxpby_ref!(x, nrow, 1.0, x, alpha, p)# x = x + alpha*p
+            flag  = compute_waxpby_ref!(r, nrow, 1.0, r, -alpha, Ap)  
+            t2    = time_ns()- t2t+t2# r = r - alpha*Ap
+
+            t1t   = time_ns()
+            flag  = compute_dot_product_ref!(normr, t4, nrow, r, r) 
             t1    = time_ns()- t1t+t1
-            normr = sqrt(normr)
+
+            normr  = sqrt(normr)
+	    sr_ref = normr/normr0
+#	    @show sr_ref k
 
             if A.geom.rank==0 & k%print_freq == 0 || k == max_iter
                 @debug("Iteration = $k Scaled Residual = $(normr/normr0)")
@@ -146,7 +154,7 @@ function cg_ref!(A , data , b , x , max_iter ,
             niters = k
         end
     end
-    sr_ref = (normr/normr0)
+
     # Store times
 
     t0        = time_ns() - t_begin  # Total time. All done...

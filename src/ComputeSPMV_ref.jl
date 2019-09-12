@@ -37,7 +37,7 @@ function compute_spmv_ref!(y, A, x) # takes SpMatrix_anx structure
       end
       y[i] = sum
   end
-   
-  return 0, y
+
+  return 0
 
 end

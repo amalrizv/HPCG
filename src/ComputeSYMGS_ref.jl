@@ -24,7 +24,7 @@ Computes one step of symmetric Gauss-Seidel:
 
   @param[in] A the known system matrix
   @param[in] r the input vector
-  @param[inout] x On entry, x should contain relevant values, on exit x contains the result of one symmetric GS sweep with r as the RHS.
+  @param[inout] xv On entry, xv should contain relevant values, on exit xv contains the result of one symmetric GS sweep with r as the RHS.
 
 
   @warning Early versions of this kernel (Version 1.1 and earlier) had the r and x arguments in reverse order, and out of sync with other kernels.
@@ -33,7 +33,7 @@ Computes one step of symmetric Gauss-Seidel:
 
   @see ComputeSYMGS
 =#
-function compute_symgs_ref!(x, A, r) 
+function compute_symgs_ref!(xv, A, r) 
   @assert(length(x)==A.localNumberOfColumns) # Make sure x contain space for halo values
   if MPI.Initialized()== true
 	  exchange_halo!(x,A)
@@ -81,6 +81,6 @@ function compute_symgs_ref!(x, A, r)
     xv[i] = sum/currentDiagonal
   end
 
-  return 0, xv
+  return 0
 end
 

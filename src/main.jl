@@ -119,7 +119,7 @@ function main(hpcg_args)
         cur_level_matrix  = generate_coarse_problem!(cur_level_matrix) 	
         cur_level_matrix = cur_level_matrix.Ac 		#  Make the just-constructed coarse grid the next level
     end
-    @debug("All levels generated")
+    @show("All levels generated")
 
     setup_time = time_ns() - setup_time #Capture total time of setup
     # TODO: Why is the below commented out?
@@ -150,24 +150,28 @@ function main(hpcg_args)
     ncol = A.localNumberOfColumns
     x_overlap  = Vector{Float64}(undef, ncol) #  Overlapped copy of x vector
     b_computed = Vector{Float64}(undef, nrow) #  Computed RHS vector
-
+    b_computed = zeros(nrow)
     # Record execution time of reference SpMV and MG kernels for reporting times
     # First load vector with random values
-    x_overlap = fill_random_vector!(x_overlap)
+   # x_overlap = fill_random_vector!(x_overlap)
+   # x_overlap = zeros(ncol)
+    fill!(x_overlap, 1.0)
     num_calls = 10
     if quickPath ==1 
         num_calls = 1 # QuickPath means we do on one call of each block of repetitive code
     end
 
     t_begin = time_ns()
+    MPI.Barrier(MPI.COMM_WORLD)
 
     for i = 1:num_calls
-        ierr, b_computed = compute_spmv_ref!(b_computed,A, x_overlap) # b_computed = A*x_overlap
+        ierr = compute_spmv_ref!(b_computed,A, x_overlap) # b_computed = A*x_overlap
+	@show b_computed[nrow]
         if ierr != 0
             @error("Error in call to SpMV: $ierr .\n")
         end
 
-        ierr, x_overlap= compute_mg!(x_overlap, A, b_computed) # b_computed = Minv*y_overlap
+        ierr= compute_mg!(x_overlap, A, b_computed) # b_computed = Minv*y_overlap
 
         if ierr != 0
             @error("Error in call to MG: $ierr .\n") 
@@ -202,11 +206,7 @@ function main(hpcg_args)
     err_count = 0
   nrow = A.localNumberOfRows
   ncol = A.localNumberOfColumns
-  r    = Vector{Float64}(undef,nrow)
-  z    = Vector{Float64}(undef,ncol)
-  p    = Vector{Float64}(undef,ncol)
-  Ap   = Vector{Float64}(undef,nrow)
-  data = CGData(r,z,p, Ap)
+  data = CGData(zeros(nrow), zeros(ncol), zeros(ncol), zeros(nrow))
     for i = 1:num_calls
         x = zeros(length(x))
         @debug("In     ## Reference CG Timing Phase ## ")

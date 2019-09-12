@@ -76,13 +76,16 @@ function generate_coarse_problem!(A)
     geomc = generate_geometry!(A.geom.size, A.geom.rank, A.geom.numThreads, A.geom.pz, zlc, zuc, nxc, nyc, nzc, A.geom.npx, A.geom.npy, A.geom.npz)
 
     Ac               = initialize_sparse_matrix(geomc)
-    ret1, ret2, ret3 = generate_problem!(Ac)
+    ret1, ret2, ret3, ret4 = generate_problem!(Ac)
 
-    Ac = setup_halo!(Ac)
+    Ac = setup_halo!(ret1)
 
-    rc          = Vector{Float64}(undef, Ac.localNumberOfRows)
-    xc          = Vector{Float64}(undef, Ac.localNumberOfColumns)
-    Axf         = Vector{Float64}(undef, A.localNumberOfColumns)
+    rc          = zeros(Ac.localNumberOfRows)
+    xc          = zeros(Ac.localNumberOfColumns)
+    Axf         = zeros(A.localNumberOfColumns)
+    #rc          = Vector{Float64}(undef, Ac.localNumberOfRows)
+    #xc          = Vector{Float64}(undef, Ac.localNumberOfColumns)
+    #Axf         = Vector{Float64}(undef, A.localNumberOfColumns)
     
     mgd::MGData = init_mg_data(f2c_operator, rc, xc, Axf)
 
