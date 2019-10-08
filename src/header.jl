@@ -2,6 +2,7 @@ using ArgParse
 using Logging
 using Distributed
 Distributed.@everywhere include("main.jl")
+
 #TODO: USE_MPI is redundant for np
 s = ArgParseSettings()
 @add_arg_table s begin 
@@ -62,4 +63,4 @@ parsed_args = parse_args(s)
 
 ENV["JULIA_DEBUG"] = "all"
 
-main(parsed_args)
+@everywhere main(parsed_args)

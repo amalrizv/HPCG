@@ -76,9 +76,9 @@ function generate_coarse_problem!(A)
     geomc = generate_geometry!(A.geom.size, A.geom.rank, A.geom.numThreads, A.geom.pz, zlc, zuc, nxc, nyc, nzc, A.geom.npx, A.geom.npy, A.geom.npz)
 
     Ac               = initialize_sparse_matrix(geomc)
-    ret1, ret2, ret3, ret4 = generate_problem!(Ac)
+    ret2, ret3, ret4 = generate_problem!(Ac)
 
-    Ac = setup_halo!(ret1)
+    setup_halo!(Ac)
 
     rc          = zeros(Ac.localNumberOfRows)
     xc          = zeros(Ac.localNumberOfColumns)
@@ -91,6 +91,5 @@ function generate_coarse_problem!(A)
 
     A.Ac        = Ac
     A.mgData    = mgd
-    return A
 end
 

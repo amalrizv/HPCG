@@ -9,31 +9,32 @@
 
 # KCH TODO: only do this if mpi is enabled!
 using MPI
-include("hpcg.jl")
-include("init.jl")
-include("CheckAspectRatio.jl")
-include("SpMatrix.jl")
-include("GenerateGeometry.jl")
-include("GenerateProblem.jl")
-include("GenerateCoarseProblem.jl")
-include("SetupHalo.jl")
-include("CheckProblem.jl")
-include("ExchangeHalo.jl")
-include("OptimizeProblem.jl")
+using Distributed
+Distributed.@everywhere include("hpcg.jl")
+Distributed.@everywhere include("init.jl")
+Distributed.@everywhere include("CheckAspectRatio.jl")
+Distributed.@everywhere include("SpMatrix.jl")
+Distributed.@everywhere include("GenerateGeometry.jl")
+Distributed.@everywhere include("GenerateProblem.jl")
+Distributed.@everywhere include("GenerateCoarseProblem.jl")
+Distributed.@everywhere include("SetupHalo.jl")
+Distributed.@everywhere include("CheckProblem.jl")
+Distributed.@everywhere include("ExchangeHalo.jl")
+Distributed.@everywhere include("OptimizeProblem.jl")
 #include("WriteProblem.jl")
 #include("ReportResults.jl")
 #include("mytimer.jl")
-include("ComputeSPMV_ref.jl")
-include("ComputeMG.jl")
-include("ComputeResidual.jl")
-include("CG.jl")
-include("CG_ref.jl")
-include("Geometry.jl")
+Distributed.@everywhere include("ComputeSPMV_ref.jl")
+Distributed.@everywhere include("ComputeMG.jl")
+Distributed.@everywhere include("ComputeResidual.jl")
+Distributed.@everywhere include("CG.jl")
+Distributed.@everywhere include("CG_ref.jl")
+Distributed.@everywhere include("Geometry.jl")
 #include("Vector.jl")
-include("CGData.jl")
-include("TestCG.jl")
-include("TestSymmetry.jl")
-include("TestNorms.jl")
+Distributed.@everywhere include("CGData.jl")
+Distributed.@everywhere include("TestCG.jl")
+Distributed.@everywhere include("TestSymmetry.jl")
+Distributed.@everywhere include("TestNorms.jl")
 
 #=
   Main driver program: Construct synthetic problem, run V&V tests, compute benchmark parameters, run benchmark, report results.
@@ -109,14 +110,14 @@ function main(hpcg_args)
     setup_time = time_ns() # TODO: INCLUDE CORRECT TIMER
     A          = initialize_sparse_matrix(geom)
 
-    A, b, x, xexact = generate_problem!(A)	
-    A   = setup_halo!(A)	
+	b, x, xexact = generate_problem!(A)	
+    setup_halo!(A)	
     num_mg_levels  = 4 #Number of levels including first
 
     cur_level_matrix::HPCGSparseMatrix = A
     for level = 1:num_mg_levels-1
         @debug("Generating course problem for level=$level")
-        cur_level_matrix  = generate_coarse_problem!(cur_level_matrix) 	
+        generate_coarse_problem!(cur_level_matrix) 	
         cur_level_matrix = cur_level_matrix.Ac 		#  Make the just-constructed coarse grid the next level
     end
     @show("All levels generated")
@@ -258,7 +259,7 @@ function main(hpcg_args)
     TestCGdata, times = test_cg!(A, data, b, x, count_pass, count_fail)
 
     testsymmetry_data = TestSymmetryData 
-    test_symmetry(A, b, xexact, testsymmetry_data)
+    #test_symmetry(A, b, xexact, testsymmetry_data)
 
     if (rank==0) 
         @debug "Total validation (TestCG and TestSymmetry) execution time in main (sec) = " (time_ns() - t1)

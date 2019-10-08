@@ -34,9 +34,9 @@ Computes one step of symmetric Gauss-Seidel:
   @see ComputeSYMGS
 =#
 function compute_symgs_ref!(xv, A, r) 
-  @assert(length(x)==A.localNumberOfColumns) # Make sure x contain space for halo values
+  @assert(length(xv)==A.localNumberOfColumns) # Make sure x contain space for halo values
   if MPI.Initialized()== true
-	  exchange_halo!(x,A)
+	  exchange_halo!(xv,A)
   end
 
   nrow = A.localNumberOfRows
@@ -44,7 +44,6 @@ function compute_symgs_ref!(xv, A, r)
   matrixValues = A.matrixValues
   mtxIndL = A.mtxIndL
   rv = r
-  xv = x
 
   for i=1:nrow
     currentValues = matrixValues[i, :]

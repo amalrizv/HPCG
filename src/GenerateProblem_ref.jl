@@ -92,7 +92,13 @@ function generate_problem_ref!(A::HPCGSparseMatrix)
                 globalToLocalMap[currentGlobalRow] = currentLocalRow
 
                 localToGlobalMap[currentLocalRow] = currentGlobalRow
-                @debug(" rank, globalRow, localRow = $A.geom.rank $currentGlobalRow ",globalToLocalMap[currentGlobalRow])
+				# CONFIRMED : localToGlobal and GlobaltoLocal both have
+				#  key 16
+				
+				#if currentGlobalRow == 16
+				#	println("yadayada, $(A.geom.rank)")
+				#end
+
                 numberOfNonzerosInRow = 0
 		currentValuePointer = 1
 		currentIndexPointer = 1
@@ -169,6 +175,18 @@ function generate_problem_ref!(A::HPCGSparseMatrix)
     #A.matrixDiagonal        = matrixDiagonal
     A.localToGlobalMap      = localToGlobalMap
     A.globalToLocalMap      = globalToLocalMap
-    return A, b, x, xexact
+
+	#DONE _ Same values forwarded to SetupHalo
+	# TODO_AMAL : Print out all modified variables(specially localToGlobal and 
+	#  			  globalTolocal mappings) of A to see if what is being sent from 
+	# 			  generate problem is actually whats being recieved in SetupHalo.
+	if A.geom.rank == 1
+		open("mtx_gen_1.txt", "a") do f 
+			println(f, A.mtxIndG, A.mtxIndL)
+		end
+	end
+
+
+    return b, x, xexact
 
 end

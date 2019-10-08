@@ -26,7 +26,7 @@ function compute_mg_ref!(x, A, r) #sp_coarse passed
   ierr = 0
 
   # if mgdata is even defined this will result in a non zero value 
-  if isdefined(:A.mgData) == true  #  Go to next coarse level if defined
+  if A.mgData == 0  #  Go to next coarse level if defined
       numberOfPresmootherSteps = A.mgData.numberOfPresmootherSteps
 
       # In second iteration Compute MG sends A.mgData.xc 

@@ -76,6 +76,5 @@ function hpcg_init!(params, arg_hpcg)
 
     iparams  = nothing
 
-    return params
-
+	return params
 end
