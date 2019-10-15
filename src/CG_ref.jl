@@ -144,6 +144,15 @@ function cg_ref!(A , data , b , x , max_iter ,
             t1    = time_ns()- t1t+t1
 
             normr  = sqrt(normr)
+			if A.geom.rank == 0 
+				open("j_normr_0.txt", "a") do f 
+					println(f, "normr = $normr")
+				end
+			else
+				open("j_normr_1.txt", "a") do f 
+					println(f, "normr = $normr")
+				end
+		   end
 	    sr_ref = normr/normr0
 #	    @show sr_ref k
 

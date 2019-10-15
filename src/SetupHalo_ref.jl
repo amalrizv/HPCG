@@ -3,7 +3,7 @@
 
  HPCG routine
 =#
-
+using DataStructures
 using MPI
 using DelimitedFiles
 include("Geometry.jl")
@@ -43,70 +43,74 @@ function setup_halo_ref!(A)
         #  We need to receive this value of the x vector during the halo exchange.
         # 2) We record our row ID since we know that the other processor will need this value from us, due to symmetry.
 
-		sendList           = Dict{Int64, alt_set}()
-		receiveList        = Dict{Int64, alt_set}()
+		sendList           = Dict{Int64, OrderedSet{Int64}}()
+		receiveList        = Dict{Int64, OrderedSet{Int64}}()
         externalToLocalMap = Dict{Int64, Int64}()
+		#BUG_INFO #RZV
+		# The main problem is with the Set, OrderedSet data Structure that is used here
+		# TRIAL 1 : I tried using a Set first but since it did not retain order we switched to
+		# TRIAL 2 : a custom Dict which was similar to the PriorityQueue structure in DataStructures.
+		# TRIAL 3 : To remove unnneccessary complications (TRIAL_2) we just arranged 
+		# 			the elements of the Set in an ascending order using sort(collect...) 
+		# 			but that was a wrong approach since elements of Set are not in 
+		# 			ascending order but just FIFO.
+		# TRIAL_4 : So I switched to using an OrderedSet.
+		# 			An OrderedSet is a FIFO Set. Operated by using push! and pop!
+		# 			when the values are collected using collect(some_ordered_set)
+		# 			the fifo order is maintained and in the scenario below:
+		#
+		# 			for x in collect(some_ordered_set)
+		# 				x should be accessed in FIFO style(confirmed by REPL and a testing function)
+		#
+		for ranks = 0: A.geom.size-1
+			receiveList[ranks] = OrderedSet{Int64}()
+			sendList[ranks]     = OrderedSet{Int64}()
+		end
+
         #  TODO: With proper critical and atomic regions, this loop could be threaded, but not attempting it at this time
+		#
         for i = 1:localNumberOfRows 
             currentGlobalRow = A.localToGlobalMap[i] 
             for j = 1:nonzerosInRow[i]
 				curIndex            = mtxIndG[i,j]
                 rankIdOfColumnEntry = compute_rank_of_matrix_row(A.geom, curIndex)
-				for z =0:A.geom.size-1 #create alt_sets for send and rcv lists for all ranks 
-					receiveList[z]	= alt_set(0)
-					sendList[z]		= alt_set(0)
+
+###################################################
+#CORRECT
+				if A.geom.rank == 0 
+					open("rankIdOfColumnEntry_0.txt", "a") do f 
+						println(f, "rankIdOfColumnEntry is $rankIdOfColumnEntry for curIndex(mtxIndG)[$i][$j] value $curIndex")
+					end
+				else
+					open("rankIdOfColumnEntry_1.txt", "a") do f 
+						println(f, "rankIdOfColumnEntry is $rankIdOfColumnEntry for curIndex(mtxIndG)[$i][$j] value $curIndex")
+					end
+#CORRECT
 				end
-				## DEBUG
-#				open("col_entry_rank_output.txt", "a") do f
-#			     	println(f, "rank, row , col, globalToLocalMap[col] = $(A.geom.rank), $currentGlobalRow, $curIndex, $(A.globalToLocalMap[curIndex])")	
-#				end
-				## DEBUG
-				
-#					@show A.geom.rank, currentGlobalRow, curIndex, length(A.globalToLocalMap)
-
-
+###################################################
 
             	if  A.geom.rank != rankIdOfColumnEntry # If column index is not a row index, then it comes from another processor
-					@show curIndex
-					#add to alt_set_add!
-					alt_set_add!(receiveList[rankIdOfColumnEntry], curIndex)
-					alt_set_add!(sendList[rankIdOfColumnEntry], currentGlobalRow)
-					#=
-		    		if haskey(receiveList, rankIdOfColumnEntry)
-		    			push!(receiveList[rankIdOfColumnEntry], curIndex)
-			
- 		    		else
-						receiveList[rankIdOfColumnEntry] = Set(curIndex)
-		    		end
 					
-            		if haskey(sendList, rankIdOfColumnEntry) 
-                		push!(sendList[rankIdOfColumnEntry], currentGlobalRow) 
-		    		else
-                		sendList[rankIdOfColumnEntry] = Set(currentGlobalRow)
-		    		end
-					=#
+		    		push!(receiveList[rankIdOfColumnEntry], curIndex)
+
+                	push!(sendList[rankIdOfColumnEntry], currentGlobalRow) 
+					
             	end
         	end
     	end
-		@show receiveList[0], receiveList[1], sendList[0], sendList[1]
+
     #Count number of matrix entries to send and receive
     	totalToBeSent = 0
-		for (s,t) in sendList
-			# sendList is a Dict of Int(s) and alt_set(t)
-        	for (k,v) in t.alt
-				# alt_set(t)  is a struct of Int(k) and Dict(v)
-				totalToBeSent += length(v)
-			end
+		for (k,v) in sendList
+			totalToBeSent += length(v)
         end
 
 	    totalToBeReceived = 0
-		for (s,t) in receiveList
-			# receiveList is a Dict of Int(s) and alt_set(t)
-	        for (k,v) in t.alt
-				# alt_set(t)  is a Dict of Int(k) and Dict(v)
-				totalToBeReceived += length(v)
-			end
+
+		for (k,v) in receiveList
+			totalToBeReceived += length(v)
         end
+
         # TODO KCH: the following should only execute if debugging is enabled!
         # These are all attributes that should be true, due to symmetry
         # @debug("totalToBeSent = $totalToBeSent totalToBeReceived = $totalToBeReceived")
@@ -115,7 +119,7 @@ function setup_halo_ref!(A)
         # Each receive-from neighbor should be a send-to neighbor, and send the same number of entries
         for (k,v) in receiveList
             @assert haskey(sendList,k)
-            @assert length(sendList[k].alt)==length(receiveList[k].alt)
+			@assert length(sendList[k])==length(receiveList[k])
         end
         len_snd_list  = length(collect(keys(sendList)))
         len_rcv_list  = length(collect(keys(receiveList)))
@@ -126,47 +130,79 @@ function setup_halo_ref!(A)
         receiveLength     = Array{Int64}(undef, len_rcv_list)
         sendLength        = Array{Int64}(undef, len_rcv_list)
         neighborCount     = 0
+		receiveEntryCount = 0 
+		sendEntryCount	  = 0
+
 
         for (k,v) in receiveList 
             neighborId                   = k # rank of current neighbor we are processing
             neighbors[neighborCount+1]     = neighborId # store rank ID of current neighbor
-            receiveLength[neighborCount+1] = length(receiveList[neighborId].alt)
-            sendLength[neighborCount+1]    = length(sendList[neighborId].alt) # Get count if sends/receives
-			n_rcv_id = receiveList[neighborId].alt 	# n_rcv_id is a dict of an int and 
-													# an alt_set(with fields size(int) 
-													# and alt(dict))
+            receiveLength[neighborCount+1] = length(v)
+            sendLength[neighborCount+1]    = length(sendList[neighborId]) # Get count if sends/receives
+###################################################
 
-	    	n_snd_id = sendList[neighborId].alt		# n_rcv_id is a dict of an int and 
-													# an alt_set(with fields size(int)
-													# and alt(dict))
-@show n_rcv_id
-			for(x,y) in n_rcv_id # is a dict of index(key) and factor(value)     		 
-				# x(key) is curIndex value 
-				# y(value) is the factor to be added
-				# Check for i == 16, 48,528 |receiveEntryCount ,0,1,2
-		#		if i == 48
-		#		  @show localNumberOfRows, 
-		#		   exit()
-		#	    end
-				@show x, localNumberOfRows, y				
-				externalToLocalMap[x] = localNumberOfRows + y # The remote columns are indexed at end of internals
+			n_rcv_id = collect(v) 							# n_rcv_id is an array of  set elements
+																# no element repeated
+
+			n_snd_id = collect(sendList[neighborId])		# n_snd_id is an array of set elements
+																# no element repeated
+					
+			for x in n_rcv_id
+				# Both ranks are supposed to traverse through same values of x 
+				# But rank 0 maps x+1
+		
+
+###################################################
+				if A.geom.rank == 0 
+					open("j_e2lmapping_0.txt", "a") do f 
+						println(f,"externalToLocalMap[$x] = $localNumberOfRows + $receiveEntryCount +1") 
+					end
+				else
+					open("j_e2lmapping_1.txt", "a") do f 
+						println(f,"externalToLocalMap[$x] = $localNumberOfRows + $receiveEntryCount +1") 
+					end
+
+				end
+
+				
+###################################################
+				# RZV #BUG_INFO
+				# test fucntion file  = ord.jl
+				# Dict(externalToLocalMap) does not maintain the order in which elements are sent
+				# to receiveList[rank_id] but that is not to say that the mapping would be wrong.
+				#
+				# My assumption was that tha order might change but the mapping will be correct
+				#  
+				# Is this behaviour seen in both processes ?  Yes
+				#
+				# Is this behaviour tested in Julia REPL 
+				# 			or a seperate testing function ?  Yes the order of dict changes but the mapping is preserved
+				#
+				# So behaviour of Test function and this code are not behaving the same way.
+
+		# BUG_INFO # RZV
+		# Because of all this outputs recorded for $externalToLocalMap[curIndex] for all ranks is wrong
+		# Because of all this outputs recorded for j_e2lmapping_0&1 j_diff_rank_0&1 and j_mtxIndL_0&1 for all ranks is wrong
+				externalToLocalMap[x] = localNumberOfRows + receiveEntryCount + 1 # The remote columns are indexed at end of internals
+				receiveEntryCount    += 1
             end
 
-			for (x,y) in n_snd_id
-				# x(key) is currentGlobalRow value 
-				# y(value) is the indexing 
+			for x in n_snd_id
 
-#				if A.geom.rank == 0 
-#					open("els_2_send_rank_1.txt", "a") do f 
-#						println(f,"$(A.globalToLocalMap[i]) ,$sendEntryCount") 
-#					end
-#				else
-#					open("els_2_send_rank_2.txt", "a") do f 
-#						println(f,"$(A.globalToLocalMap[i]) ,$sendEntryCount") 
-#					end
-#				end
+###################################################
+				if A.geom.rank == 0 
+					open("els_2_send_rank_0.txt", "a") do f 
+						println(f,"elementsToSend[$sendEntryCount +1] = $(A.globalToLocalMap[x])") 
+					end
+				else
+					open("els_2_send_rank_1.txt", "a") do f 
+						println(f,"elementsToSend[$sendEntryCount +1] = $(A.globalToLocalMap[x])") 
+					end
+				end
+###################################################
 
-                elementsToSend[y] = A.globalToLocalMap[x] # store local ids of entry to send
+			elementsToSend[sendEntryCount+1] = A.globalToLocalMap[x] # store local ids of entry to send
+				sendEntryCount   += 1
             end
 
             neighborCount +=1
@@ -179,48 +215,40 @@ function setup_halo_ref!(A)
                 rankIdOfColumnEntry = compute_rank_of_matrix_row(A.geom, curIndex)
                 if A.geom.rank == rankIdOfColumnEntry # My column index, so convert to local index
 
-					# PROBLEM :
-					# For rank 1 mtxiNdL[1][1], [1][4], [1][7],[1][10], [3][..] are wrong among more
-					# These are only found wrong in loop C :: 132-134 >> externalToLocalMap which is 
-					# Its wrong because indexing in the ReceiveList is all wrong. I used push! to add
-					# elements to an existing set. Sets add these newly added values at the top instead
-					# from at the bottom. Because of this indexing in receiveList, receiveEntryCount 
-					# was all wrong and adding 162 in places it had to add 1.
-					# SOLUTION 1: Make your own alternate set structure which maintains the chronological
-					# 			  sense of what was added first to the set 
-					# 			  type A : Instead of a set we make a dict with chronology stored as 
-					# 			  		   as values to set vlaues(which will be keys)
-					# 			  type B : Make 2 sets. Simulataneously add chronolgy and set values
-					# 			  		   I am not so sure about this approach because I am not sure 
-					# 			  		   if Julia will maintain these chronologies without a doubt  
-					# For rank 0 all values match with C version 
-					# mtxIndG is correct for both ranks for all positions
-
                     mtxIndL[i,j] = A.globalToLocalMap[curIndex]
+
 ###################################################
-#		if A.geom.rank == 0 
-#			open("j_same_rank_0.txt", "a") do f 
-#				println(f,"$i, $j, $curIndex, $(A.globalToLocalMap[curIndex])") 
-#			end
-#		else
-#			open("j_same_rank_1.txt", "a") do f 
-#				println(f,"$i, $j, $curIndex, $(A.globalToLocalMap[curIndex])")
-#			end
-#		end
+		if A.geom.rank == 0 
+			open("j_same_rank_0.txt", "a") do f 
+				println(f,"$i, $j, $curIndex, $(A.globalToLocalMap[curIndex])") 
+			end
+		else
+			open("j_same_rank_1.txt", "a") do f 
+				println(f,"$i, $j, $curIndex, $(A.globalToLocalMap[curIndex])")
+			end
+		end
 ###################################################			
                 else # If column index is not a row index, then it comes from another processor
+
+		# BUG_INFO # RZV
+		# Because of all this outputs recorded for $externalToLocalMap[curIndex] for all ranks is wrong
+		# Because of all this outputs recorded for j_e2lmapping_0&1 j_diff_rank_0&1 and j_mtxIndL_0&1 for all ranks is wrong
+
+		
                     mtxIndL[i,j] = externalToLocalMap[curIndex]
 ###################################################
-#		if A.geom.rank == 0 
-#			open("j_diff_rank_0.txt", "a") do f 
-#				println(f,"$i, $j, $curIndex, $(externalToLocalMap[curIndex])") 
-#			end
-#		else
-#			open("j_diff_rank_1.txt", "a") do f 
-#				println(f,"$i, $j, $curIndex, $(externalToLocalMap[curIndex])")
-#			end
-#		end
+		if A.geom.rank == 0 
+			open("j_diff_rank_0.txt", "a") do f 
+				println(f,"$i, $j, $curIndex, $(externalToLocalMap[curIndex])") 
+			end
+		else
+			open("j_diff_rank_1.txt", "a") do f 
+				println(f,"$i, $j, $curIndex, $(externalToLocalMap[curIndex])")
+			end
+
+		end
 ###################################################			
+#
                 end
             end
        end
@@ -260,6 +288,8 @@ function setup_halo_ref!(A)
 				println(f,"$(A.mtxIndG)") 
 			end
 		end
+		# BUG_INFO # RZV
+		# Because of all this outputs recorded for mtxIndL for all ranks is wrong
 		if A.geom.rank == 0 
 			open("j_mtxIndL_0.txt", "a") do f 
 				println(f,"$(A.mtxIndL)") 

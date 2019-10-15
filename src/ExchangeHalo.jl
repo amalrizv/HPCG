@@ -29,14 +29,6 @@ function exchange_halo!(x, A)
   sendBuffer        = A.sendBuffer
   totalToBeSent     = A.totalToBeSent
   elementsToSend    = A.elementsToSend
-  @show localNumberOfRows
-  @show num_neighbors
-  @show receiveLength
-  @show sendLength
-  @show neighbors
-  @show sendBuffer[1]
-  @show totalToBeSent
-  @show elementsToSend[1]
 
   size = Int64
   rank = Int64 # Number of MPI processes, My process ID
@@ -90,10 +82,10 @@ function exchange_halo!(x, A)
   # TODO: Thread this loop
   for i = 1:num_neighbors
     n_send = sendLength[i]
-    start = (i-1)n_send+1
-    finish = start+n_send-1
-    MPI.Send(sendBuffer[start:finish], neighbors[i], MPI_MY_TAG, MPI.COMM_WORLD)
-    
+	# mapping externalToLocalMap is corresponding 
+	# but because of indexing errors in SetupHalo
+	# this code is not able to access those areas (?)
+	MPI.Send(sendBuffer[1:n_send], neighbors[i], MPI_MY_TAG, MPI.COMM_WORLD)
   end
 
   #

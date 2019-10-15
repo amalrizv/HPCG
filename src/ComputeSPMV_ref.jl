@@ -31,9 +31,22 @@ function compute_spmv_ref!(y, A, x) # takes SpMatrix_anx structure
       cur_inds = A.mtxIndL[i, :]
 
       cur_nnz  = A.nonzerosInRow[i]
+	  # print output of both ranks 
+
 
       for j= 1:cur_nnz
+	  if A.geom.rank == 0
+		  open("spmv_0.txt", "a") do f
+			  println(f, "sum = $sum + cur_vals[$j]( = $(cur_vals[j]) ) * x[cur_inds[$j] ( = x[$(cur_inds[j])] = $(x[cur_inds[j]]) )")
+		  end
+	  else
+		  open("spmv_1.txt", "a") do f
+			  println(f, "sum = $sum + cur_vals[$j]( = $(cur_vals[j]) ) * x[cur_inds[$j] ( = x[$(cur_inds[j])] = $(x[cur_inds[j]]) )")
+		  end
+	  end
+
           sum = sum + (cur_vals[j]*x[cur_inds[j]])
+
       end
       y[i] = sum
   end
