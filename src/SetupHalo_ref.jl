@@ -55,12 +55,20 @@ function setup_halo_ref!(A)
 		# 			but that was a wrong approach since elements of Set are not in 
 		# 			ascending order but just FIFO.
 		# TRIAL_4 : So I switched to using an OrderedSet.
-		# 			An OrderedSet is a FIFO Set. Operated by using push! and pop!
+		# 			An OrderedSet is a LIFO Set. Operated by using push! and pop!
 		# 			when the values are collected using collect(some_ordered_set)
-		# 			the fifo order is maintained and in the scenario below:
+		# 			the FIFO order is maintained. [Output evidence  in set_output_1]
+		#			+
+		#			when the values are iterated through the Ordered Set then also 
+		#			a FIFO order is maintained.
+		#			= Even after maintaining FIFO nature in iteration and collect (in REPL and ord.jl) 
+		#			  it is seen that when the code is assigning externalToLocalMap
+		#			  for keys that are either being iterated via ordered_set_values or 
+		#			  collected_ordered_set_values or baffilingly even 
+		#			  reverse_collected_ordered_set_values. Some stubborn unknown condition
+		#			  in the code is making these values being read in LIFO order.
 		#
-		# 			for x in collect(some_ordered_set)
-		# 				x should be accessed in FIFO style(confirmed by REPL and a testing function)
+		#
 		#
 		for ranks = 0: A.geom.size-1
 			receiveList[ranks] = OrderedSet{Int64}()
@@ -140,16 +148,27 @@ function setup_halo_ref!(A)
             receiveLength[neighborCount+1] = length(v)
             sendLength[neighborCount+1]    = length(sendList[neighborId]) # Get count if sends/receives
 ###################################################
-
-			n_rcv_id = collect(v) 							# n_rcv_id is an array of  set elements
+#=
+			n_rcv_id = reverse!(collect(v)) 							# n_rcv_id is an array of  set elements
 																# no element repeated
 
-			n_snd_id = collect(sendList[neighborId])		# n_snd_id is an array of set elements
+			n_snd_id = reverse!(collect(sendList[neighborId]))		# n_snd_id is an array of set elements
 																# no element repeated
-					
-			for x in n_rcv_id
-				# Both ranks are supposed to traverse through same values of x 
-				# But rank 0 maps x+1
+=#					
+			if A.geom.rank == 0
+				open("set_output_0.txt", "a") do f 
+					println(f, "receiveList[k] \n $(receiveList[k])")
+					println(f,"collect(receiveList[k] \n $(collect(receiveList[k]))")
+					println(f, "reverse!(collect(receiveList[k] \n $(reverse!(collect(receiveList[k])))")
+				end
+			else
+				open("set_output_1.txt", "a") do f 
+					println(f, "receiveList[k] \n $(receiveList[k])")
+					println(f,"collect(receiveList[k] \n $(collect(receiveList[k]))")
+					println(f, "reverse!(collect(receiveList[k] \n $(reverse!(collect(receiveList[k])))")
+				end
+			end
+			for x in sort(collect(receiveList[k]))
 		
 
 ###################################################
@@ -166,7 +185,7 @@ function setup_halo_ref!(A)
 
 				
 ###################################################
-				# RZV #BUG_INFO
+				#RZV #BUG_INFO
 				# test fucntion file  = ord.jl
 				# Dict(externalToLocalMap) does not maintain the order in which elements are sent
 				# to receiveList[rank_id] but that is not to say that the mapping would be wrong.
@@ -180,14 +199,14 @@ function setup_halo_ref!(A)
 				#
 				# So behaviour of Test function and this code are not behaving the same way.
 
-		# BUG_INFO # RZV
+		# BUG_INFO #RZV
 		# Because of all this outputs recorded for $externalToLocalMap[curIndex] for all ranks is wrong
 		# Because of all this outputs recorded for j_e2lmapping_0&1 j_diff_rank_0&1 and j_mtxIndL_0&1 for all ranks is wrong
 				externalToLocalMap[x] = localNumberOfRows + receiveEntryCount + 1 # The remote columns are indexed at end of internals
 				receiveEntryCount    += 1
             end
 
-			for x in n_snd_id
+			for x in sort(collect(sendList[k]))
 
 ###################################################
 				if A.geom.rank == 0 
@@ -230,7 +249,7 @@ function setup_halo_ref!(A)
 ###################################################			
                 else # If column index is not a row index, then it comes from another processor
 
-		# BUG_INFO # RZV
+		# BUG_INFO #RZV
 		# Because of all this outputs recorded for $externalToLocalMap[curIndex] for all ranks is wrong
 		# Because of all this outputs recorded for j_e2lmapping_0&1 j_diff_rank_0&1 and j_mtxIndL_0&1 for all ranks is wrong
 
@@ -288,7 +307,7 @@ function setup_halo_ref!(A)
 				println(f,"$(A.mtxIndG)") 
 			end
 		end
-		# BUG_INFO # RZV
+		# BUG_INFO #RZV
 		# Because of all this outputs recorded for mtxIndL for all ranks is wrong
 		if A.geom.rank == 0 
 			open("j_mtxIndL_0.txt", "a") do f 
