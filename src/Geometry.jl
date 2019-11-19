@@ -74,9 +74,6 @@ function compute_rank_of_matrix_row(geom, index)
     ipy  = iy÷geom.ny
     ipx  = ix÷geom.nx
     rank = ipx+ipy*geom.npx+ipz*geom.npy*geom.npx
-	if index == 79
-		println("BOOYAH and the rank is $rank computed by process $(geom.rank)")
-	end
     return rank
 end
 

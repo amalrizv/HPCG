@@ -146,7 +146,7 @@ function generate_problem_ref!(A::HPCGSparseMatrix)
     totalNumberOfNonzeros = 0
     # Use MPI's reduce function to sum all nonzeros
     if MPI.Initialized() == true
-      println("$(A.geom.rank) has $localNumberOfNonzeros local number of zeros ")
+      #println("$(A.geom.rank) has $localNumberOfNonzeros local number of zeros ")
       MPI.Barrier(MPI.COMM_WORLD)
       lnnz = localNumberOfNonzeros
       gnnz = 0 # convert to 64 bit for MPI call
@@ -176,15 +176,11 @@ function generate_problem_ref!(A::HPCGSparseMatrix)
     A.localToGlobalMap      = localToGlobalMap
     A.globalToLocalMap      = globalToLocalMap
 
-	#DONE _ Same values forwarded to SetupHalo
-	# TODO_AMAL : Print out all modified variables(specially localToGlobal and 
-	#  			  globalTolocal mappings) of A to see if what is being sent from 
-	# 			  generate problem is actually whats being recieved in SetupHalo.
-	if A.geom.rank == 1
-		open("mtx_gen_1.txt", "a") do f 
-			println(f, A.mtxIndG, A.mtxIndL)
-		end
-	end
+#	if A.geom.rank == 1
+#		open("mtx_gen_1.txt", "a") do f 
+#			println(f, A.mtxIndG, A.mtxIndL)
+#		end
+#	end
 
 
     return b, x, xexact

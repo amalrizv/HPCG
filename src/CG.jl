@@ -48,9 +48,11 @@ include("ComputeWAXPBY.jl")
   @return Returns zero on success and a non-zero value otherwise.
   @see CG_ref()
 =#
-function cg!(A, data, b, x, max_iter, tolerance, niters, normr, normr0, times, doPreconditioning) 
+function cg!(A, data, b, x, max_iter, tolerance, times, doPreconditioning) 
   t_begin = time_ns()  # Start timing right away
   normr = 0.0
+  normr0 = 0.0
+  niters = 0
   rtz = 0.0
   oldrtz = 0.0 
   alpha = 0.0
@@ -89,19 +91,19 @@ function cg!(A, data, b, x, max_iter, tolerance, niters, normr, normr0, times, d
   # p is of length ncols, copy x to p for sparse MV operation
   p[1:length(x)] = x
   t3t 		= time_ns() 
-  flag		= compute_spmv!(Ap, A, p) 
+  ierr = compute_spmv!(Ap, A, p) 
   t3 		= time_ns()-t3t 
 
   #Ap 	= A*p
 
   t2t 	= time_ns()
-  flag	= compute_waxpby!(r, nrow, 1.0, b, -1.0, Ap, A.is_waxpby_optimized)
+  ierr = compute_waxpby!(r, nrow, 1.0, b, -1.0, Ap, A.is_waxpby_optimized)
   t2 	= time_ns()-t2t 
 
   # r = b - Ax (x stored in p)
 
   t1t 	= time_ns()
-  flag	= compute_dot_product!(normr, t4, nrow, r, r, A.is_dot_prod_optimized)
+  normr, t4, ierr = compute_dot_product!(nrow, r, r, A.is_dot_prod_optimized)
   t1 	= time_ns()-t1t
 
   normr = sqrt(normr)
@@ -119,7 +121,7 @@ function cg!(A, data, b, x, max_iter, tolerance, niters, normr, normr0, times, d
   	if  normr/normr0 > tolerance 
     		t5t = time_ns()
     		if doPreconditioning
-      			flag	= compute_mg!(z,A, r) # Apply preconditioner
+      			compute_mg!(z,A, r) # Apply preconditioner
     		else
       			z[1:length(r)] = r # copy r to z (no preconditioning)
     		end
@@ -127,44 +129,43 @@ function cg!(A, data, b, x, max_iter, tolerance, niters, normr, normr0, times, d
 
     		if k == 1
       			t2t   	= time_ns()
-      			flag  	= compute_waxpby!(p, nrow, 1.0, z, 0.0, z, A.is_waxpby_optimized)
+      			ierr =  compute_waxpby!(p, nrow, 1.0, z, 0.0, z, A.is_waxpby_optimized)
       			t2 	= t2+time_ns()-t2t # Copy Mr to p
       			t1t 	= time_ns()
-      			flag 	= compute_dot_product!(rtz, t4, nrow, r, z, A.is_dot_prod_optimized)
+      			rtz, t4, ierr = compute_dot_product!(nrow, r, z, A.is_dot_prod_optimized)
       			t1 	= t1+time_ns()- t1t # rtz = r'*z
    		else 
       			oldrtz 	= rtz
       			t1t 	= time_ns()
-      			flag	= compute_dot_product!(rtz, t4, nrow, r, z, A.is_dot_prod_optimized) 
+      			rtz, t4, ierr = compute_dot_product!( nrow, r, z, A.is_dot_prod_optimized) 
       			t1 	= t1+time_ns()-t1t # rtz = r'*z
       			beta 	= rtz/oldrtz
       			t2t 	= time_ns()
-      			flag    = compute_waxpby!(p, nrow, 1.0, z, beta, p, A.is_waxpby_optimized)  
+      			ierr	=compute_waxpby!(p, nrow, 1.0, z, beta, p, A.is_waxpby_optimized)  
       			t2 	= time_ns()-t2t+t2 # p = beta*p + z
    		end
 
     		t3t 	= time_ns()
-    		flag	= compute_spmv!(Ap, A, p) 
+    		ierr = compute_spmv!(Ap, A, p) 
     		t3	= t3+time_ns()- t3t # Ap = A*p
 
     		t1t 	= time_ns()
-    		flag	= compute_dot_product!(pAp, t4, nrow, p, Ap, A.is_dot_prod_optimized) 
+    		pAp, t4, ierr = compute_dot_product!(nrow, p, Ap, A.is_dot_prod_optimized) 
     		t1 	= time_ns()-t1t+t1 # alpha = p'*Ap
 
     		alpha 	= rtz/pAp
 
     		t2t  	= time_ns() 
-    		flag 	= compute_waxpby!(x, nrow, 1.0, x, alpha, p, A.is_waxpby_optimized)# x = x + alpha*p
-    		flag	= compute_waxpby!(r, nrow, 1.0, r, -alpha, Ap, A.is_waxpby_optimized)
+    		ierr = compute_waxpby!(x, nrow, 1.0, x, alpha, p, A.is_waxpby_optimized)# x = x + alpha*p
+    		ierr = compute_waxpby!(r, nrow, 1.0, r, -alpha, Ap, A.is_waxpby_optimized)
     		t2 	= time_ns()- t2t +t2# r = r - alpha*Ap
 	
     		t1t 	= time_ns()
-                flag	= compute_dot_product!(normr, t4, nrow, r, r, A.is_dot_prod_optimized)
+                normr, t4, ierr = compute_dot_product!(nrow, r, r, A.is_dot_prod_optimized)
     		t1 = t1+time_ns()- t1t
 	
     		normr = sqrt(normr)
 		sr = normr/normr0
-	#	@show k sr
 #ifdef HPCG_DEBUG
     		if A.geom.rank==0 && (k%print_freq == 0 || k == max_iter)
       			@debug("Iteration = ",k,"   Scaled Residual = ",normr/normr0, "\n")
@@ -186,6 +187,16 @@ function cg!(A, data, b, x, max_iter, tolerance, niters, normr, normr0, times, d
 ## times[7] = t6
 ##else
 ##endif
+		if A.geom.rank == 0
+			open("residual_0.txt", "a") do f 
+				println(f, "$(x[length(x)])")
+			end
+		else
+			open("residual_1.txt", "a") do f 
+				println(f, "$(x[length(x)])")
+			end
+	    end
   
-  return 0 ,A , data , x , niters, normr , normr0 , times
+ ierr=0
+ return niters, normr, normr0, ierr
 end

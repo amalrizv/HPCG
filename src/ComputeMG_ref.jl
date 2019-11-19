@@ -3,6 +3,7 @@
 
  HPCG routine
 =#
+include("appendx.jl")
 include("ComputeSPMV_ref.jl")
 include("ComputeRestriction_ref.jl")
 include("ComputeSYMGS_ref.jl")
@@ -19,65 +20,62 @@ include("ComputeProlongation_ref.jl")
   @see ComputeMG
 =#
 
-function compute_mg_ref!(x, A, r) #sp_coarse passed 
+function compute_mg_ref!(x, A, r, ierr) #sp_coarse passed 
   @assert(length(x)==A.localNumberOfColumns) #Make sure x contain space for halo values
-  x = zeros(length(x)) #initialize x to zero
+  zero_fill!(x)
+  #initialize x to zero
 
-  ierr = 0
 
   # if mgdata is even defined this will result in a non zero value 
   if A.mgData == 0  #  Go to next coarse level if defined
       numberOfPresmootherSteps = A.mgData.numberOfPresmootherSteps
 
-      # In second iteration Compute MG sends A.mgData.xc 
-      # as inout and A.Ac and A.mgData.rc as inputs
-      # For the second rank (rc and Ac inputs checked)
-      # something is wrong with computation when rank is 1 
       for i = 1:numberOfPresmootherSteps
-          ierr = compute_symgs_ref!(x, A, r )
+          compute_symgs_ref!(x, A, r , ierr)
       end
       if ierr!=0
           return ierr
       end
+
       ierr = compute_spmv_ref!(A.mgData.Axf, A, x) 
-#      @show A.mgData.Axf[length(A.mgData.Axf)]
-      #second iteration Axf is wrong for rank 1 
-	
       if ierr!=0
           return ierr
       end
 
       # Perform restriction operation using simple injection
-      ierr = compute_restriction_ref!(A, r)  
-      if ierr!=0 
-          return ierr
-      end
-      ierr, A.mgData.xc = compute_mg!(A.mgData.xc, A.Ac, A.mgData.rc)  
-##############loops back one time################
+      compute_restriction_ref!(A, r, ierr)  
       if ierr!=0 
           return ierr
       end
 
-      ierr = compute_prolongation_ref!(x,A)  
+      compute_mg!(A.mgData.xc, A.Ac, A.mgData.rc)  
+      if ierr!=0 
+          return ierr
+      end
+
+      compute_prolongation_ref!(x,A, ierr)  
       if (ierr!=0) 
           return ierr
       end
 
       numberOfPostsmootherSteps = A.mgData.numberOfPostsmootherSteps
+
       for i= 1: numberOfPostsmootherSteps
-          ierr, x = compute_symgs_ref!(x,A, r)
+    		compute_symgs_ref!(x,A, r, ierr)
       end
-
       if ierr!=0 
           return ierr
       end
+
   else 
-      ierr = compute_symgs_ref!(x, A, r)
+
+      compute_symgs_ref!(x, A, r, ierr)
       if ierr!=0 
           return ierr
       end
-  end
 
-  return 0
+  end
+  
+  ierr = 0
 end
 

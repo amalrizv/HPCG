@@ -7,7 +7,7 @@ using Statistics
 
 include("hpcg.jl")
 
-function check_aspect_ratio(smallest_ratio, x, y, z, what, do_io) 
+function check_aspect_ratio(smallest_ratio, x, y, z, what, do_io, ierr) 
 
   current_ratio = Statistics.min(Statistics.min(x, y), z) / (Statistics.max(Statistics.max(x, y), z))
 
@@ -20,6 +20,6 @@ function check_aspect_ratio(smallest_ratio, x, y, z, what, do_io)
 
   end
 
-  return 0
+  ierr = 0
 
 end

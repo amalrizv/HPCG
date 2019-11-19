@@ -23,7 +23,7 @@ include("ReadHpcgDat.jl")
   @see HPCG_Finalize
 =#
 
-function hpcg_init!(params, arg_hpcg)
+function hpcg_init!(params , arg_hpcg)
 
     opts = collect(keys(arg_hpcg))
     vals = collect(values(arg_hpcg))
@@ -76,5 +76,5 @@ function hpcg_init!(params, arg_hpcg)
 
     iparams  = nothing
 
-	return params
+   return params
 end

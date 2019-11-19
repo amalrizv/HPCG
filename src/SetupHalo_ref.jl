@@ -19,12 +19,12 @@ include("SetupHalo_struct.jl")
 function setup_halo_ref!(A)
 
 #	DEBUG : Same values forwarded from GenerateProblem_ref	
-	if A.geom.rank == 1 
-		open("mtx_setup_1.txt", "a") do f 
-			println(f, A.mtxIndG, A.mtxIndL)
-		end
-	end
-    @debug("In SetupHalo_ref")
+#	if A.geom.rank == 1 
+#		open("mtx_setup_1.txt", "a") do f 
+#			println(f, A.mtxIndG, A.mtxIndL)
+#		end
+#	end
+ #   @debug("In SetupHalo_ref")
 
     # Extract Matrix pieces
 
@@ -46,30 +46,6 @@ function setup_halo_ref!(A)
 		sendList           = Dict{Int64, OrderedSet{Int64}}()
 		receiveList        = Dict{Int64, OrderedSet{Int64}}()
         externalToLocalMap = Dict{Int64, Int64}()
-		#BUG_INFO #RZV
-		# The main problem is with the Set, OrderedSet data Structure that is used here
-		# TRIAL 1 : I tried using a Set first but since it did not retain order we switched to
-		# TRIAL 2 : a custom Dict which was similar to the PriorityQueue structure in DataStructures.
-		# TRIAL 3 : To remove unnneccessary complications (TRIAL_2) we just arranged 
-		# 			the elements of the Set in an ascending order using sort(collect...) 
-		# 			but that was a wrong approach since elements of Set are not in 
-		# 			ascending order but just FIFO.
-		# TRIAL_4 : So I switched to using an OrderedSet.
-		# 			An OrderedSet is a LIFO Set. Operated by using push! and pop!
-		# 			when the values are collected using collect(some_ordered_set)
-		# 			the FIFO order is maintained. [Output evidence  in set_output_1]
-		#			+
-		#			when the values are iterated through the Ordered Set then also 
-		#			a FIFO order is maintained.
-		#			= Even after maintaining FIFO nature in iteration and collect (in REPL and ord.jl) 
-		#			  it is seen that when the code is assigning externalToLocalMap
-		#			  for keys that are either being iterated via ordered_set_values or 
-		#			  collected_ordered_set_values or baffilingly even 
-		#			  reverse_collected_ordered_set_values. Some stubborn unknown condition
-		#			  in the code is making these values being read in LIFO order.
-		#
-		#
-		#
 		for ranks = 0: A.geom.size-1
 			receiveList[ranks] = OrderedSet{Int64}()
 			sendList[ranks]     = OrderedSet{Int64}()
@@ -82,21 +58,6 @@ function setup_halo_ref!(A)
             for j = 1:nonzerosInRow[i]
 				curIndex            = mtxIndG[i,j]
                 rankIdOfColumnEntry = compute_rank_of_matrix_row(A.geom, curIndex)
-
-###################################################
-#CORRECT
-				if A.geom.rank == 0 
-					open("rankIdOfColumnEntry_0.txt", "a") do f 
-						println(f, "rankIdOfColumnEntry is $rankIdOfColumnEntry for curIndex(mtxIndG)[$i][$j] value $curIndex")
-					end
-				else
-					open("rankIdOfColumnEntry_1.txt", "a") do f 
-						println(f, "rankIdOfColumnEntry is $rankIdOfColumnEntry for curIndex(mtxIndG)[$i][$j] value $curIndex")
-					end
-#CORRECT
-				end
-###################################################
-
             	if  A.geom.rank != rankIdOfColumnEntry # If column index is not a row index, then it comes from another processor
 					
 		    		push!(receiveList[rankIdOfColumnEntry], curIndex)
@@ -147,83 +108,23 @@ function setup_halo_ref!(A)
             neighbors[neighborCount+1]     = neighborId # store rank ID of current neighbor
             receiveLength[neighborCount+1] = length(v)
             sendLength[neighborCount+1]    = length(sendList[neighborId]) # Get count if sends/receives
-###################################################
-#=
-			n_rcv_id = reverse!(collect(v)) 							# n_rcv_id is an array of  set elements
-																# no element repeated
-
-			n_snd_id = reverse!(collect(sendList[neighborId]))		# n_snd_id is an array of set elements
-																# no element repeated
-=#					
-			if A.geom.rank == 0
-				open("set_output_0.txt", "a") do f 
-					println(f, "receiveList[k] \n $(receiveList[k])")
-					println(f,"collect(receiveList[k] \n $(collect(receiveList[k]))")
-					println(f, "reverse!(collect(receiveList[k] \n $(reverse!(collect(receiveList[k])))")
-				end
-			else
-				open("set_output_1.txt", "a") do f 
-					println(f, "receiveList[k] \n $(receiveList[k])")
-					println(f,"collect(receiveList[k] \n $(collect(receiveList[k]))")
-					println(f, "reverse!(collect(receiveList[k] \n $(reverse!(collect(receiveList[k])))")
-				end
-			end
 			for x in sort(collect(receiveList[k]))
-		
-
-###################################################
-				if A.geom.rank == 0 
-					open("j_e2lmapping_0.txt", "a") do f 
-						println(f,"externalToLocalMap[$x] = $localNumberOfRows + $receiveEntryCount +1") 
-					end
-				else
-					open("j_e2lmapping_1.txt", "a") do f 
-						println(f,"externalToLocalMap[$x] = $localNumberOfRows + $receiveEntryCount +1") 
-					end
-
-				end
-
-				
-###################################################
-				#RZV #BUG_INFO
-				# test fucntion file  = ord.jl
-				# Dict(externalToLocalMap) does not maintain the order in which elements are sent
-				# to receiveList[rank_id] but that is not to say that the mapping would be wrong.
-				#
-				# My assumption was that tha order might change but the mapping will be correct
-				#  
-				# Is this behaviour seen in both processes ?  Yes
-				#
-				# Is this behaviour tested in Julia REPL 
-				# 			or a seperate testing function ?  Yes the order of dict changes but the mapping is preserved
-				#
-				# So behaviour of Test function and this code are not behaving the same way.
-
-		# BUG_INFO #RZV
-		# Because of all this outputs recorded for $externalToLocalMap[curIndex] for all ranks is wrong
-		# Because of all this outputs recorded for j_e2lmapping_0&1 j_diff_rank_0&1 and j_mtxIndL_0&1 for all ranks is wrong
 				externalToLocalMap[x] = localNumberOfRows + receiveEntryCount + 1 # The remote columns are indexed at end of internals
 				receiveEntryCount    += 1
             end
+			
+			if A.geom.rank == 0
+				fs = open("e2send_0.txt", "a")
+			else
+				fs = open("e2send_1.txt", "a")
+			end
 
 			for x in sort(collect(sendList[k]))
-
-###################################################
-				if A.geom.rank == 0 
-					open("els_2_send_rank_0.txt", "a") do f 
-						println(f,"elementsToSend[$sendEntryCount +1] = $(A.globalToLocalMap[x])") 
-					end
-				else
-					open("els_2_send_rank_1.txt", "a") do f 
-						println(f,"elementsToSend[$sendEntryCount +1] = $(A.globalToLocalMap[x])") 
-					end
-				end
-###################################################
-
-			elementsToSend[sendEntryCount+1] = A.globalToLocalMap[x] # store local ids of entry to send
+				elementsToSend[sendEntryCount+1] = A.globalToLocalMap[x] # store local ids of entry to send
+				println(fs,"elementsToSend[$(sendEntryCount+1)] = $(A.globalToLocalMap[x]) ")
 				sendEntryCount   += 1
             end
-
+			close(fs)
             neighborCount +=1
         end
 
@@ -233,51 +134,16 @@ function setup_halo_ref!(A)
                 curIndex = mtxIndG[i,j]
                 rankIdOfColumnEntry = compute_rank_of_matrix_row(A.geom, curIndex)
                 if A.geom.rank == rankIdOfColumnEntry # My column index, so convert to local index
-
                     mtxIndL[i,j] = A.globalToLocalMap[curIndex]
-
-###################################################
-		if A.geom.rank == 0 
-			open("j_same_rank_0.txt", "a") do f 
-				println(f,"$i, $j, $curIndex, $(A.globalToLocalMap[curIndex])") 
-			end
-		else
-			open("j_same_rank_1.txt", "a") do f 
-				println(f,"$i, $j, $curIndex, $(A.globalToLocalMap[curIndex])")
-			end
-		end
-###################################################			
                 else # If column index is not a row index, then it comes from another processor
-
-		# BUG_INFO #RZV
-		# Because of all this outputs recorded for $externalToLocalMap[curIndex] for all ranks is wrong
-		# Because of all this outputs recorded for j_e2lmapping_0&1 j_diff_rank_0&1 and j_mtxIndL_0&1 for all ranks is wrong
-
-		
                     mtxIndL[i,j] = externalToLocalMap[curIndex]
-###################################################
-		if A.geom.rank == 0 
-			open("j_diff_rank_0.txt", "a") do f 
-				println(f,"$i, $j, $curIndex, $(externalToLocalMap[curIndex])") 
-			end
-		else
-			open("j_diff_rank_1.txt", "a") do f 
-				println(f,"$i, $j, $curIndex, $(externalToLocalMap[curIndex])")
-			end
 
-		end
-###################################################			
-#
-                end
+				end
+
             end
-       end
+        end
 
         # Store contents in our matrix struct
-	if A.geom.rank==1
-		open("rank1_elementsToSend", "a") do f
-			DelimitedFiles.writedlm(f,elementsToSend)
-		end 
-	end
         numberOfExternalValues = length(externalToLocalMap)
         localNumberOfColumns   = A.localNumberOfRows + numberOfExternalValues
         numberOfSendNeighbors  = length(sendList)
@@ -298,26 +164,6 @@ function setup_halo_ref!(A)
         A.sendLength             = sendLength
         A.sendBuffer             = sendBuffer
 
-		if A.geom.rank == 0 
-			open("j_mtxIndG_0.txt", "a") do f 
-				println(f,"$(A.mtxIndG)") 
-			end
-		else
-			open("j_mtxIndG_1.txt", "a") do f 
-				println(f,"$(A.mtxIndG)") 
-			end
-		end
-		# BUG_INFO #RZV
-		# Because of all this outputs recorded for mtxIndL for all ranks is wrong
-		if A.geom.rank == 0 
-			open("j_mtxIndL_0.txt", "a") do f 
-				println(f,"$(A.mtxIndL)") 
-			end
-		else
-			open("j_mtxIndL_1.txt", "a") do f 
-				println(f,"$(A.mtxIndL)") 
-			end
-		end
 
         @debug(" For rank $A.geom.rank of $A.geom.size number of neighbors $A.numberOfSendNeighbors")
         for i = 1:numberOfSendNeighbors
@@ -328,5 +174,5 @@ function setup_halo_ref!(A)
         end
 
     end # ! NO_MPI
-    println("Out of SetupHalo_ref")
+    #println("Out of SetupHalo_ref")
 end

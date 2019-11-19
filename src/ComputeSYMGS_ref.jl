@@ -33,7 +33,7 @@ Computes one step of symmetric Gauss-Seidel:
 
   @see ComputeSYMGS
 =#
-function compute_symgs_ref!(xv, A, r) 
+function compute_symgs_ref!(xv, A, rv, ierr) 
   @assert(length(xv)==A.localNumberOfColumns) # Make sure x contain space for halo values
   if MPI.Initialized()== true
 	  exchange_halo!(xv,A)
@@ -43,7 +43,6 @@ function compute_symgs_ref!(xv, A, r)
   #matrixDiagonal = A.matrixDiagonal  # An array of pointers to the diagonal entries A.matrixValues
   matrixValues = A.matrixValues
   mtxIndL = A.mtxIndL
-  rv = r
 
   for i=1:nrow
     currentValues = matrixValues[i, :]
@@ -80,6 +79,6 @@ function compute_symgs_ref!(xv, A, r)
     xv[i] = sum/currentDiagonal
   end
 
-  return 0
+  ierr = 0 
 end
 

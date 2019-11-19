@@ -26,7 +26,7 @@ include("CG.jl")
 
   @see CG()
 =#
-function test_cg!(A, data, b, x, count_pass, count_fail) 
+function test_cg!(A, data, b, x, count_pass, count_fail, ierr) 
 
     testcg_data = TestCGData 
     # Use this array for collecting timing information
@@ -68,16 +68,17 @@ function test_cg!(A, data, b, x, count_pass, count_fail)
 
     # For the unpreconditioned CG call, we should take about 10 iterations, permit 12
     # For the preconditioned case, we should take about 1 iteration, permit 2
-
+    
     for k=0:2 # This loop tests both unpreconditioned and preconditioned runs
         expected_niters = testcg_data.expected_niters_no_prec
         if k==1
             expected_niters = testcg_data.expected_niters_prec
         end
         for i=0:numberOfCgCalls
-            x = zeros(length(x)) # Zero out x
-            ierr, A, data, x, niters, normr, normr0, times_add = cg!(A, data, b, x, maxIters, tolerance, niters, normr, normr0, times, k==1)
-            times = times_add
+			for i=1:length(x)
+				x[i] = 0 
+			end
+        	niters, normr, normr0, ierr = cg!(A, data, b, x, maxIters, tolerance, times, k==1)
             if ierr==1
                 @debug("Error in call to CG:$ierr.\n")
             end
@@ -113,7 +114,6 @@ function test_cg!(A, data, b, x, count_pass, count_fail)
     exaggeratedDiagA  = nothing
     origB             = nothing
     testcg_data.normr = normr
-
-    return testcg_data, times
+	return testcg_data
 
 end

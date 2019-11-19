@@ -31,9 +31,7 @@ include("ComputeWAXPBY_ref.jl")
   @return Returns zero on success and a non-zero value otherwise.
   @see CG()
 =#
-function cg_ref!(A , data , b , x , max_iter , 
-                  tolerance, niters, normr , 
-                  normr0 , times, doPreconditioning) 
+function cg_ref!(A , data , b , x , max_iter , tolerance, times, doPreconditioning) 
 
     t_begin = time_ns()  # Start timing right away
     normr   = 0.0
@@ -42,7 +40,7 @@ function cg_ref!(A , data , b , x , max_iter ,
     alpha   = 0.0
     beta    = 0.0
     pAp     = 0.0
-
+    niters = 0
     t0 = 0.0
     t1 = 0.0 
     t2 = 0.0 
@@ -76,17 +74,17 @@ function cg_ref!(A , data , b , x , max_iter ,
     x_len 	= length(x)
     p[1:x_len] 	= x
     t3t 	= time_ns()
-    flag	= compute_spmv_ref!(Ap, A , p)  
+    ierr = compute_spmv_ref!(Ap, A , p)  
 
 
     t3  = time_ns()-t3t # Ap = A*p
     t2t = time_ns()
 
-    flag	= compute_waxpby_ref!(r, nrow, 1.0, b, -1.0, Ap) 
+    ierr =    compute_waxpby_ref!(r, nrow, 1.0, b, -1.0, Ap) 
     t2  = time_ns()- t2t # r = b - Ax (x stored in p)
     t1t = time_ns()
 
-    flag = compute_dot_product_ref!(normr, t4, nrow, r, r)
+    normr, t4, ierr = compute_dot_product_ref!(nrow, r, r)
 
     t1    = time_ns()- t1t
     normr = sqrt(normr)
@@ -101,9 +99,9 @@ function cg_ref!(A , data , b , x , max_iter ,
     	if normr/normr0 > tolerance
             t5t = time_ns()
             if doPreconditioning
-                flag   =compute_mg_ref!(z,A, r) # Apply preconditioner
+                compute_mg_ref!(z,A, r, ierr) # Apply preconditioner
             else
-                flag  = compute_waxpby_ref!(z, nrow, 1.0, r, 0.0, r) # copy r to z (no preconditioning)
+                ierr = compute_waxpby_ref!(z, nrow, 1.0, r, 0.0, r) # copy r to z (no preconditioning)
             end
             t5 = time_ns()- t5t # Preconditioner apply time
 
@@ -111,48 +109,48 @@ function cg_ref!(A , data , b , x , max_iter ,
                 p[1:length(z)] = z 
                 t2= t2+time_ns()-t5t # Copy Mr to p
                 t1t = time_ns() 
-                flag  = compute_dot_product_ref!(rtz, t4, nrow, r, z) 
+                rtz, t4, ierr = compute_dot_product_ref!(nrow, r, z) 
                 t1 = t1+time_ns()- t1t # rtz = r'*z
             else 
                 oldrtz = rtz
                 t1t = time_ns() 
-                flag = compute_dot_product_ref!(rtz, t4, nrow, r, z) 
+                rtz , t4, ierr = compute_dot_product_ref!(nrow, r, z) 
                 t1 = t1+time_ns()- t1t # rtz = r'*z
                 beta = rtz/oldrtz
                 t2t = time_ns() 
-                flag = compute_waxpby_ref!(p, nrow, 1.0, z, beta, p)  
+                ierr = compute_waxpby_ref!(p, nrow, 1.0, z, beta, p)  
                 t2 = t2+time_ns()- t2t # p = beta*p + z
             end
 
             t3t   = time_ns() 
-            flag  = compute_spmv_ref!(Ap, A, p) 
+            ierr = compute_spmv_ref!(Ap,  A, p) 
             t3    = time_ns()- t3t+t3 # Ap = A*p
 
             t1t   = time_ns()
-            flag  = compute_dot_product_ref!(pAp, t4, nrow, p, Ap) 
+            pAp, t4, ierr = compute_dot_product_ref!(nrow, p, Ap) 
             t1    = time_ns()- t1t+t1 # alpha = p'*Ap
 
             alpha = rtz/pAp
 
             t2t   = time_ns()
-            flag  = compute_waxpby_ref!(x, nrow, 1.0, x, alpha, p)# x = x + alpha*p
-            flag  = compute_waxpby_ref!(r, nrow, 1.0, r, -alpha, Ap)  
+            ierr = compute_waxpby_ref!(x, nrow, 1.0, x, alpha, p)# x = x + alpha*p
+            ierr = compute_waxpby_ref!(r, nrow, 1.0, r, -alpha, Ap)  
             t2    = time_ns()- t2t+t2# r = r - alpha*Ap
 
             t1t   = time_ns()
-            flag  = compute_dot_product_ref!(normr, t4, nrow, r, r) 
+            normr, t4, ierr = compute_dot_product_ref!(nrow, r, r) 
             t1    = time_ns()- t1t+t1
 
             normr  = sqrt(normr)
-			if A.geom.rank == 0 
-				open("j_normr_0.txt", "a") do f 
-					println(f, "normr = $normr")
-				end
-			else
-				open("j_normr_1.txt", "a") do f 
-					println(f, "normr = $normr")
-				end
-		   end
+#			if A.geom.rank == 0 
+#				open("j_normr_0.txt", "a") do f 
+#					println(f, "normr = $normr")
+#				end
+#			else
+#				open("j_normr_1.txt", "a") do f 
+#					println(f, "normr = $normr")
+#				end
+#		   end
 	    sr_ref = normr/normr0
 #	    @show sr_ref k
 
@@ -169,12 +167,14 @@ function cg_ref!(A , data , b , x , max_iter ,
     t0        = time_ns() - t_begin  # Total time. All done...
     times_add = Array{Any}(undef,length(times))
 
-    times_add[1] = t0
-    times_add[2] = t1
-    times_add[3] = t2
-    times_add[4] = t3
-    times_add[5] = t4
+	times_add[1] = t0+times[1]
+	times_add[2] = t1+times[2]
+	times_add[3] = t2+times[3]
+	times_add[4] = t3+times[4]
+	times_add[5] = t4+times[5]
+	times = times_add
     # for MPi version only
     #times_add[6] = t5
-    return 0, times 
+   ierr = 0 
+   return niters, normr, normr0, ierr
 end

@@ -56,12 +56,13 @@ function main(hpcg_args)
 
     if hpcg_args["np"] > 1
         MPI.Init()
-	println("initialized")
+	#println("initialized")
         hpcg_args["np"] = MPI.Comm_size(MPI.COMM_WORLD)
     end
 
     params = HPCG_Params
     params = hpcg_init!(params, hpcg_args)
+
 
     # Check if QuickPath option is enabled.
     # If the running time is set to zero, we minimize all paths through the program
@@ -83,8 +84,8 @@ function main(hpcg_args)
     nz = params.nz
 
     ierr = 0  # Used to check return codes on function calls
-    ierr = check_aspect_ratio(0.125, nx, ny, nz, "local problem", rank == 0)
 
+    check_aspect_ratio(0.125, nx, ny, nz, "local problem", rank == 0, ierr)
     if ierr != 0
         return ierr
     end
@@ -99,7 +100,7 @@ function main(hpcg_args)
     # MPI::VERSION passing the wrong arguments for pz zu npx npy and npz 
     geom = generate_geometry!(size, rank, params.numThreads, params.pz, params.zl, params.zu, nx, ny, nz, params.npx, params.npy, params.npz)
 
-    ierr = check_aspect_ratio(0.125, geom.npx, geom.npy, geom.npz, "process grid", rank==0)
+    check_aspect_ratio(0.125, geom.npx, geom.npy, geom.npz, "process grid", rank==0, ierr)
 
     if ierr != 0
         return ierr
@@ -154,10 +155,9 @@ function main(hpcg_args)
     b_computed = zeros(nrow)
     # Record execution time of reference SpMV and MG kernels for reporting times
     # First load vector with random values
-   # x_overlap = fill_random_vector!(x_overlap)
-   # x_overlap = zeros(ncol)
     fill!(x_overlap, 1.0)
     num_calls = 10
+
     if quickPath ==1 
         num_calls = 1 # QuickPath means we do on one call of each block of repetitive code
     end
@@ -165,18 +165,29 @@ function main(hpcg_args)
     t_begin = time_ns()
     MPI.Barrier(MPI.COMM_WORLD)
 
-    for i = 1:num_calls
+
+
+	for i = 1:num_calls
         ierr = compute_spmv_ref!(b_computed,A, x_overlap) # b_computed = A*x_overlap
-	@show b_computed[nrow]
         if ierr != 0
             @error("Error in call to SpMV: $ierr .\n")
         end
+#		
+#		if A.geom.rank == 0 
+#			open("b_computed_0.txt", "a") do f
+#				println(f,"b_computed[$(length(b_computed))] = $(b_computed[length(b_computed)])")
+#			end
+#		else
+#			open("b_computed_1.txt", "a") do f
+#				println(f,"b_computed[$(length(b_computed))] = $(b_computed[length(b_computed)])")
+#			end
+#		end
 
-        ierr= compute_mg!(x_overlap, A, b_computed) # b_computed = Minv*y_overlap
-
+		compute_mg!(x_overlap, A, b_computed) # b_computed = Minv*y_overlap
         if ierr != 0
             @error("Error in call to MG: $ierr .\n") 
         end
+
     end 
 
     times[8] = (time_ns() - t_begin)/num_calls # Total time divided by number of calls.
@@ -209,10 +220,9 @@ function main(hpcg_args)
   ncol = A.localNumberOfColumns
   data = CGData(zeros(nrow), zeros(ncol), zeros(ncol), zeros(nrow))
     for i = 1:num_calls
-        x = zeros(length(x))
+        zero_fill!(x)
         @debug("In     ## Reference CG Timing Phase ## ")
-        ierr , ref_add = cg_ref!(A, data, b, x, refMaxIters, tolerance, niters, normr, normr0, ref_times, true)
-        ref_times = ref_add + ref_times
+        niters, normr, normr0, ierr = cg_ref!(A, data, b, x, refMaxIters, tolerance, ref_times, true)
 
         if ierr != 0
             err_count += 1 # count the number of errors in CG
@@ -256,7 +266,7 @@ function main(hpcg_args)
 
     @debug "Length of solution vector: " length(x)
 
-    TestCGdata, times = test_cg!(A, data, b, x, count_pass, count_fail)
+    test_cg!(A, data, b, x, count_pass, count_fail, ierr)
 
     testsymmetry_data = TestSymmetryData 
     #test_symmetry(A, b, xexact, testsymmetry_data)
@@ -286,12 +296,11 @@ function main(hpcg_args)
     # Compute the residual reduction and residual count for the user ordering and optimized kernels.
     for i=1:num_calls
 
-        x = zeros(length(x)) # start x at all zeros
+    	zero_fill!(x)
         last_cummulative_time = opt_times[1]
 
-        ierr, A, data, x, niters, normr, normr0, opt_add = cg!(A, data, b, x, optMaxIters, refTolerance, niters, normr, normr0, opt_times, true)
+        niters, normr, normr0, ierr = cg!(A, data, b, x, optMaxIters, refTolerance, opt_times, true)
 
-        opt_times += opt_add
 
         if ierr != 0
             err_count +=1 # count the number of errors in CG
@@ -354,9 +363,8 @@ function main(hpcg_args)
 
     for i=1: Int(numberOfCgSets)
 
-        x = zeros(length(x)) # Zero out x
-        ierr, A, data, x, niters, normr, normr0, times_add = cg!(A, data, b, x, optMaxIters, optTolerance, niters, normr, normr0, times, true)
-        times = times_add+times
+        x = zero_fill!(x) # Zero out x
+        niters, normr, normr0, ierr = cg!(A, data, b, x, optMaxIters, optTolerance, times, true)
 
         if ierr != 0
             @error("Error in call to CG: $ierr.\n") 
@@ -371,8 +379,8 @@ function main(hpcg_args)
 
     # Compute difference between known exact solution and computed solution
     # All processors are needed here.
-    residual::Float64 = 0.0
-    ierr , residual   = compute_residual!(residual ,A.localNumberOfRows, x, xexact)
+	
+    residual, ierr = compute_residual!(A.localNumberOfRows, x, xexact)
 
     if ierr != 0
         @error("Error in call to compute_residual: $ierr.\n") 
@@ -402,7 +410,7 @@ function main(hpcg_args)
 
     # Finish up
     if MPI.Initialized()==true
-	println("message")
+	#println("message")
   	MPI.Finalize()
     end
 

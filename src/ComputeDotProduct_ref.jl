@@ -15,19 +15,21 @@ using MPI
 
   @param[in] n the number of vector elements (on this processor)
   @param[in] x, y the input vectors
-  @param[inout] result a pointer to scalar value, on exit will contain result.
+  @param[in] result a pointer to scalar value, on exit will contain result.
   @param[out] time_allreduce the time it took to perform the communication between processes
 
   @return returns false upon success and true otherwise
 
   @see compute_dot_product
 =#
-function compute_dot_product_ref!(result, time_allreduce, n, x, y) 
+function compute_dot_product_ref!(n, x, y) 
 
   @assert(length(x)>=n) # Test vector lengths
   @assert(length(y)>=n)
 
   local_result = 0.0
+  result       = 0.0
+  time_allreduce= 0.0
   if x==y
     for i=1:n
         local_result = local_result+x[i]*x[i]
@@ -50,6 +52,7 @@ function compute_dot_product_ref!(result, time_allreduce, n, x, y)
   	time_allreduce += 0.0
    	result = local_result
   end
-  return false
 
+  ierr = 0
+  return time_allreduce,result, ierr
 end
