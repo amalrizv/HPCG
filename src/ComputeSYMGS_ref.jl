@@ -33,16 +33,32 @@ Computes one step of symmetric Gauss-Seidel:
 
   @see ComputeSYMGS
 =#
-function compute_symgs_ref!(xv, A, rv, ierr) 
+function compute_symgs_ref!(xv, A, rv) 
+ # xv = x
   @assert(length(xv)==A.localNumberOfColumns) # Make sure x contain space for halo values
+  if A.geom.rank == 0
+	  fs =  open("mpi_ircv_0.txt", "a")
+	  fp =  open("mpi_send_0.txt", "a")
+	  sfs =  open("symgs_front_swp_0.txt", "a")
+  else
+ 	  fs =  open("mpi_ircv_1.txt", "a")
+	  fp =  open("mpi_send_1.txt", "a")
+	  sfs =  open("symgs_front_swp_1.txt", "a")
+  end
   if MPI.Initialized()== true
+	  println(fs, "Called from SYMGS")
+	  println(fp, "Called from SYMGS")
 	  exchange_halo!(xv,A)
   end
+  close(fs)
+  close(fp)
 
   nrow = A.localNumberOfRows
   #matrixDiagonal = A.matrixDiagonal  # An array of pointers to the diagonal entries A.matrixValues
   matrixValues = A.matrixValues
   mtxIndL = A.mtxIndL
+	  println(sfs, "xv_original[1] = $(xv[1])")
+	  println(sfs, "sum = sum - currentValues[j] * xv[curCol]")
 
   for i=1:nrow
     currentValues = matrixValues[i, :]
@@ -51,16 +67,25 @@ function compute_symgs_ref!(xv, A, rv, ierr)
     curcols = A.curcols
     currentDiagonal = matrixValues[i,curcols[i] ] # Current diagonal value
     sum = rv[i] # RHS value
+	println(sfs, "sum = sum - currentValues[j] * xv[curCol]")
     for j=1:currentNumberOfNonzeros 
       curCol = currentColIndices[j]
-     
+	  println(sfs, "sum = $sum - $(currentValues[j]) * $(xv[curCol])")
+	  # RZV First iteration of this loop has a different value 
       sum = sum - currentValues[j] * xv[curCol]
     end
+	println(sfs, " sum =sum + xv[i]*currentDiagonal")
+	println(sfs, "sum = $sum + $(xv[i]) * $currentDiagonal")
     sum =sum + xv[i]*currentDiagonal # Remove diagonal contribution from previous loop
+	println(sfs, "xv[i] = sum/currentDiagonal")
+	println(sfs, "xv[i] = $sum / $currentDiagonal")
     xv[i] = sum/currentDiagonal
 
   end
+#RZV
 
+	  println(sfs, "xv_modified[1] = $(xv[1])")
+		
   # Now the back sweep.
 
   for i=Iterators.reverse(1:nrow)
@@ -70,15 +95,23 @@ function compute_symgs_ref!(xv, A, rv, ierr)
     curcols = A.curcols
     currentDiagonal = matrixValues[i,curcols[i] ] # Current diagonal value
     sum = rv[i] # RHS value
+	println(sfs, "sum = sum - currentValues[j] * xv[curCol]")
 
     for j = 1:currentNumberOfNonzeros
       curCol = currentColIndices[j]
+	  println(sfs, "sum = $sum - $(currentValues[j]) * $(xv[curCol])")
       sum = sum - currentValues[j]*xv[curCol]
     end
-    sum = sum + xv[i]*currentDiagonal # Remove diagonal contribution from previous loop
+	println(sfs, " sum =sum + xv[i]*currentDiagonal")
+    println(sfs, "sum = $sum + $(xv[i]) * $currentDiagonal")
+    sum =sum + xv[i]*currentDiagonal # Remove diagonal contribution from previous loop
+	println(sfs, " sum =sum + xv[i]*currentDiagonal")
+	println(sfs, "xv[i] = $sum / $currentDiagonal")
     xv[i] = sum/currentDiagonal
-  end
 
-  ierr = 0 
+  end
+	  println(sfs, "xv_back_modified[1] = $(xv[1])")
+	close(sfs)
+  return 0
 end
 

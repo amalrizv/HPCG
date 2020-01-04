@@ -83,9 +83,8 @@ function main(hpcg_args)
     ny = params.ny
     nz = params.nz
 
-    ierr = 0  # Used to check return codes on function calls
 
-    check_aspect_ratio(0.125, nx, ny, nz, "local problem", rank == 0, ierr)
+    ierr = check_aspect_ratio(0.125, nx, ny, nz, "local problem", rank == 0)
     if ierr != 0
         return ierr
     end
@@ -100,7 +99,7 @@ function main(hpcg_args)
     # MPI::VERSION passing the wrong arguments for pz zu npx npy and npz 
     geom = generate_geometry!(size, rank, params.numThreads, params.pz, params.zl, params.zu, nx, ny, nz, params.npx, params.npy, params.npz)
 
-    check_aspect_ratio(0.125, geom.npx, geom.npy, geom.npz, "process grid", rank==0, ierr)
+    ierr = check_aspect_ratio(0.125, geom.npx, geom.npy, geom.npz, "process grid", rank==0)
 
     if ierr != 0
         return ierr
@@ -156,6 +155,7 @@ function main(hpcg_args)
     # Record execution time of reference SpMV and MG kernels for reporting times
     # First load vector with random values
     fill!(x_overlap, 1.0)
+
     num_calls = 10
 
     if quickPath ==1 
@@ -172,18 +172,11 @@ function main(hpcg_args)
         if ierr != 0
             @error("Error in call to SpMV: $ierr .\n")
         end
-#		
-#		if A.geom.rank == 0 
-#			open("b_computed_0.txt", "a") do f
-#				println(f,"b_computed[$(length(b_computed))] = $(b_computed[length(b_computed)])")
-#			end
-#		else
-#			open("b_computed_1.txt", "a") do f
-#				println(f,"b_computed[$(length(b_computed))] = $(b_computed[length(b_computed)])")
-#			end
-#		end
-
-		compute_mg!(x_overlap, A, b_computed) # b_computed = Minv*y_overlap
+		# b_computed is same as C version, x_overlap is changed by SPMV
+		# and MG>>SYMGS 
+		@show b_computed[1]
+		ierr = compute_mg!(x_overlap, A, b_computed) # b_computed = Minv*y_overlap
+		@show x_overlap[1]
         if ierr != 0
             @error("Error in call to MG: $ierr .\n") 
         end
@@ -266,7 +259,7 @@ function main(hpcg_args)
 
     @debug "Length of solution vector: " length(x)
 
-    test_cg!(A, data, b, x, count_pass, count_fail, ierr)
+    ierr = test_cg!(A, data, b, x, count_pass, count_fail)
 
     testsymmetry_data = TestSymmetryData 
     #test_symmetry(A, b, xexact, testsymmetry_data)

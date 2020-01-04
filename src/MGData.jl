@@ -12,6 +12,7 @@ mutable struct MGData
   rc::Vector{Float64}                               # coarse grid residual vector
   xc::Vector{Float64}                               # coarse grid solution vector
   Axf::Vector{Float64}                              # fine grid residual vector
+  init::Bool
 
   #=
    This is for storing optimized data structres created in OptimizeProblem and
@@ -21,7 +22,7 @@ mutable struct MGData
 end
 
 function MGData()
-    return MGData(0, 0, [], Vector(), Vector(), Vector())
+	return MGData(0, 0, [], Vector(), Vector(), Vector(), false)
 end
 
 
@@ -32,5 +33,5 @@ end
  @param[out] data the data structure for CG vectors that will be allocated to get it ready for use in CG iterations
  =#
 function init_mg_data(f2c_op, rc, xc, axf) 
-  return MGData(1, 1, f2c_op, rc, xc, axf)
+  return MGData(1, 1, f2c_op, rc, xc, axf, true)
 end

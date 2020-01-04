@@ -40,7 +40,6 @@ function compute_waxpby_ref!(w, n, alpha, x, beta, y)
     end
   end
 
-  ierr = 0
-  return ierr
+  return 0
 
 end

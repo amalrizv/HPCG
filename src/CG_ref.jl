@@ -99,7 +99,7 @@ function cg_ref!(A , data , b , x , max_iter , tolerance, times, doPreconditioni
     	if normr/normr0 > tolerance
             t5t = time_ns()
             if doPreconditioning
-                compute_mg_ref!(z,A, r, ierr) # Apply preconditioner
+                ierr = compute_mg_ref!(z,A, r ) # Apply preconditioner
             else
                 ierr = compute_waxpby_ref!(z, nrow, 1.0, r, 0.0, r) # copy r to z (no preconditioning)
             end

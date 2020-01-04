@@ -53,6 +53,5 @@ function compute_dot_product_ref!(n, x, y)
    	result = local_result
   end
 
-  ierr = 0
-  return time_allreduce,result, ierr
+  return time_allreduce,result, 0
 end

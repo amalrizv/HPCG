@@ -82,7 +82,8 @@ function generate_coarse_problem!(A)
 
     rc          = zeros(Ac.localNumberOfRows)
     xc          = zeros(Ac.localNumberOfColumns)
-    Axf         = zeros(A.localNumberOfColumns)
+    
+	Axf         = zeros(A.localNumberOfColumns)
     #rc          = Vector{Float64}(undef, Ac.localNumberOfRows)
     #xc          = Vector{Float64}(undef, Ac.localNumberOfColumns)
     #Axf         = Vector{Float64}(undef, A.localNumberOfColumns)

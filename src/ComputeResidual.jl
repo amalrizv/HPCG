@@ -54,5 +54,5 @@ function compute_residual!(n, v1, v2)
   end
   @show residual
   ierr = 0
-  return residual, ierr
+  return residual, 0
 end

@@ -7,6 +7,7 @@ using MPI
 # Compile this routine only if running with MPI
 
 include("Geometry.jl")
+include("appendx.jl")
 
 
 #=
@@ -17,9 +18,7 @@ include("Geometry.jl")
 =#
 #fix call
 function exchange_halo!(x, A) 
-
   # Extract Matrix pieces
-
  if MPI.Initialized()== true
   localNumberOfRows = A.localNumberOfRows
   num_neighbors     = A.numberOfSendNeighbors
@@ -28,7 +27,7 @@ function exchange_halo!(x, A)
   neighbors         = A.neighbors
   sendBuffer        = A.sendBuffer
   totalToBeSent     = A.totalToBeSent
-  elementsToSend    = A.elementsToSend
+  elementsToSend    = A.elementsToSend # corresponds with C version
 
   size = Int64
   rank = Int64 # Number of MPI processes, My process ID
@@ -36,7 +35,6 @@ function exchange_halo!(x, A)
   size = MPI.Comm_size(MPI.COMM_WORLD)
   rank = MPI.Comm_rank(MPI.COMM_WORLD)
   
-
   #
   #  first post receives, these are immediate receives
   #  Do not wait for result to come, will do that at the
@@ -49,44 +47,35 @@ function exchange_halo!(x, A)
 
   #
   # Externals are at end of locals
-  #
-
-  # x_external = x[localNumberOfRows+1:length(x)]
-
-  # In C, x_external points to the (localNumberOfRows)th
-  # element of x. The point is to receive indices from neighbors
-  # in buff(an array) so that these local indices are stored at the 
-  # end of local indices
-  
-  # In Julia we dont need to preserve this marker for the 
-  # 
 
   # Post receives first
   # TODO: Thread this loop
 
-
+  # any changes in xv should not be reflected in x
   if A.geom.rank == 0
-	  fs =  open("mpi_ircv_0.txt", "a")
+	  fr =  open("mpi_ircv_0.txt", "a")
   else
- 	  fs =  open("mpi_ircv_1.txt", "a")
+ 	  fr =  open("mpi_ircv_1.txt", "a")
   end
-  println(fs, "break")
 
 
-
+  offset_start = localNumberOfRows+1  
   for i = 1 : num_neighbors
     n_recv 		= receiveLength[i]
-    buff 		= Array{Int64,1}(undef,n_recv)
-
-    fill!(buff,0) 			# because buff has double values 
+    buff 		= Array{Float64,1}(undef,n_recv)
+    offset_stop = offset_start +n_recv-1
+    zero_fill!(buff) 			# because buff has double values 
 
     request[i]  = MPI.Irecv!(buff, neighbors[i], MPI_MY_TAG, MPI.COMM_WORLD)
+			# MPI.Irecv! shows  buff array does not receive anything
+	
+	x[offset_start:offset_stop] = buff
+	offset_start = offset_stop+1
 
-    x		 	= vcat(x, buff) 			# vector assignment is ok because 
-											# x is not a primitive datatype
+
   end
-
-  println(fs, "$(x[length(x)])  ")
+ # println(fr,"x[4097] = $(x[localNumberOfRows+1])")
+# x has both local and external indices.
 
   #
   # Fill up send buffer
@@ -108,14 +97,15 @@ function exchange_halo!(x, A)
   else
  	  fs =  open("mpi_send_1.txt", "a")
   end
-  println(fs, "break")
-
+# Only local indices from x are used here
   for i = 1:num_neighbors
     n_send = sendLength[i]
+	println(fs,"sending sendBuffer[1] = $(sendBuffer[1])")
 	MPI.Send(sendBuffer[1:n_send], neighbors[i], MPI_MY_TAG, MPI.COMM_WORLD)
-	println(fs, "$(sendBuffer[length(sendBuffer)])")
   end
 
+
+  #println(fs,"x[4097] = $(x[localNumberOfRows+1])")
 
 
   #

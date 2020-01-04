@@ -18,7 +18,16 @@ function compute_spmv_ref!(y, A, x)
   @assert(length(x)>=A.localNumberOfColumns) # Test vector lengths
   @assert(length(y)>=A.localNumberOfRows)
 
+  if A.geom.rank == 0
+	  fs =  open("mpi_ircv_0.txt", "a")
+	  fp =  open("mpi_send_0.txt", "a")
+  else
+ 	  fs =  open("mpi_ircv_1.txt", "a")
+	  fp =  open("mpi_send_1.txt", "a")
+  end
   if MPI.Initialized()== true
+	  println(fs, "Called from : SPMV")
+	  println(fp, "Called from : SPMV")
       exchange_halo!(x,A)
   end
 
@@ -60,7 +69,6 @@ function compute_spmv_ref!(y, A, x)
 #			end
 #		end
 
-  ierr = 0
-  return y,ierr
+  return 0
 
 end

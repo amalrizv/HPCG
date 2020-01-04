@@ -8,7 +8,7 @@
 ####################################/
 
 include("hpcg.jl")
-
+include("appendx.jl")
 include("TestCG_struct.jl")
 include("CG.jl")
 
@@ -26,7 +26,7 @@ include("CG.jl")
 
   @see CG()
 =#
-function test_cg!(A, data, b, x, count_pass, count_fail, ierr) 
+function test_cg!(A, data, b, x, count_pass, count_fail) 
 
     testcg_data = TestCGData 
     # Use this array for collecting timing information
@@ -75,9 +75,7 @@ function test_cg!(A, data, b, x, count_pass, count_fail, ierr)
             expected_niters = testcg_data.expected_niters_prec
         end
         for i=0:numberOfCgCalls
-			for i=1:length(x)
-				x[i] = 0 
-			end
+			zero_fill!(x)
         	niters, normr, normr0, ierr = cg!(A, data, b, x, maxIters, tolerance, times, k==1)
             if ierr==1
                 @debug("Error in call to CG:$ierr.\n")
