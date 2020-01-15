@@ -209,20 +209,33 @@ function main(hpcg_args)
     ref_times = zeros(9)
     tolerance = 0.0 # Set tolerance to zero to make all runs do maxIters iterations
     err_count = 0
-  nrow = A.localNumberOfRows
-  ncol = A.localNumberOfColumns
-  data = CGData(zeros(nrow), zeros(ncol), zeros(ncol), zeros(nrow))
+
+    nrow = A.localNumberOfRows
+    ncol = A.localNumberOfColumns
+
+    r	= Vector{Float64}(undef,nrow)
+	z  	= Vector{Float64}(undef,ncol)
+  	p  	= Vector{Float64}(undef,ncol)
+  	Ap 	= Vector{Float64}(undef,nrow)
+
+	data	=	CGData(r, z, p, Ap)
+
     for i = 1:num_calls
         zero_fill!(x)
         @debug("In     ## Reference CG Timing Phase ## ")
         niters, normr, normr0, ierr = cg_ref!(A, data, b, x, refMaxIters, tolerance, ref_times, true)
-
-        if ierr != 0
+	        if ierr != 0
             err_count += 1 # count the number of errors in CG
         end
 
         totalNiters_ref += niters
     end
+	if A.geom.rank==0 
+			# not concurrent 
+			@show "Reference CG Timing Phase"
+			@show normr, normr0
+		end
+
 
     #@debug begin
     #    if rank == 0 
@@ -254,15 +267,15 @@ function main(hpcg_args)
 
     t1 = time_ns()
 
-    count_pass = 0
-    count_fail = 0
 
     @debug "Length of solution vector: " length(x)
-
-    ierr = test_cg!(A, data, b, x, count_pass, count_fail)
+	# Only and only one call to test_cg!
+	# count_pass = 0
+	# count_fail = 0
+    ierr = test_cg!(A, data, b, x, 0,0)
 
     testsymmetry_data = TestSymmetryData 
-    #test_symmetry(A, b, xexact, testsymmetry_data)
+    test_symmetry(A, b, xexact, testsymmetry_data)
 
     if (rank==0) 
         @debug "Total validation (TestCG and TestSymmetry) execution time in main (sec) = " (time_ns() - t1)
@@ -291,7 +304,6 @@ function main(hpcg_args)
 
     	zero_fill!(x)
         last_cummulative_time = opt_times[1]
-
         niters, normr, normr0, ierr = cg!(A, data, b, x, optMaxIters, refTolerance, opt_times, true)
 
 
@@ -314,7 +326,8 @@ function main(hpcg_args)
             opt_worst_time = current_time
         end
     end
-
+	@show "In Optimized CG Setup Phase"
+	@show normr
     # Get the absolute worst time across all MPI ranks (time in CG can be different)
     local_opt_worst_time = opt_worst_time
      if MPI.Initialized()==true
@@ -331,11 +344,11 @@ function main(hpcg_args)
             @debug("Failed to reduce the residual $tolerance_failures times.")
         end
     end
-
+    println("
     ###############################
     ## Optimized CG Timing Phase ##
-    ###############################
-
+	###############################")
+	
     ## Here we finally run the benchmark phase
     ## The variable total_runtime is the target benchmark execution time in seconds
 
@@ -357,6 +370,7 @@ function main(hpcg_args)
     for i=1: Int(numberOfCgSets)
 
         x = zero_fill!(x) # Zero out x
+		println("data.residual_vector[1] = $(data.p[1])")
         niters, normr, normr0, ierr = cg!(A, data, b, x, optMaxIters, optTolerance, times, true)
 
         if ierr != 0
@@ -369,6 +383,8 @@ function main(hpcg_args)
 
         testnorms_data.values[i] = normr/normr0 # Record scaled residual from this run
     end
+	@show "Before computing residual in opTIMIZED CG timing phase"
+	@show normr 
 
     # Compute difference between known exact solution and computed solution
     # All processors are needed here.

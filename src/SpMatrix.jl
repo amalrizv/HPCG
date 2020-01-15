@@ -139,7 +139,10 @@ end
 =#
 @inline function replace_matrix_diagonal!(A, diag) 
     @assert(A.localNumberOfRows==first(size(diag)))
-    A.matrixDiagonal = diag
+	for i= 1:A.localNumberOfRows
+		A.matrixDiagonal[i] = diag[i]
+	end
+
 end
 
 # KCH NOTE: the 2147483647 below was what RAND_MAX was defined in on my system's libc headers.

@@ -27,8 +27,17 @@ include("CG.jl")
   @see CG()
 =#
 function test_cg!(A, data, b, x, count_pass, count_fail) 
-
-    testcg_data = TestCGData 
+if A.geom.rank == 0 
+	@show " #RZV 
+# 1) TestCG constructior needed for TesCGData struct
+# 2) Check if origDiagA should have only 26.0s or do they contain pointers
+# 3) Check iterations from line 75 
+#
+# Why is CG being called repeatedly from TestCG?
+# Some problem related to solution not being able to converge.
+#"
+end
+    #testcg_data = TestCGData 
     # Use this array for collecting timing information
     times =  zeros(8)
 
@@ -44,12 +53,12 @@ function test_cg!(A, data, b, x, count_pass, count_fail)
     # CG should converge in about 10 iterations for this problem, regardless of problem size
     for i=1:A.localNumberOfRows
         globalRowID = A.localToGlobalMap[i]
-        if globalRowID<9
+        if globalRowID<10
             scale = (globalRowID+2)*1.0e6
-            exaggeratedDiagA = exaggeratedDiagA .* scale
+			exaggeratedDiagA[i] = exaggeratedDiagA[i] .* scale
             b = b .* scale
         else 
-            exaggeratedDiagA  = exaggeratedDiagA .* 1.0e6
+			exaggeratedDiagA[i]  = exaggeratedDiagA[i] .* 1.0e6
             b = b .* 1.0e6
         end
     end
@@ -69,14 +78,15 @@ function test_cg!(A, data, b, x, count_pass, count_fail)
     # For the unpreconditioned CG call, we should take about 10 iterations, permit 12
     # For the preconditioned case, we should take about 1 iteration, permit 2
     
-    for k=0:2 # This loop tests both unpreconditioned and preconditioned runs
+    for k=1:2 # This loop tests both unpreconditioned and preconditioned runs
         expected_niters = testcg_data.expected_niters_no_prec
-        if k==1
+        if k==2
             expected_niters = testcg_data.expected_niters_prec
         end
-        for i=0:numberOfCgCalls
+        for i=1:numberOfCgCalls
 			zero_fill!(x)
-        	niters, normr, normr0, ierr = cg!(A, data, b, x, maxIters, tolerance, times, k==1)
+			# CG is being called 4 times 
+        	niters, normr, normr0, ierr = cg!(A, data, b, x, maxIters, tolerance, times, k==2)
             if ierr==1
                 @debug("Error in call to CG:$ierr.\n")
             end
@@ -85,10 +95,10 @@ function test_cg!(A, data, b, x, count_pass, count_fail)
             else 
                 testcg_data.count_fail+=1
             end
-            if k==0 && niters>testcg_data.niters_max_no_prec
+            if k==1 && niters>testcg_data.niters_max_no_prec
                 testcg_data.niters_max_no_prec = niters # Keep track of largest iter count
             end
-            if k==1 && niters>testcg_data.niters_max_prec
+            if k==2 && niters>testcg_data.niters_max_prec
                 testcg_data.niters_max_prec = niters # Same for preconditioned run
             end
             if A.geom.rank==0
@@ -102,7 +112,7 @@ function test_cg!(A, data, b, x, count_pass, count_fail)
 
     # Restore matrix diagonal and RHS
     for i = 1: A.localNumberOfRows 
-	A.matrixValues[i, A.curcols[i]] = origDiagA[i]
+	A.matrixValues[i, A.curcols[i]] = exaggeratedDiagA[i]
     end
 
     b = origB
@@ -112,6 +122,10 @@ function test_cg!(A, data, b, x, count_pass, count_fail)
     exaggeratedDiagA  = nothing
     origB             = nothing
     testcg_data.normr = normr
+	if A.geom.rank == 0 
+		
+		println("Leaving TestCG")
+	end
 	return testcg_data
 
 end

@@ -67,24 +67,24 @@ function compute_symgs_ref!(xv, A, rv)
     curcols = A.curcols
     currentDiagonal = matrixValues[i,curcols[i] ] # Current diagonal value
     sum = rv[i] # RHS value
-	println(sfs, "sum = sum - currentValues[j] * xv[curCol]")
+#	println(sfs, "sum = sum - currentValues[j] * xv[curCol]")
     for j=1:currentNumberOfNonzeros 
       curCol = currentColIndices[j]
 	  println(sfs, "sum = $sum - $(currentValues[j]) * $(xv[curCol])")
 	  # RZV First iteration of this loop has a different value 
       sum = sum - currentValues[j] * xv[curCol]
     end
-	println(sfs, " sum =sum + xv[i]*currentDiagonal")
-	println(sfs, "sum = $sum + $(xv[i]) * $currentDiagonal")
+#	println(sfs, " sum =sum + xv[i]*currentDiagonal")
+#	println(sfs, "sum = $sum + $(xv[i]) * $currentDiagonal")
     sum =sum + xv[i]*currentDiagonal # Remove diagonal contribution from previous loop
-	println(sfs, "xv[i] = sum/currentDiagonal")
-	println(sfs, "xv[i] = $sum / $currentDiagonal")
+#	println(sfs, "xv[i] = sum/currentDiagonal")
+#	println(sfs, "xv[i] = $sum / $currentDiagonal")
     xv[i] = sum/currentDiagonal
 
   end
 #RZV
 
-	  println(sfs, "xv_modified[1] = $(xv[1])")
+#	  println(sfs, "xv_modified[1] = $(xv[1])")
 		
   # Now the back sweep.
 
@@ -95,22 +95,22 @@ function compute_symgs_ref!(xv, A, rv)
     curcols = A.curcols
     currentDiagonal = matrixValues[i,curcols[i] ] # Current diagonal value
     sum = rv[i] # RHS value
-	println(sfs, "sum = sum - currentValues[j] * xv[curCol]")
+#	println(sfs, "sum = sum - currentValues[j] * xv[curCol]")
 
     for j = 1:currentNumberOfNonzeros
       curCol = currentColIndices[j]
-	  println(sfs, "sum = $sum - $(currentValues[j]) * $(xv[curCol])")
+#	  println(sfs, "sum = $sum - $(currentValues[j]) * $(xv[curCol])")
       sum = sum - currentValues[j]*xv[curCol]
     end
-	println(sfs, " sum =sum + xv[i]*currentDiagonal")
-    println(sfs, "sum = $sum + $(xv[i]) * $currentDiagonal")
+#	println(sfs, " sum =sum + xv[i]*currentDiagonal")
+#    println(sfs, "sum = $sum + $(xv[i]) * $currentDiagonal")
     sum =sum + xv[i]*currentDiagonal # Remove diagonal contribution from previous loop
-	println(sfs, " sum =sum + xv[i]*currentDiagonal")
-	println(sfs, "xv[i] = $sum / $currentDiagonal")
+#	println(sfs, " sum =sum + xv[i]*currentDiagonal")
+#	println(sfs, "xv[i] = $sum / $currentDiagonal")
     xv[i] = sum/currentDiagonal
 
   end
-	  println(sfs, "xv_back_modified[1] = $(xv[1])")
+#	  println(sfs, "xv_back_modified[1] = $(xv[1])")
 	close(sfs)
   return 0
 end

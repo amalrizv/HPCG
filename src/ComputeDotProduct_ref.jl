@@ -30,15 +30,13 @@ function compute_dot_product_ref!(n, x, y)
   local_result = 0.0
   result       = 0.0
   time_allreduce= 0.0
-  if x==y
-    for i=1:n
-        local_result = local_result+x[i]*x[i]
-    end
-  else 
-    for i=1:n
+  for i=1:n
+  	if x==y
+        local_result += x[i]*x[i]
+  	else 
         local_result += x[i]*y[i]
-    end
-  end
+  	end
+ end
 
   if MPI.Initialized()
  	#Use MPI's reduce function to collect all partial sums
@@ -53,5 +51,5 @@ function compute_dot_product_ref!(n, x, y)
    	result = local_result
   end
 
-  return time_allreduce,result, 0
+  return result, time_allreduce, 0
 end

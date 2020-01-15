@@ -31,6 +31,7 @@ include("ComputeWAXPBY_ref.jl")
   @return Returns zero on success and a non-zero value otherwise.
   @see CG()
 =#
+
 function cg_ref!(A , data , b , x , max_iter , tolerance, times, doPreconditioning) 
 
     t_begin = time_ns()  # Start timing right away
@@ -41,6 +42,9 @@ function cg_ref!(A , data , b , x , max_iter , tolerance, times, doPreconditioni
     beta    = 0.0
     pAp     = 0.0
     niters = 0
+
+
+
     t0 = 0.0
     t1 = 0.0 
     t2 = 0.0 
@@ -48,6 +52,7 @@ function cg_ref!(A , data , b , x , max_iter , tolerance, times, doPreconditioni
     t4 = 0.0
     t5 = 0.0
  
+
     #t6 = 0.0
 
     nrow = A.localNumberOfRows
@@ -73,12 +78,13 @@ function cg_ref!(A , data , b , x , max_iter , tolerance, times, doPreconditioni
     # p is of length ncols, copy x to p for sparse MV operation
     x_len 	= length(x)
     p[1:x_len] 	= x
+
     t3t 	= time_ns()
     ierr = compute_spmv_ref!(Ap, A , p)  
 
 
     t3  = time_ns()-t3t # Ap = A*p
-    t2t = time_ns()
+	t2t = time_ns()
 
     ierr =    compute_waxpby_ref!(r, nrow, 1.0, b, -1.0, Ap) 
     t2  = time_ns()- t2t # r = b - Ax (x stored in p)
@@ -103,56 +109,58 @@ function cg_ref!(A , data , b , x , max_iter , tolerance, times, doPreconditioni
             else
                 ierr = compute_waxpby_ref!(z, nrow, 1.0, r, 0.0, r) # copy r to z (no preconditioning)
             end
+		
             t5 = time_ns()- t5t # Preconditioner apply time
 
             if k == 1
+
                 p[1:length(z)] = z 
-                t2= t2+time_ns()-t5t # Copy Mr to p
-                t1t = time_ns() 
-                rtz, t4, ierr = compute_dot_product_ref!(nrow, r, z) 
-                t1 = t1+time_ns()- t1t # rtz = r'*z
+                t2			   = t2+time_ns()-t5t # Copy Mr to p
+
+                t1t 			= time_ns() 
+                rtz, t4, ierr 	= compute_dot_product_ref!(nrow, r, z) 
+                t1 				= t1+time_ns()- t1t # rtz = r'*z
+
             else 
+
                 oldrtz = rtz
-                t1t = time_ns() 
-                rtz , t4, ierr = compute_dot_product_ref!(nrow, r, z) 
-                t1 = t1+time_ns()- t1t # rtz = r'*z
-                beta = rtz/oldrtz
-                t2t = time_ns() 
-                ierr = compute_waxpby_ref!(p, nrow, 1.0, z, beta, p)  
-                t2 = t2+time_ns()- t2t # p = beta*p + z
+
+				# rtz = r'*z
+                t1t 			= time_ns() 
+                rtz , t4, ierr 	= compute_dot_product_ref!(nrow, r, z) 
+                t1 				= t1+time_ns()- t1t 
+
+                beta 	= rtz/oldrtz
+
+				# p = beta*p + z
+                t2t 	= time_ns() 
+                ierr 	= compute_waxpby_ref!(p, nrow, 1.0, z, beta, p)  
+                t2 		= t2+time_ns()- t2t 
             end
 
-            t3t   = time_ns() 
-            ierr = compute_spmv_ref!(Ap,  A, p) 
-            t3    = time_ns()- t3t+t3 # Ap = A*p
 
-            t1t   = time_ns()
-            pAp, t4, ierr = compute_dot_product_ref!(nrow, p, Ap) 
-            t1    = time_ns()- t1t+t1 # alpha = p'*Ap
+			# Ap = A*p
+            t3t   	= time_ns() 
+            ierr 	= compute_spmv_ref!(Ap,  A, p) 
+            t3   	= time_ns()- t3t+t3 
 
-            alpha = rtz/pAp
+			# alpha = p'*Ap
+			t1t   			= time_ns()
+            pAp, t4, ierr 	= compute_dot_product_ref!(nrow, p, Ap) 
+            t1    			= time_ns()- t1t+t1
+            alpha 	= rtz/pAp
 
-            t2t   = time_ns()
-            ierr = compute_waxpby_ref!(x, nrow, 1.0, x, alpha, p)# x = x + alpha*p
-            ierr = compute_waxpby_ref!(r, nrow, 1.0, r, -alpha, Ap)  
-            t2    = time_ns()- t2t+t2# r = r - alpha*Ap
+			# x = x + alpha*p ; r = r - alpha*Ap
+            t2t   	= time_ns()
+            ierr 	= compute_waxpby_ref!(x, nrow, 1.0, x, alpha, p)# x = x + alpha*p
+            ierr 	= compute_waxpby_ref!(r, nrow, 1.0, r, -alpha, Ap)  
+            t2    	= time_ns()- t2t+t2
 
-            t1t   = time_ns()
-            normr, t4, ierr = compute_dot_product_ref!(nrow, r, r) 
-            t1    = time_ns()- t1t+t1
+            t1t   			=	 time_ns()
+            normr, t4, ierr = compute_dot_product_ref!(nrow, r,r) 
+            t1    			= time_ns()- t1t+t1
 
-            normr  = sqrt(normr)
-#			if A.geom.rank == 0 
-#				open("j_normr_0.txt", "a") do f 
-#					println(f, "normr = $normr")
-#				end
-#			else
-#				open("j_normr_1.txt", "a") do f 
-#					println(f, "normr = $normr")
-#				end
-#		   end
-	    sr_ref = normr/normr0
-#	    @show sr_ref k
+            normr 	= sqrt(normr)
 
             if A.geom.rank==0 & k%print_freq == 0 || k == max_iter
                 @debug("Iteration = $k Scaled Residual = $(normr/normr0)")
@@ -176,5 +184,11 @@ function cg_ref!(A , data , b , x , max_iter , tolerance, times, doPreconditioni
     # for MPi version only
     #times_add[6] = t5
    ierr = 0 
+   #=
+	data.r  = r # Residual vector
+    data.z  = z # Preconditioned residual vector
+    data.p  = p # Direction vector (in MPI mode ncol>=nrow)
+    data.Ap = Ap
+	=#
    return niters, normr, normr0, ierr
 end

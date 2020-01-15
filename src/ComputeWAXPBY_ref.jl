@@ -27,7 +27,9 @@ function compute_waxpby_ref!(w, n, alpha, x, beta, y)
   @assert(length(y)>=n)
 
   if alpha == 1.0
+		  
     for i = 1:n
+		# inexact error y[i]
     	w[i] =  x[i] + beta * y[i]
     end
   elseif beta == 1.0

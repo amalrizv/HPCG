@@ -16,13 +16,17 @@ end
  @param[in]  A    the data structure that describes the problem matrix and its structure
  @param[out] data the data structure for CG vectors that will be allocated to get it ready for use in CG iterations
 =#
-function InitializeSparseCGData(A, data) 
+function InitializeSparseCGData(A) 
   nrow = A.localNumberOfRows
   ncol = A.localNumberOfColumns
   r    = Vector{Float64}(undef,nrow)
   z    = Vector{Float64}(undef,ncol)
   p    = Vector{Float64}(undef,ncol)
   Ap   = Vector{Float64}(undef,nrow)
+  r 	= zero_fill!(r)
+  z 	= zero_fill!(z)
+  p 	= zero_fill!(p)
+ Ap 	= zero_fill!(Ap)
   data = CGData(r,z,p, Ap)
   return data
 end

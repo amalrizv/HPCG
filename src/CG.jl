@@ -1,27 +1,11 @@
-#@HEADER
-# ***************************************************
-#
-# HPCG: High Performance Conjugate Gradient Benchmark
-#
-# Contact:
-# Michael A. Heroux ( maherou@sandia.gov)
-# Jack Dongarra     (dongarra@eecs.utk.edu)
-# Piotr Luszczek    (luszczek@eecs.utk.edu)
-#
-# ***************************************************
-#@HEADER
-
 #=
  @file CG.cpp
  HPCG routine
 =#
-
 #include <fstream>
-
 #include <cmath>
 
 include("hpcg.jl")
-
 
 #include("mytimer.jl")
 include("ComputeSPMV.jl")
@@ -49,6 +33,7 @@ include("ComputeWAXPBY.jl")
   @see CG_ref()
 =#
 function cg!(A, data, b, x, max_iter, tolerance, times, doPreconditioning) 
+
   t_begin = time_ns()  # Start timing right away
   normr = 0.0
   normr0 = 0.0
@@ -70,7 +55,8 @@ function cg!(A, data, b, x, max_iter, tolerance, times, doPreconditioning)
 ##ifndef HPCG_NO_MPI
 # t6 = 0.0
 ##endif
-  nrow = A.localNumberOfRows 
+  nrow = A.localNumberOfRows
+
   r = data.r # Residual vector
   z = data.z # Preconditioned residual vector
   p = data.p # Direction vector (in MPI mode ncol>=nrow)
@@ -88,7 +74,10 @@ function cg!(A, data, b, x, max_iter, tolerance, times, doPreconditioning)
 	print_freq=1
   end
 #endif
+
   # p is of length ncols, copy x to p for sparse MV operation
+
+
   p[1:length(x)] = x
   t3t 		= time_ns() 
   ierr = compute_spmv!(Ap, A, p) 
@@ -98,6 +87,7 @@ function cg!(A, data, b, x, max_iter, tolerance, times, doPreconditioning)
 
   t2t 	= time_ns()
   ierr = compute_waxpby!(r, nrow, 1.0, b, -1.0, Ap, A.is_waxpby_optimized)
+
   t2 	= time_ns()-t2t 
 
   # r = b - Ax (x stored in p)
@@ -116,12 +106,14 @@ function cg!(A, data, b, x, max_iter, tolerance, times, doPreconditioning)
   # Record initial residual for convergence testing
   normr0 = normr
 
+
   # Start iterations
   for k	= 1:max_iter
   	if  normr/normr0 > tolerance 
     		t5t = time_ns()
-    		if doPreconditioning
-      			compute_mg!(z,A, r) # Apply preconditioner
+    		if doPreconditioning == true
+    #symgs->exchnagehalo
+      			ierr = compute_mg!(z,A, r) # Apply preconditioner
     		else
       			z[1:length(r)] = r # copy r to z (no preconditioning)
     		end
@@ -130,6 +122,7 @@ function cg!(A, data, b, x, max_iter, tolerance, times, doPreconditioning)
     		if k == 1
       			t2t   	= time_ns()
       			ierr =  compute_waxpby!(p, nrow, 1.0, z, 0.0, z, A.is_waxpby_optimized)
+			#	println("1 = Copy Mr to p $(p[1]) ")
       			t2 	= t2+time_ns()-t2t # Copy Mr to p
       			t1t 	= time_ns()
       			rtz, t4, ierr = compute_dot_product!(nrow, r, z, A.is_dot_prod_optimized)
@@ -142,9 +135,10 @@ function cg!(A, data, b, x, max_iter, tolerance, times, doPreconditioning)
       			beta 	= rtz/oldrtz
       			t2t 	= time_ns()
       			ierr	=compute_waxpby!(p, nrow, 1.0, z, beta, p, A.is_waxpby_optimized)  
+			#	println("2 = $(p[1]) p =  beta * p + z  ")
       			t2 	= time_ns()-t2t+t2 # p = beta*p + z
    		end
-
+			
     		t3t 	= time_ns()
     		ierr = compute_spmv!(Ap, A, p) 
     		t3	= t3+time_ns()- t3t # Ap = A*p
@@ -152,16 +146,21 @@ function cg!(A, data, b, x, max_iter, tolerance, times, doPreconditioning)
     		t1t 	= time_ns()
     		pAp, t4, ierr = compute_dot_product!(nrow, p, Ap, A.is_dot_prod_optimized) 
     		t1 	= time_ns()-t1t+t1 # alpha = p'*Ap
-
+  		
     		alpha 	= rtz/pAp
 
     		t2t  	= time_ns() 
+
+ 
+		
+		#	println("3 = $(p[1]) x =  alpha * p + x  ")
     		ierr = compute_waxpby!(x, nrow, 1.0, x, alpha, p, A.is_waxpby_optimized)# x = x + alpha*p
+  
     		ierr = compute_waxpby!(r, nrow, 1.0, r, -alpha, Ap, A.is_waxpby_optimized)
     		t2 	= time_ns()- t2t +t2# r = r - alpha*Ap
 	
     		t1t 	= time_ns()
-                normr, t4, ierr = compute_dot_product!(nrow, r, r, A.is_dot_prod_optimized)
+            normr, t4, ierr = compute_dot_product!(nrow, r, r, A.is_dot_prod_optimized)
     		t1 = t1+time_ns()- t1t
 	
     		normr = sqrt(normr)
@@ -187,16 +186,13 @@ function cg!(A, data, b, x, max_iter, tolerance, times, doPreconditioning)
 ## times[7] = t6
 ##else
 ##endif
-		if A.geom.rank == 0
-			open("residual_0.txt", "a") do f 
-				println(f, "$(x[length(x)])")
-			end
-		else
-			open("residual_1.txt", "a") do f 
-				println(f, "$(x[length(x)])")
-			end
-	    end
-  
+	  
  ierr=0
+ 	#= 
+	data.r  = r # Residual vector
+    data.z  = z # Preconditioned residual vector
+    data.p  = p # Direction vector (in MPI mode ncol>=nrow)
+    data.Ap = Ap
+	=#
  return niters, normr, normr0, ierr
 end

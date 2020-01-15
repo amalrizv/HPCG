@@ -19,30 +19,15 @@ include("hpcg.jl")
 =#
 function compute_residual!(n, v1, v2) 
 
-  v1v = v1
-  v2v = v2
   local_residual = 0.0
-
-     threadlocal_residual = 0.0
-    for i=1:n
-       diff = (v1v[i] - v2v[i])
-      if diff > threadlocal_residual 
-	threadlocal_residual = diff
-      end
-   
-    
-      if threadlocal_residual>local_residual
-	 local_residual = threadlocal_residual
-      end
-    
+      
+  for i=1:n # No threading
+     diff = abs(v1[i] - v2[i])
+   	 if diff > local_residual
+	     local_residual = diff
+     end
+     @debug(" Computed, exact, diff = $v1[i] $v2[i] $diff")
   end
-  for i=1:n
-     diff = (v1v[i] - v2v[i])
-    if diff > local_residual
-	 local_residual = diff
-    end
-    @debug(" Computed, exact, diff = $v1v[i] $v2v[i] $diff")
-   end
 
   if MPI.Initialized()== true
 	  # Use MPI's reduce function to collect all partial sums

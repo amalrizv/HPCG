@@ -41,8 +41,8 @@ function test_symmetry(A, b, xexact, testsymmetry_data)
  # Test symmetry of matrix
 
  # First load vectors with random values
- fill_random_vector!(x_ncol)
- fill_random_vector!(y_ncol)
+ fill!(x_ncol, 1.0)
+ fill!(y_ncol, 1.0)
 
  ANorm = 2 * 26.0
 
@@ -73,7 +73,7 @@ function test_symmetry(A, b, xexact, testsymmetry_data)
 	@debug("Error in call to dot: $err .\n")
  end
  # TODO : check if eps(Float64) is apt porting of DBL_EPSILON
- #depsym_spmv = ((xtAy - ytAx)/((xNorm2*ANorm*yNorm2 + yNorm2*ANorm*xNorm2) * eps(Float64)))
+ depsym_spmv = abs((xtAy - ytAx)/((xNorm2*ANorm*yNorm2 + yNorm2*ANorm*xNorm2) * eps(Float64)))
 
  if depsym_spmv > 1.0
 	count_fail += 1  # If the difference is > 1, count it wrong
@@ -111,7 +111,7 @@ function test_symmetry(A, b, xexact, testsymmetry_data)
     @debug("Error in call to dot: $ierr .\n")
  end
 
- depsym_mg = (xtMinvy - ytMinvx)/((xNorm2*ANorm*yNorm2 + yNorm2*ANorm*xNorm2) * (eps(Float64)))
+ depsym_mg = abs((xtMinvy - ytMinvx)/((xNorm2*ANorm*yNorm2 + yNorm2*ANorm*xNorm2) * (eps(Float64))))
 
  if depsym_mg > 1.0 
 	count_fail+=1  # If the difference is > 1, count it wrong
