@@ -1,5 +1,5 @@
 #=
- @file ComputeWAXPBY_ref.cpp
+ @file ComputeWAXPBY_ref.jl
 
  HPCG routine
 =#
@@ -26,20 +26,20 @@ function compute_waxpby_ref!(w, n, alpha, x, beta, y)
   @assert(length(x)>=n) # Test vector length 
   @assert(length(y)>=n)
 
-  if alpha == 1.0
-		  
-    for i = 1:n
-		# inexact error y[i]
+  for i = 1:n 
+  	if alpha == 1.0
+	#	@show "alpha = 1.0"	  
+	#	@show x[i], y[i]
     	w[i] =  x[i] + beta * y[i]
-    end
-  elseif beta == 1.0
-    for i = 1:n 
+
+  	elseif beta == 1.0
+
 	    w[i] = alpha * x[i] + y[i]
-    end
-  else  
-    for i = 1:n 
+  	else  
+
 	    w[i] = alpha * x[i] + beta * y[i]
     end
+
   end
 
   return 0

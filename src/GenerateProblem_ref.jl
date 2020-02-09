@@ -48,6 +48,9 @@ function generate_problem_ref!(A::HPCGSparseMatrix)
     b       = Vector{Float64}(undef,localNumberOfRows)
     x       = Vector{Float64}(undef,localNumberOfRows)
     xexact  = Vector{Float64}(undef,localNumberOfRows)
+	zero_fill!(b)
+	zero_fill!(x)
+	zero_fill!(xexact)
     bv      = zeros(localNumberOfRows)
     xv      = zeros(localNumberOfRows)
     xexactv = zeros(localNumberOfRows)
@@ -92,13 +95,7 @@ function generate_problem_ref!(A::HPCGSparseMatrix)
                 globalToLocalMap[currentGlobalRow] = currentLocalRow
 
                 localToGlobalMap[currentLocalRow] = currentGlobalRow
-				# CONFIRMED : localToGlobal and GlobaltoLocal both have
-				#  key 16
-				
-				#if currentGlobalRow == 16
-				#	println("yadayada, $(A.geom.rank)")
-				#end
-
+			
                 numberOfNonzerosInRow = 0
 		currentValuePointer = 1
 		currentIndexPointer = 1
@@ -141,12 +138,11 @@ function generate_problem_ref!(A::HPCGSparseMatrix)
             end #  stop ix loop
         end # stop iy loop
     end # stop iz loop
-    @debug("Process $A.geom.rank of $A.geom.size has $localNumberOfRows rows.\n Process $A.geom.rank of $A.geom.size has $localNumberOfNonzeros nonzeros.\n") 
+	@debug("Process $(A.geom.rank) of $(A.geom.size) has $localNumberOfRows rows.\n Process $(A.geom.rank) of $(A.geom.size) has $localNumberOfNonzeros nonzeros.\n") 
 
     totalNumberOfNonzeros = 0
     # Use MPI's reduce function to sum all nonzeros
     if MPI.Initialized() == true
-      #println("$(A.geom.rank) has $localNumberOfNonzeros local number of zeros ")
       MPI.Barrier(MPI.COMM_WORLD)
       lnnz = localNumberOfNonzeros
       gnnz = 0 # convert to 64 bit for MPI call
@@ -176,11 +172,7 @@ function generate_problem_ref!(A::HPCGSparseMatrix)
     A.localToGlobalMap      = localToGlobalMap
     A.globalToLocalMap      = globalToLocalMap
 
-#	if A.geom.rank == 1
-#		open("mtx_gen_1.txt", "a") do f 
-#			println(f, A.mtxIndG, A.mtxIndL)
-#		end
-#	end
+
 
 
     return b, x, xexact

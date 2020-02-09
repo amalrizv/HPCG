@@ -52,13 +52,7 @@ function exchange_halo!(x, A)
   # TODO: Thread this loop
 
   # any changes in xv should not be reflected in x
-  if A.geom.rank == 0
-	  fr =  open("mpi_ircv_0.txt", "a")
-  else
- 	  fr =  open("mpi_ircv_1.txt", "a")
-  end
-
-
+  
   offset_start = localNumberOfRows+1  
   for i = 1 : num_neighbors
     n_recv 		= receiveLength[i]
@@ -74,7 +68,6 @@ function exchange_halo!(x, A)
 
 
   end
- # println(fr,"x[4097] = $(x[localNumberOfRows+1])")
 # x has both local and external indices.
 
   #
@@ -92,20 +85,13 @@ function exchange_halo!(x, A)
 
   # TODO: Thread this loop
 
-  if A.geom.rank == 0
-	  fs =  open("mpi_send_0.txt", "a")
-  else
- 	  fs =  open("mpi_send_1.txt", "a")
-  end
-# Only local indices from x are used here
+  # Only local indices from x are used here
   for i = 1:num_neighbors
     n_send = sendLength[i]
-	println(fs,"sending sendBuffer[1] = $(sendBuffer[1])")
 	MPI.Send(sendBuffer[1:n_send], neighbors[i], MPI_MY_TAG, MPI.COMM_WORLD)
   end
 
 
-  #println(fs,"x[4097] = $(x[localNumberOfRows+1])")
 
 
   #
@@ -116,32 +102,9 @@ function exchange_halo!(x, A)
 
   #  status = Ref{Status}() as in MPI.jl example package
   # TODO: Thread this loop
-  # BUG_INFO 
-  # -Check which process was not able to get out of IRecv [ line 61 ]
-  # Both process stall at MPI.Wait()
-  #
-  # Bug occurs in the OptimizedCG Phase 
-  # in main.jl at 302 when calling cg!
-  #
-  # main > cg > mg > symgs > exchangeHalo()
-  #
-  # -Confirm ExchangeHalo behaviour
-  # Exchange Halo is not working as expected
-  # all values recieved by every process is 0 if init of buff is fill!(0)(Julia).
-  # for process 1 values rcvd other than 0 are negative.
-  # most values sent by every process is 0, 1 or NaN (Julia).
-  # -exchnageHalo is not working as expected after pointer arithmetic is corrected:
-  # HOW
-  # 	pointer arithmetic in x_external was creating a copy of the
-  # 	[in] vector x in Julia.
-  # NOW 
-  # x = [local...indices, num_neighbor_1_external_indices, ..., num_beighbor_size-1_external_indices]
-
-
   for i = 1: num_neighbors
 
     if MPI.Wait!(request[i]) == 1
-	  println("process number $(A.geom.rank)")
       exit(-1) #TODO: have better error exit
     end
 

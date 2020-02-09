@@ -26,17 +26,7 @@ include("CG.jl")
 
   @see CG()
 =#
-function test_cg!(A, data, b, x, count_pass, count_fail) 
-if A.geom.rank == 0 
-	@show " #RZV 
-# 1) TestCG constructior needed for TesCGData struct
-# 2) Check if origDiagA should have only 26.0s or do they contain pointers
-# 3) Check iterations from line 75 
-#
-# Why is CG being called repeatedly from TestCG?
-# Some problem related to solution not being able to converge.
-#"
-end
+function test_cg!(A, data, b, x,testcg_data ) 
     #testcg_data = TestCGData 
     # Use this array for collecting timing information
     times =  zeros(8)
@@ -48,18 +38,17 @@ end
     fill!(origDiagA, 26.0)
     exaggeratedDiagA[1:length(origDiagA)] = origDiagA
     origB[1:length(b)]           = b
-
-    # Modify the matrix diagonal to greatly exaggerate diagonal values.
+       # Modify the matrix diagonal to greatly exaggerate diagonal values.
     # CG should converge in about 10 iterations for this problem, regardless of problem size
     for i=1:A.localNumberOfRows
         globalRowID = A.localToGlobalMap[i]
         if globalRowID<10
-            scale = (globalRowID+2)*1.0e6
+            scale = (globalRowID+1)*1.0e6
 			exaggeratedDiagA[i] = exaggeratedDiagA[i] .* scale
-            b = b .* scale
+			b[i] = b[i] .* scale
         else 
 			exaggeratedDiagA[i]  = exaggeratedDiagA[i] .* 1.0e6
-            b = b .* 1.0e6
+			b[i] = b[i] .* 1.0e6
         end
     end
 
@@ -73,8 +62,7 @@ end
     maxIters        = 50
     numberOfCgCalls = 2
     tolerance       = 1.0e-12 # Set tolerance to reasonable value for grossly scaled diagonal terms
-    testcg_data     = TestCGData(count_pass, count_fail,12,2,0,0, normr)
-
+    
     # For the unpreconditioned CG call, we should take about 10 iterations, permit 12
     # For the preconditioned case, we should take about 1 iteration, permit 2
     
@@ -115,17 +103,13 @@ end
 	A.matrixValues[i, A.curcols[i]] = exaggeratedDiagA[i]
     end
 
-    b = origB
+	b[1:length(origB)] = origB
 
     # Delete vectors
     origDiagA         = nothing
     exaggeratedDiagA  = nothing
     origB             = nothing
     testcg_data.normr = normr
-	if A.geom.rank == 0 
-		
-		println("Leaving TestCG")
-	end
 	return testcg_data
 
 end

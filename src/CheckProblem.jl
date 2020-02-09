@@ -59,7 +59,7 @@ function check_problem(A::HPCGSparseMatrix, b, x, xexact)
          currentGlobalRow = giz*gnx*gny+giy*gnx+gix+1
         @assert(A.localToGlobalMap[currentLocalRow] == currentGlobalRow)
 
-        #@debug(" rank, globalRow, localRow = $A.geom.rank $currentGlobalRow ",A.globalToLocalMap[currentGlobalRow])
+		@debug(" rank, globalRow, localRow = $(A.geom.rank) $currentGlobalRow ,$(A.globalToLocalMap[currentGlobalRow])")
         numberOfNonzerosInRow = 0
         currentValuePointer = 1 # Pointer to current value in current row
         currentIndexPointerG = 1 # Pointer to current index in current row
@@ -100,7 +100,7 @@ function check_problem(A::HPCGSparseMatrix, b, x, xexact)
       end # end ix loop
     end # end iy loop
   end # end iz loop
-  @debug("Process $A.geom.rank  of $A.geom.size has $localNumberOfRows rows.\n Process $A.geom.rank of $A.geom.size has $localNumberOfNonzeros nonzeros.\n") 
+  @debug("Process $(A.geom.rank)  of $(A.geom.size) has $localNumberOfRows rows.\n Process $(A.geom.rank) of $(A.geom.size) has $localNumberOfNonzeros nonzeros.\n") 
 
   totalNumberOfNonzeros = 0
   if MPI.Initialized()== true 

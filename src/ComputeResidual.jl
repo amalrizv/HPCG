@@ -26,18 +26,19 @@ function compute_residual!(n, v1, v2)
    	 if diff > local_residual
 	     local_residual = diff
      end
-     @debug(" Computed, exact, diff = $v1[i] $v2[i] $diff")
+	 @debug(" Computed, exact, diff = $(v1[i]), $(v2[i]),  $(diff)")
   end
 
   if MPI.Initialized()== true
 	  # Use MPI's reduce function to collect all partial sums
-  	global_residual = 0
+  	global_residual = 0.0
   	global_residual = MPI.Allreduce(local_residual, MPI.MAX, MPI.COMM_WORLD)
   	residual = global_residual
   else
  	 residual = local_residual
   end
-  @show residual
+  #@show local_residual
+  #@show residual
   ierr = 0
   return residual, 0
 end

@@ -22,7 +22,7 @@ Distributed.@everywhere include("CheckProblem.jl")
 Distributed.@everywhere include("ExchangeHalo.jl")
 Distributed.@everywhere include("OptimizeProblem.jl")
 #include("WriteProblem.jl")
-#include("ReportResults.jl")
+Distributed.@everywhere include("ReportResults.jl")
 #include("mytimer.jl")
 Distributed.@everywhere include("ComputeSPMV_ref.jl")
 Distributed.@everywhere include("ComputeMG.jl")
@@ -56,7 +56,6 @@ function main(hpcg_args)
 
     if hpcg_args["np"] > 1
         MPI.Init()
-	#println("initialized")
         hpcg_args["np"] = MPI.Comm_size(MPI.COMM_WORLD)
     end
 
@@ -93,6 +92,7 @@ function main(hpcg_args)
     ## Problem Setup Phase ##
     #########################
 
+	#@show "In Problem Setup Phase "
     t1 = time_ns() # TODO: INCLUDE CORRECT TIMER 
 
     # Construct the geometry and linear system
@@ -111,6 +111,7 @@ function main(hpcg_args)
     A          = initialize_sparse_matrix(geom)
 
 	b, x, xexact = generate_problem!(A)	
+	#@show b[1]
     setup_halo!(A)	
     num_mg_levels  = 4 #Number of levels including first
 
@@ -120,7 +121,7 @@ function main(hpcg_args)
         generate_coarse_problem!(cur_level_matrix) 	
         cur_level_matrix = cur_level_matrix.Ac 		#  Make the just-constructed coarse grid the next level
     end
-    @show("All levels generated")
+   # @show("All levels generated")
 
     setup_time = time_ns() - setup_time #Capture total time of setup
     # TODO: Why is the below commented out?
@@ -145,6 +146,8 @@ function main(hpcg_args)
     ## Reference SpMV+MG Timing Phase ##
     ####################################
 
+	#@show "In Reference SpMV+MG Timing Phase" 
+	#@show b[1]
     # Call Reference SpMV and MG. Compute Optimization time as ratio of times in these routines
 
     nrow = A.localNumberOfRows
@@ -174,9 +177,9 @@ function main(hpcg_args)
         end
 		# b_computed is same as C version, x_overlap is changed by SPMV
 		# and MG>>SYMGS 
-		@show b_computed[1]
+	#	@show b_computed[1]
 		ierr = compute_mg!(x_overlap, A, b_computed) # b_computed = Minv*y_overlap
-		@show x_overlap[1]
+	#	@show x_overlap[1]
         if ierr != 0
             @error("Error in call to MG: $ierr .\n") 
         end
@@ -185,16 +188,15 @@ function main(hpcg_args)
 
     times[8] = (time_ns() - t_begin)/num_calls # Total time divided by number of calls.
 
-    #@debug begin
-    #    if rank == 0
-    #        @debug("Total SpMV+MG timing phase execution time in main (sec) = $(time_ns()-t1)\n")
-    #    end 
-    #end
+        if rank == 0
+            @debug("Total SpMV+MG timing phase execution time in main (sec) = $(time_ns()-t1)\n")
+        end 
 
     ###############################
     ## Reference CG Timing Phase ##
     ###############################
-
+	#@show "In reference CG Timing Phase" 
+	#@show b[1]
     t1 = time_ns()
 
     global_failure  = 0 # assume all is well: no failures
@@ -217,12 +219,14 @@ function main(hpcg_args)
 	z  	= Vector{Float64}(undef,ncol)
   	p  	= Vector{Float64}(undef,ncol)
   	Ap 	= Vector{Float64}(undef,nrow)
-
+	zero_fill!(r)
+	zero_fill!(z)
+	zero_fill!(p)
+	zero_fill!(Ap)
 	data	=	CGData(r, z, p, Ap)
 
     for i = 1:num_calls
         zero_fill!(x)
-        @debug("In     ## Reference CG Timing Phase ## ")
         niters, normr, normr0, ierr = cg_ref!(A, data, b, x, refMaxIters, tolerance, ref_times, true)
 	        if ierr != 0
             err_count += 1 # count the number of errors in CG
@@ -232,16 +236,14 @@ function main(hpcg_args)
     end
 	if A.geom.rank==0 
 			# not concurrent 
-			@show "Reference CG Timing Phase"
-			@show normr, normr0
+			#@show "Reference CG Timing Phase"
+			#@show normr, normr0
 		end
 
 
-    #@debug begin
-    #    if rank == 0 
-    #        @debug("$err_count error(s) in call(s) to reference CG.")
-    #    end
-    #end
+	    if rank == 0 
+    	        @debug("$err_count error(s) in call(s) to reference CG.")
+        end
 
     refTolerance::Float64 = normr / normr0
 
@@ -251,11 +253,9 @@ function main(hpcg_args)
     t7 = time_ns() - t7
     times[7] = t7
 
-    #@debug begin
-    #    if rank==0
-    #        @debug("Total problem setup time in main (sec) = $(time_ns()-t1)") 
-    #    end
-    #end
+        if rank==0
+            @debug("Total problem setup time in main (sec) = $(time_ns()-t1)") 
+        end
 
     if geom.size == 1
         # WriteProblem(geom, A, b, x, xexact)
@@ -265,20 +265,27 @@ function main(hpcg_args)
     ## Validation Testing Phase ##
     ##############################
 
+	#@show "In Validation testing Phase"
+	#@show b[1]
     t1 = time_ns()
 
 
-    @debug "Length of solution vector: " length(x)
+	@debug "Length of solution vector: $(length(x))"
 	# Only and only one call to test_cg!
 	# count_pass = 0
 	# count_fail = 0
-    ierr = test_cg!(A, data, b, x, 0,0)
+	#RZV :TODO : b uses a const variable in function call in C
+	b_copy = Vector{Float64}(undef, A.localNumberOfRows)
+	for i= 1:A.localNumberOfRows
+		b_copy[i] = b[i]
+	end
+	testcg_data     = TestCGData(0,0,12,2,0,0, normr)
+    ierr = test_cg!(A, data, b_copy, x,  testcg_data)
 
-    testsymmetry_data = TestSymmetryData 
-    test_symmetry(A, b, xexact, testsymmetry_data)
+    testsymmetry_data = test_symmetry(A, b_copy, xexact)
 
     if (rank==0) 
-        @debug "Total validation (TestCG and TestSymmetry) execution time in main (sec) = " (time_ns() - t1)
+		@debug ("Total validation (TestCG and TestSymmetry) execution time in main (sec) = $(time_ns() - t1)")
     end
 
     t1 = time_ns()
@@ -286,7 +293,7 @@ function main(hpcg_args)
     ##############################
     ## Optimized CG Setup Phase ##
     ##############################
-
+	
     niters             = 0
     normr              = 0.0
     normr0             = 0.0
@@ -326,8 +333,8 @@ function main(hpcg_args)
             opt_worst_time = current_time
         end
     end
-	@show "In Optimized CG Setup Phase"
-	@show normr
+	#@show "After Optimized CG Setup Phase"
+	#@show normr
     # Get the absolute worst time across all MPI ranks (time in CG can be different)
     local_opt_worst_time = opt_worst_time
      if MPI.Initialized()==true
@@ -344,10 +351,11 @@ function main(hpcg_args)
             @debug("Failed to reduce the residual $tolerance_failures times.")
         end
     end
-    println("
     ###############################
     ## Optimized CG Timing Phase ##
-	###############################")
+	###############################
+	
+	#@show "In optimized CG Timing phase"
 	
     ## Here we finally run the benchmark phase
     ## The variable total_runtime is the target benchmark execution time in seconds
@@ -358,8 +366,9 @@ function main(hpcg_args)
     if rank == 0 
         @debug("Projected running time: $total_runtime seconds") 
         @debug("Number of CG sets: $numberOfCgSets") 
+		#@show("Number of CG sets: $numberOfCgSets") 
+ 
     end
-
     # This is the timed run for a specified amount of time. 
 
     optMaxIters    = optNiters
@@ -370,9 +379,8 @@ function main(hpcg_args)
     for i=1: Int(numberOfCgSets)
 
         x = zero_fill!(x) # Zero out x
-		println("data.residual_vector[1] = $(data.p[1])")
         niters, normr, normr0, ierr = cg!(A, data, b, x, optMaxIters, optTolerance, times, true)
-
+		#@show normr
         if ierr != 0
             @error("Error in call to CG: $ierr.\n") 
         end
@@ -383,14 +391,17 @@ function main(hpcg_args)
 
         testnorms_data.values[i] = normr/normr0 # Record scaled residual from this run
     end
-	@show "Before computing residual in opTIMIZED CG timing phase"
-	@show normr 
+	#@show "Before computing residual in opTIMIZED CG timing phase"
+	#@show normr 
 
     # Compute difference between known exact solution and computed solution
     # All processors are needed here.
-	
-    residual, ierr = compute_residual!(A.localNumberOfRows, x, xexact)
 
+    residual, ierr = compute_residual!(A.localNumberOfRows, x, xexact)
+	if A.geom.rank ==0
+		#@show "After CG Timing Phase"
+		#@show residual
+    end
     if ierr != 0
         @error("Error in call to compute_residual: $ierr.\n") 
     end
@@ -406,7 +417,7 @@ function main(hpcg_args)
     ## Report Results ##
     ####################
     # Report results to YAML file
-#    times  = ReportResults(A, numberOfMgLevels, numberOfCgSets, refMaxIters, optMaxIters, times, testcg_data, testsymmetry_data, testnorms_data, global_failure, quickPath)
+   report_results(A, num_mg_levels, numberOfCgSets, refMaxIters, optMaxIters, times, testcg_data, testsymmetry_data, testnorms_data, global_failure, quickPath)
     # Clean up
     A              = nothing # This delete will recursively delete all coarse grid data
     data           = nothing
@@ -419,7 +430,6 @@ function main(hpcg_args)
 
     # Finish up
     if MPI.Initialized()==true
-	#println("message")
   	MPI.Finalize()
     end
 

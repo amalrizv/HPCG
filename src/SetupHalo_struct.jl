@@ -14,8 +14,6 @@ function alt_set_add!(a::alt_set, to_add::Int64)
 		val  = a.size +1
 		a.alt[to_add] = val
 		a.size  = val
-	else
-		println("already has $to_add")
 	end
 		
 end

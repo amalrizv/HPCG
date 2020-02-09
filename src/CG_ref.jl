@@ -32,7 +32,7 @@ include("ComputeWAXPBY_ref.jl")
   @see CG()
 =#
 
-function cg_ref!(A , data , b , x , max_iter , tolerance, times, doPreconditioning) 
+function cg_ref!(A , data , b , x , max_iter , tolerance , times, doPreconditioning) 
 
     t_begin = time_ns()  # Start timing right away
     normr   = 0.0
@@ -60,7 +60,7 @@ function cg_ref!(A , data , b , x , max_iter , tolerance, times, doPreconditioni
     z  = data.z # Preconditioned residual vector
     p  = data.p # Direction vector (in MPI mode ncol>=nrow)
     Ap = data.Ap
-
+ 
     if !doPreconditioning && A.geom.rank==0
         @debug("WARNING: PERFORMING UNPRECONDITIONED ITERATIONS")
     end
@@ -104,9 +104,10 @@ function cg_ref!(A , data , b , x , max_iter , tolerance, times, doPreconditioni
     for k=1:max_iter 
     	if normr/normr0 > tolerance
             t5t = time_ns()
-            if doPreconditioning
+            if doPreconditioning == true
+				#true passed from main 
                 ierr = compute_mg_ref!(z,A, r ) # Apply preconditioner
-            else
+			            else
                 ierr = compute_waxpby_ref!(z, nrow, 1.0, r, 0.0, r) # copy r to z (no preconditioning)
             end
 		
@@ -118,8 +119,8 @@ function cg_ref!(A , data , b , x , max_iter , tolerance, times, doPreconditioni
                 t2			   = t2+time_ns()-t5t # Copy Mr to p
 
                 t1t 			= time_ns() 
-                rtz, t4, ierr 	= compute_dot_product_ref!(nrow, r, z) 
-                t1 				= t1+time_ns()- t1t # rtz = r'*z
+			                rtz, t4, ierr 	= compute_dot_product_ref!(nrow, r, z) 
+			                t1 				= t1+time_ns()- t1t # rtz = r'*z
 
             else 
 
@@ -131,7 +132,6 @@ function cg_ref!(A , data , b , x , max_iter , tolerance, times, doPreconditioni
                 t1 				= t1+time_ns()- t1t 
 
                 beta 	= rtz/oldrtz
-
 				# p = beta*p + z
                 t2t 	= time_ns() 
                 ierr 	= compute_waxpby_ref!(p, nrow, 1.0, z, beta, p)  
@@ -148,11 +148,17 @@ function cg_ref!(A , data , b , x , max_iter , tolerance, times, doPreconditioni
 			t1t   			= time_ns()
             pAp, t4, ierr 	= compute_dot_product_ref!(nrow, p, Ap) 
             t1    			= time_ns()- t1t+t1
-            alpha 	= rtz/pAp
 
+			if pAp == 0 
+				alpha = 1
+			else
+            	alpha 	= rtz/pAp
+		    end
+			
 			# x = x + alpha*p ; r = r - alpha*Ap
             t2t   	= time_ns()
-            ierr 	= compute_waxpby_ref!(x, nrow, 1.0, x, alpha, p)# x = x + alpha*p
+			            ierr 	= compute_waxpby_ref!(x, nrow, 1.0, x, alpha, p)# x = x + alpha*p
+			
             ierr 	= compute_waxpby_ref!(r, nrow, 1.0, r, -alpha, Ap)  
             t2    	= time_ns()- t2t+t2
 
@@ -167,8 +173,10 @@ function cg_ref!(A , data , b , x , max_iter , tolerance, times, doPreconditioni
             end
 
             niters = k
-        end
-    end
+		else
+			break
+		end # end of tolerance check 
+	end # end of for loop
 
     # Store times
 
@@ -184,11 +192,5 @@ function cg_ref!(A , data , b , x , max_iter , tolerance, times, doPreconditioni
     # for MPi version only
     #times_add[6] = t5
    ierr = 0 
-   #=
-	data.r  = r # Residual vector
-    data.z  = z # Preconditioned residual vector
-    data.p  = p # Direction vector (in MPI mode ncol>=nrow)
-    data.Ap = Ap
-	=#
    return niters, normr, normr0, ierr
 end

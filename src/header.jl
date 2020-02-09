@@ -59,7 +59,7 @@ end
 
 parsed_args = parse_args(s)
 
-@info "Arguments" parsed_args
+#@info "Arguments" parsed_args
 
 ENV["JULIA_DEBUG"] = "all"
 

@@ -121,7 +121,6 @@ function generate_geometry!(size, rank, numThreads,pz, zl, zu,
 
   gix0 = ipx*nx
   giy0 = ipy*ny
-  println(gnx, gny, gnz, gix0, giy0, giz0)
 
 
   geom = Geometry(size, rank, numThreads, 

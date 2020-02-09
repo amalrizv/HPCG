@@ -18,14 +18,6 @@ include("SetupHalo_struct.jl")
 =#
 function setup_halo_ref!(A)
 
-#	DEBUG : Same values forwarded from GenerateProblem_ref	
-#	if A.geom.rank == 1 
-#		open("mtx_setup_1.txt", "a") do f 
-#			println(f, A.mtxIndG, A.mtxIndL)
-#		end
-#	end
- #   @debug("In SetupHalo_ref")
-
     # Extract Matrix pieces
 
     localNumberOfRows = A.localNumberOfRows
@@ -34,7 +26,6 @@ function setup_halo_ref!(A)
     mtxIndL               = A.mtxIndL
     # In the non-MPI case we simply copy global indices to local index storage
     if MPI.Initialized() == false
-        # LNR = ,"localNumberOfRows," dimsMIG = ,",size(mtxIndG)," dimMIL = ",size(mtxIndL),".")
         A.mtxIndL = mtxIndG
     else
 
@@ -82,7 +73,7 @@ function setup_halo_ref!(A)
 
         # TODO KCH: the following should only execute if debugging is enabled!
         # These are all attributes that should be true, due to symmetry
-        # @debug("totalToBeSent = $totalToBeSent totalToBeReceived = $totalToBeReceived")
+         @debug("totalToBeSent = $totalToBeSent totalToBeReceived = $totalToBeReceived")
         @assert(totalToBeSent==totalToBeReceived) # Number of sent entry should equal number of received
         @assert(length(sendList)==length(receiveList)) # Number of send-to neighbors should equal number of receive-from
         # Each receive-from neighbor should be a send-to neighbor, and send the same number of entries
@@ -113,18 +104,10 @@ function setup_halo_ref!(A)
 				receiveEntryCount    += 1
             end
 			
-			if A.geom.rank == 0
-				fs = open("e2send_0.txt", "a")
-			else
-				fs = open("e2send_1.txt", "a")
-			end
-
-			for x in sort(collect(sendList[k]))
+					for x in sort(collect(sendList[k]))
 				elementsToSend[sendEntryCount+1] = A.globalToLocalMap[x] # store local ids of entry to send
-				println(fs,"elementsToSend[$(sendEntryCount+1)] = $(A.globalToLocalMap[x]) ")
 				sendEntryCount   += 1
             end
-			close(fs)
             neighborCount +=1
         end
 
@@ -165,14 +148,13 @@ function setup_halo_ref!(A)
         A.sendBuffer             = sendBuffer
 
 
-        @debug(" For rank $A.geom.rank of $A.geom.size number of neighbors $A.numberOfSendNeighbors")
+		@debug(" For rank $(A.geom.rank) of $(A.geom.size) number of neighbors $(A.numberOfSendNeighbors)")
         for i = 1:numberOfSendNeighbors
-            @debug("     rank = ", A.geom.rank," neighbor = ",neighbors[i]," send/recv length = ", sendLength[i]/receiveLength[i],".")
+			@debug("  rank = $(A.geom.rank) neighbor = $(neighbors[i]) send/recv length =  $(sendLength[i]/receiveLength[i]).")
             for j = 1:sendLength[i]
-                @debug("       rank = ", A.geom.rank," elementsToSend[$j] =", elementsToSend[j],".")
+				@debug(" rank = $(A.geom.rank), elementsToSend[$j] = $(elementsToSend[j])")
             end
         end
 
     end # ! NO_MPI
-    #println("Out of SetupHalo_ref")
 end

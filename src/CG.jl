@@ -86,20 +86,20 @@ function cg!(A, data, b, x, max_iter, tolerance, times, doPreconditioning)
   #Ap 	= A*p
 
   t2t 	= time_ns()
-  ierr = compute_waxpby!(r, nrow, 1.0, b, -1.0, Ap, A.is_waxpby_optimized)
+   ierr, A.is_waxpby_optimized  = compute_waxpby!(r, nrow, 1.0, b, -1.0, Ap)
 
   t2 	= time_ns()-t2t 
 
   # r = b - Ax (x stored in p)
 
   t1t 	= time_ns()
-  normr, t4, ierr = compute_dot_product!(nrow, r, r, A.is_dot_prod_optimized)
+  normr, t4, ierr = compute_dot_product!(nrow, r, r)
   t1 	= time_ns()-t1t
 
   normr = sqrt(normr)
 #ifdef HPCG_DEBUG
   if A.geom.rank == 0 
-  	@debug("Initial Residual = ",normr,"\n")
+  	@debug("Initial Residual = $normr")
   end
 #endif
 
@@ -109,8 +109,8 @@ function cg!(A, data, b, x, max_iter, tolerance, times, doPreconditioning)
 
   # Start iterations
   for k	= 1:max_iter
-  	if  normr/normr0 > tolerance 
-    		t5t = time_ns()
+	  if  normr/normr0 > tolerance && iszero(normr) == false
+		       		t5t = time_ns()
     		if doPreconditioning == true
     #symgs->exchnagehalo
       			ierr = compute_mg!(z,A, r) # Apply preconditioner
@@ -121,56 +121,55 @@ function cg!(A, data, b, x, max_iter, tolerance, times, doPreconditioning)
 
     		if k == 1
       			t2t   	= time_ns()
-      			ierr =  compute_waxpby!(p, nrow, 1.0, z, 0.0, z, A.is_waxpby_optimized)
-			#	println("1 = Copy Mr to p $(p[1]) ")
+      			ierr, A.is_waxpby_optimized  =  compute_waxpby!(p, nrow, 1.0, z, 0.0, z)
       			t2 	= t2+time_ns()-t2t # Copy Mr to p
       			t1t 	= time_ns()
-      			rtz, t4, ierr = compute_dot_product!(nrow, r, z, A.is_dot_prod_optimized)
+      			rtz, t4, ierr  = compute_dot_product!(nrow, r, z)
       			t1 	= t1+time_ns()- t1t # rtz = r'*z
-   		else 
+   			else 
       			oldrtz 	= rtz
       			t1t 	= time_ns()
-      			rtz, t4, ierr = compute_dot_product!( nrow, r, z, A.is_dot_prod_optimized) 
+      		    rtz, t4, ierr  = compute_dot_product!( nrow, r, z) 
       			t1 	= t1+time_ns()-t1t # rtz = r'*z
       			beta 	= rtz/oldrtz
       			t2t 	= time_ns()
-      			ierr	=compute_waxpby!(p, nrow, 1.0, z, beta, p, A.is_waxpby_optimized)  
-			#	println("2 = $(p[1]) p =  beta * p + z  ")
+      			ierr, A.is_waxpby_optimized 	=compute_waxpby!(p, nrow, 1.0, z, beta, p)  
       			t2 	= time_ns()-t2t+t2 # p = beta*p + z
-   		end
+  	 		end
 			
     		t3t 	= time_ns()
     		ierr = compute_spmv!(Ap, A, p) 
     		t3	= t3+time_ns()- t3t # Ap = A*p
 
     		t1t 	= time_ns()
-    		pAp, t4, ierr = compute_dot_product!(nrow, p, Ap, A.is_dot_prod_optimized) 
+    		pAp, t4, ierr  = compute_dot_product!(nrow, p, Ap) 
     		t1 	= time_ns()-t1t+t1 # alpha = p'*Ap
   		
-    		alpha 	= rtz/pAp
-
+			if pAp == 0
+				alpha = 1
+			else
+	    		alpha 	= rtz/pAp
+			end
     		t2t  	= time_ns() 
 
  
 		
-		#	println("3 = $(p[1]) x =  alpha * p + x  ")
-    		ierr = compute_waxpby!(x, nrow, 1.0, x, alpha, p, A.is_waxpby_optimized)# x = x + alpha*p
+    		ierr, A.is_waxpby_optimized, = compute_waxpby!(x, nrow, 1.0, x, alpha, p)# x = x + alpha*p
   
-    		ierr = compute_waxpby!(r, nrow, 1.0, r, -alpha, Ap, A.is_waxpby_optimized)
+    		ierr, A.is_waxpby_optimized  = compute_waxpby!(r, nrow, 1.0, r, -alpha, Ap)
     		t2 	= time_ns()- t2t +t2# r = r - alpha*Ap
 	
     		t1t 	= time_ns()
-            normr, t4, ierr = compute_dot_product!(nrow, r, r, A.is_dot_prod_optimized)
+            normr, t4, ierr  = compute_dot_product!(nrow, r, r)
     		t1 = t1+time_ns()- t1t
 	
     		normr = sqrt(normr)
-		sr = normr/normr0
-#ifdef HPCG_DEBUG
+
     		if A.geom.rank==0 && (k%print_freq == 0 || k == max_iter)
-      			@debug("Iteration = ",k,"   Scaled Residual = ",normr/normr0, "\n")
-		end
-#endif
+				@debug("Iteration = $k    Scaled Residual = $(normr/normr0)")
+			end
     		niters = k
+			#@show normr
   	end
   end
 
@@ -194,5 +193,8 @@ function cg!(A, data, b, x, max_iter, tolerance, times, doPreconditioning)
     data.p  = p # Direction vector (in MPI mode ncol>=nrow)
     data.Ap = Ap
 	=#
+	#@show "About to exit CG"
+	#@show normr 
+	A.is_dot_prod_optimized = false
  return niters, normr, normr0, ierr
 end
