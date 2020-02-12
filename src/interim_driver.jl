@@ -1,5 +1,6 @@
 using Distributed
-using Revise
+using MPI
+using Revise 
 Distributed.@everywhere includet("header.jl")
 
 #Struct Procedures
@@ -21,13 +22,13 @@ Distributed.@everywhere includet("init.jl")
 Distributed.@everywhere includet("MixedBaseCounter.jl")
 Distributed.@everywhere includet("ExchangeHalo.jl")
 Distributed.@everywhere includet("ComputeDotProduct_ref.jl")
+Distributed.@everywhere includet("ComputeDotProduct.jl")
 Distributed.@everywhere includet("ComputeOptimalShapeXYZ.jl")
 Distributed.@everywhere includet("ComputeProlongation_ref.jl")
 Distributed.@everywhere includet("ComputeResidual.jl")
 Distributed.@everywhere includet("ComputeRestriction_ref.jl")
 Distributed.@everywhere includet("ComputeRestriction.jl")
 Distributed.@everywhere includet("ComputeSYMGS_ref.jl")
-Distributed.@everywhere includet("ComputeSYMGS.jl")
 Distributed.@everywhere includet("ComputeWAXPBY_ref.jl")
 Distributed.@everywhere includet("ComputeWAXPBY.jl")
 
@@ -37,6 +38,7 @@ Distributed.@everywhere includet("GenerateGeometry.jl")
 Distributed.@everywhere includet("CheckAspectRatio.jl")
 Distributed.@everywhere includet("GenerateProblem_ref.jl")
 Distributed.@everywhere includet("GenerateProblem.jl")
+Distributed.@everywhere includet("SetupHalo_ref.jl")
 Distributed.@everywhere includet("SetupHalo.jl")
 Distributed.@everywhere includet("GenerateCoarseProblem.jl")
 Distributed.@everywhere includet("CheckProblem.jl")

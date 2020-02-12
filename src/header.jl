@@ -1,7 +1,6 @@
 using ArgParse
 using Logging
 using Distributed
-
 #TODO: USE_MPI is redundant for np
 function header_calling_hpcg()
 	s = ArgParseSettings()
