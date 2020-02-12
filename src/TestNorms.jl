@@ -4,7 +4,6 @@
  HPCG routine
 =#
 
-include("TestNorms_struct.jl")
 
 #=
   Computes the mean and standard deviation of the array of norm results.

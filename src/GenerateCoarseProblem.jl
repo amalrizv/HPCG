@@ -1,7 +1,3 @@
-include("GenerateGeometry.jl")
-include("MGData.jl")
-include("GenerateProblem.jl")
-include("SetupHalo.jl")
 
 #=
   Routine to construct a prolongation/restriction operator for a given fine grid matrix

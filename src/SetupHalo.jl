@@ -4,7 +4,6 @@
  HPCG routine
  =#
 using MPI
-include("SetupHalo_ref.jl")
 
 #=
   Prepares system matrix data structure and creates data necessary necessary

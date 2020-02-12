@@ -3,11 +3,7 @@
 
  HPCG routine
 =#
-include("appendx.jl")
-include("ComputeSPMV_ref.jl")
-include("ComputeRestriction_ref.jl")
-include("ComputeSYMGS_ref.jl")
-include("ComputeProlongation_ref.jl")
+
 
 #=
 

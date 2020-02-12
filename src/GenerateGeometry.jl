@@ -4,9 +4,6 @@
   HPCG routine
 =#
 
-include("ComputeOptimalShapeXYZ.jl")
-
-include("hpcg.jl")
 
 
 #=

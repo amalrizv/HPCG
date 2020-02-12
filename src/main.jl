@@ -10,32 +10,6 @@
 # KCH TODO: only do this if mpi is enabled!
 using MPI
 using Distributed
-Distributed.@everywhere include("hpcg.jl")
-Distributed.@everywhere include("init.jl")
-Distributed.@everywhere include("CheckAspectRatio.jl")
-Distributed.@everywhere include("SpMatrix.jl")
-Distributed.@everywhere include("GenerateGeometry.jl")
-Distributed.@everywhere include("GenerateProblem.jl")
-Distributed.@everywhere include("GenerateCoarseProblem.jl")
-Distributed.@everywhere include("SetupHalo.jl")
-Distributed.@everywhere include("CheckProblem.jl")
-Distributed.@everywhere include("ExchangeHalo.jl")
-Distributed.@everywhere include("OptimizeProblem.jl")
-#include("WriteProblem.jl")
-Distributed.@everywhere include("ReportResults.jl")
-#include("mytimer.jl")
-Distributed.@everywhere include("ComputeSPMV_ref.jl")
-Distributed.@everywhere include("ComputeMG.jl")
-Distributed.@everywhere include("ComputeResidual.jl")
-Distributed.@everywhere include("CG.jl")
-Distributed.@everywhere include("CG_ref.jl")
-Distributed.@everywhere include("Geometry.jl")
-#include("Vector.jl")
-Distributed.@everywhere include("CGData.jl")
-Distributed.@everywhere include("TestCG.jl")
-Distributed.@everywhere include("TestSymmetry.jl")
-Distributed.@everywhere include("TestNorms.jl")
-
 #=
   Main driver program: Construct synthetic problem, run V&V tests, compute benchmark parameters, run benchmark, report results.
 

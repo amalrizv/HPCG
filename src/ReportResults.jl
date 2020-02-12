@@ -5,13 +5,6 @@
 =#
 
 using Dates
-#include <vector>
-#include "ReportResults.hpp"
-#using YAML 
-#include ("OutputFile.jl")
-
-
-include("hpcg.jl")
 
 #=
  Creates a YAML file and writes the information about the HPCG run, its results, and validity.

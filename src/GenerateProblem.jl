@@ -7,8 +7,6 @@
 using MPI
 
 
-include("GenerateProblem_ref.jl")
-
 
 #=
   Routine to generate a sparse matrix, right hand side, initial guess, and exact solution.

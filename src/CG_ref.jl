@@ -2,19 +2,6 @@
  @file CG_ref.cpp
  HPCG routine
 =#
-
-
-
-include("hpcg.jl")
-
-#include("mytimer.jl")
-include("ComputeSPMV_ref.jl")
-include("ComputeMG.jl")
-include("ComputeDotProduct.jl")
-include("ComputeWAXPBY_ref.jl")
-
-
-
 #=
   Reference routine to compute an approximate solution to Ax = b
   @param[inout] A    The known system matrix

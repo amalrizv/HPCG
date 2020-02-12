@@ -1,4 +1,3 @@
-include("MixedBaseCounter.jl")
 
 function compute_prime_factors(n)
  # TODO : Operate on this using Dicts not arrays

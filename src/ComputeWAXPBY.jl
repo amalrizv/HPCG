@@ -3,7 +3,6 @@
  HPCG routine
 =#
 
-include("ComputeWAXPBY_ref.jl")
 
 #=
   Routine to compute the update of a vector with the sum of two

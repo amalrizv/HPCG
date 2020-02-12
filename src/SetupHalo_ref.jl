@@ -6,8 +6,6 @@
 using DataStructures
 using MPI
 using DelimitedFiles
-include("Geometry.jl")
-include("SetupHalo_struct.jl")
 #=
   Reference version of SetupHalo that prepares system matrix data structure and creates data necessary
   for communication of boundary values of this process.

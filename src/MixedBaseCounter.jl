@@ -1,6 +1,5 @@
 
 
-include("MixedBaseCounter_header.jl")
 
 function MBCounter(counts::Array{Any,1}, length::Int64) 
   cur_counts = zeros(33)

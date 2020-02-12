@@ -4,7 +4,6 @@
   HPCG data structures and functions
 =#
 
-include("Geometry.jl")
 
 
 mutable struct HPCG_Params

@@ -5,8 +5,6 @@
 =#
 
 
-include("hpcg.jl")
-include("CGData.jl")
 
 mutable struct TestSymmetryData
   depsym_spmv::Float64 #  //!< departure from symmetry for the SPMV kernel

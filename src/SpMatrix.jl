@@ -5,8 +5,6 @@
 =#
 
 
-include("Geometry.jl")
-include("MGData.jl")
 
 mutable struct HPCGSparseMatrix
 

@@ -7,11 +7,6 @@
 #
 ####################################/
 
-include("hpcg.jl")
-include("appendx.jl")
-include("TestCG_struct.jl")
-include("CG.jl")
-
 #=
   Test the correctness of the Preconditined CG implementation by using a system matrix with a dominant diagonal.
 

@@ -1,7 +1,6 @@
 using ArgParse
 using Logging
 using Distributed
-Distributed.@everywhere include("main.jl")
 
 #TODO: USE_MPI is redundant for np
 function header_calling_hpcg()

@@ -5,7 +5,6 @@
 using MPI
 using Statistics
 
-include("hpcg.jl")
 
 function check_aspect_ratio(smallest_ratio, x, y, z, what, do_io) 
 

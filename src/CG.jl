@@ -2,19 +2,6 @@
  @file CG.cpp
  HPCG routine
 =#
-#include <fstream>
-#include <cmath>
-
-include("hpcg.jl")
-
-#include("mytimer.jl")
-include("ComputeSPMV.jl")
-include("ComputeMG.jl")
-include("ComputeDotProduct.jl")
-include("ComputeWAXPBY.jl")
-
-
-
 #=
   Routine to compute an approximate solution to Ax = b
   @param[in]    geom The description of the problem's geometry.

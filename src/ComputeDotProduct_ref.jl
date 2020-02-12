@@ -5,7 +5,6 @@
 =#
 
 using MPI
-#include("mytimer.jl")
 
 #=
   Routine to compute the dot product of two vectors where:

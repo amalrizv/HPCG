@@ -1,4 +1,3 @@
-include("ComputeDotProduct_ref.jl")
 
 function compute_dot_product!(n, x, y)
     is_opt = false

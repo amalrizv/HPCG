@@ -3,7 +3,6 @@
  HPCG routine
 =#
 
-include("ExchangeHalo.jl")
 
 
 #=

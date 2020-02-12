@@ -3,7 +3,6 @@
  HPCG data structure
 =#
 
-include("CGData.jl")
 
 
 mutable struct TestCGData 

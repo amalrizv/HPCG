@@ -1,13 +1,5 @@
 using MPI
 
-include("hpcg.jl")
-
-include("ComputeSPMV.jl")
-include("ComputeMG.jl")
-include("ComputeDotProduct.jl")
-include("ComputeResidual.jl")
-include("TestSymmetry_struct.jl")
-
 #=
   Tests symmetry-preserving properties of the sparse matrix vector multiply and multi-grid routines.
 

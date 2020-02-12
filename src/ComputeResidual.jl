@@ -5,7 +5,6 @@
 =#
 using MPI
 
-include("hpcg.jl")
 
 
 #=

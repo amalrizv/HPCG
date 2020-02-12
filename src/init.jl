@@ -2,9 +2,7 @@ using MPI
 using Dates
 using Logging
 
-include("hpcg.jl")
 
-include("ReadHpcgDat.jl")
 
 #=
   Initializes an HPCG run by obtaining problem parameters (from a file or

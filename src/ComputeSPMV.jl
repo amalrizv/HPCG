@@ -5,7 +5,6 @@
  HPCG routine
 =#
 
-include("ComputeSPMV_ref.jl")
 
 #=
   Routine to compute sparse matrix vector product y = Ax where:
