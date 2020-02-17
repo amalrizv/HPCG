@@ -81,7 +81,7 @@ function compute_optimal_shape_xyz(xyz, x, y, z)
     z = 1
   elseif length(factors) == 2 && factors[x] + factors[y] == 3  # three prime factors, one repeated
     z = factors[x] == 2 ? x : y # test which factor is repeated
-  elseif length(factors) == 3 && factors[x] == 1 && factors[y] == 1 && iter->second == 1# three distinct and single prime factors
+  elseif length(factors) == 3 && factors[x] == 1 && factors[y] == 1 && keyss[2] == 1# three distinct and single prime factors
     z = keyss[1]
   else  # 3 or more prime factors so try all possible 3-subsets
     distinct_factors = keyss 
