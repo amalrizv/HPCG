@@ -14,7 +14,7 @@ function compute_prime_factors(n)
   # keep removing subsequent odd numbers
   for d = 3:sq 
     factors[d] = 0
-    while 1 
+    while true 
       r = div(n, d)
       rr = rem(n,d)
       if rr == 0 
