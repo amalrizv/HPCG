@@ -105,7 +105,7 @@ function compute_optimal_shape_xyz(xyz, x, y, z)
         	tf1 = Int64(product(c1,distinct_factors))
         	tf2 = Int64(product(c2,distinct_factors))
         	tf3 = Int64(xyz ÷ tf1÷ tf2) # we derive the third dimension, we don't keep track of the factors it has
-        	area = tf1 * Float64(tf2) + tf2 * Float(tf3) + tf1 * Float(tf3)
+        	area = tf1 * (tf2) + tf2 *(tf3) + tf1 *(tf3)
         	if area < min_area 
           		min_area = area
           		x = tf1
