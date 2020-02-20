@@ -94,7 +94,7 @@ function cg_ref!(A , data , b , x , max_iter , tolerance , times, doPrecondition
             if doPreconditioning == true
 				#true passed from main 
                 ierr = compute_mg_ref!(z,A, r ) # Apply preconditioner
-			            else
+	    else
                 ierr = compute_waxpby_ref!(z, nrow, 1.0, r, 0.0, r) # copy r to z (no preconditioning)
             end
 		
@@ -102,27 +102,26 @@ function cg_ref!(A , data , b , x , max_iter , tolerance , times, doPrecondition
 
             if k == 1
 
-                p[1:length(z)] = z 
-                t2			   = t2+time_ns()-t5t # Copy Mr to p
-
-                t1t 			= time_ns() 
-			                rtz, t4, ierr 	= compute_dot_product_ref!(nrow, r, z) 
-			                t1 				= t1+time_ns()- t1t # rtz = r'*z
+                p[1:length(z)] 	= z 
+                t2	+= time_ns()-t5t # Copy Mr to p
+                t1t 	= time_ns() 
+		rtz, t4, ierr 	= compute_dot_product_ref!(nrow, r, z) 
+		t1 	+= time_ns()- t1t # rtz = r'*z
 
             else 
 
                 oldrtz = rtz
 
 				# rtz = r'*z
-                t1t 			= time_ns() 
+                t1t 	= time_ns() 
                 rtz , t4, ierr 	= compute_dot_product_ref!(nrow, r, z) 
-                t1 				+= time_ns()- t1t 
+                t1 	+= time_ns()- t1t 
 
                 beta 	= rtz/oldrtz
 				# p = beta*p + z
                 t2t 	= time_ns() 
                 ierr 	= compute_waxpby_ref!(p, nrow, 1.0, z, beta, p)  
-                t2 		+= time_ns()- t2t 
+                t2 	+= time_ns()- t2t 
             end
 
 

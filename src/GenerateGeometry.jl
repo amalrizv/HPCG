@@ -27,7 +27,6 @@ function generate_geometry!(size, rank, numThreads,pz, zl, zu,
     end
     npx, npy, npz = compute_optimal_shape_xyz(size, npx, npy, npz)
   end
-
   @debug("npx = $npx, npy = $npy, npz = $npz, comparing factor = $(npx*npy*npz)")
   @debug("npz = $npz")
 

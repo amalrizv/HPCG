@@ -109,7 +109,7 @@ function cg!(A, data, b, x, max_iter, tolerance, times, doPreconditioning)
     		if k == 1
       			t2t   	= time_ns()
       			ierr, A.is_waxpby_optimized  =  compute_waxpby!(p, nrow, 1.0, z, 0.0, z)
-      			t2 	= t2+time_ns()-t2t # Copy Mr to p
+      			t2 	+= time_ns()-t2t # Copy Mr to p
       			t1t 	= time_ns()
       			rtz, t4, ierr  = compute_dot_product!(nrow, r, z)
       			t1 	+= time_ns()- t1t # rtz = r'*z

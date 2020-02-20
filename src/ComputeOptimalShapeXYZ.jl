@@ -1,13 +1,12 @@
 
 function compute_prime_factors(n)
- # TODO : Operate on this using Dicts not arrays
   factors = Dict()
   d = Int64 
   sq = round(Int64, (sqrt(n)+1))
 
   # remove 2 as a factor with shifts instead "/" and "%"
     factors[2] = 0
-  while n > 1 & (n & 1) == 0  
+  while n > 1 && (n & 1) == 0  
     factors[2] = factors[2] + 1
     n>>=1
   end
@@ -66,8 +65,10 @@ function compute_optimal_shape_xyz(xyz, x, y, z)
 	factors[1] = 1
   end
   # there is at least one prime factor
-  keyss = collect(keys(factors))     # cache the first factor, move to the next one
-  vals  = collect(values(factors))
+  keyss = sort!(collect(keys(factors)))     # cache the first factor, move to the next one
+  for i = 1:length(keyss)
+    vals[i] = factors[keyss[i]]
+  end
   x = keyss[1]
 
   if length(keyss)>1
@@ -81,7 +82,7 @@ function compute_optimal_shape_xyz(xyz, x, y, z)
     z = 1
   elseif length(factors) == 2 && factors[x] + factors[y] == 3  # three prime factors, one repeated
     z = factors[x] == 2 ? x : y # test which factor is repeated
-  elseif length(factors) == 3 && factors[x] == 1 && factors[y] == 1 && keyss[2] == 1# three distinct and single prime factors
+  elseif length(factors) == 3 && factors[x] == 1 && factors[y] == 1 && keyss[3] == 1# three distinct and single prime factors
     z = keyss[1]
   else  # 3 or more prime factors so try all possible 3-subsets
     distinct_factors = keyss 

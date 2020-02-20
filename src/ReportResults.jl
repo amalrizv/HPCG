@@ -28,7 +28,7 @@ function report_results(A, numberOfMgLevels, numberOfCgSets, refMaxIters, optMax
   minOfficialTime = 1800 # Any official benchmark result must run at least this many seconds
 
   if MPI.Initialized() == true
- 		t4 = times[4]
+ 		t4 = times[5]
  		t4min = 0.0
  		t4max = 0.0
 		t4avg = 0.0

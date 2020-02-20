@@ -99,7 +99,7 @@ function main(hpcg_args)
 
     setup_time = time_ns() - setup_time #Capture total time of setup
     # TODO: Why is the below commented out?
-    #  times[9] = setup_time #Save it for reporting
+    times[9] = setup_time #Save it for reporting
 
     cur_level_matrix = A
     curb             = b
