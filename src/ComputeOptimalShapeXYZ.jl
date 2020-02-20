@@ -66,6 +66,7 @@ function compute_optimal_shape_xyz(xyz, x, y, z)
   end
   # there is at least one prime factor
   keyss = sort!(collect(keys(factors)))     # cache the first factor, move to the next one
+  vals = Array{Int64, 1}(undef, length(keyss))
   for i = 1:length(keyss)
     vals[i] = factors[keyss[i]]
   end
