@@ -81,7 +81,7 @@ function main(hpcg_args)
 
     # Use this array for collecting timing information
     times      = zeros(10)
-    setup_time = time_ns() # TODO: INCLUDE CORRECT TIMER
+    setup_time_start = time_ns() # TODO: INCLUDE CORRECT TIMER
     A          = initialize_sparse_matrix(geom)
 
 	b, x, xexact = generate_problem!(A)	
@@ -97,7 +97,8 @@ function main(hpcg_args)
     end
    # @show("All levels generated")
 
-    setup_time = time_ns() - setup_time #Capture total time of setup
+    setup_time_stop = time_ns() 
+    setup_time = setup_time_stop - setup_time_start #Capture total time of setup
     # TODO: Why is the below commented out?
     times[9] = setup_time #Save it for reporting
 
@@ -334,8 +335,11 @@ function main(hpcg_args)
     ## Here we finally run the benchmark phase
     ## The variable total_runtime is the target benchmark execution time in seconds
 
-    total_runtime  = params.runningTime
-    numberOfCgSets = floor(total_runtime / opt_worst_time) + 1 # Run at least once, account for rounding
+    total_runtime  = 200
+     if A.geom.rank ==0
+		@show opt_worst_time
+     end
+    numberOfCgSets = floor(total_runtime / (opt_worst_time * 1.0E-9) ) + 1 # Run at least once, account for rounding
     
     if rank == 0 
         @debug("Projected running time: $total_runtime seconds") 
@@ -349,11 +353,16 @@ function main(hpcg_args)
     optTolerance   = 0.0  # Force optMaxIters iterations
     vals           = Array{Float64, 1}(undef, Int(numberOfCgSets))
     testnorms_data = TestNormsData(vals, 0.0, 0.0, numberOfCgSets, true)
-
+	if A.geom.rank ==0
+	@show numberOfCgSets
+ 	end
     for i=1: Int(numberOfCgSets)
 
         x = zero_fill!(x) # Zero out x
         niters, normr, normr0, ierr = cg!(A, data, b, x, optMaxIters, optTolerance, times, true)
+	if A.geom.rank ==0
+	@show times
+	end
 		#@show normr
         if ierr != 0
             @error("Error in call to CG: $ierr.\n") 

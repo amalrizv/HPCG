@@ -4,7 +4,7 @@ using Distributed
 #TODO: USE_MPI is redundant for np
 function header_calling_hpcg()
 	s = ArgParseSettings()
-	@add_arg_table s begin 
+	@add_arg_table! s begin 
 		"--np"
         		help     = "np"
         		nargs    = '?'
