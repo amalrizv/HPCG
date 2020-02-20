@@ -160,7 +160,7 @@ function main(hpcg_args)
 
     end 
 
-    times[8] = (time_ns() - t_begin)/num_calls # Total time divided by number of calls.
+    times[9] = (time_ns() - t_begin)/num_calls # Total time divided by number of calls.
 
         if rank == 0
             @debug("Total SpMV+MG timing phase execution time in main (sec) = $(time_ns()-t1)\n")
@@ -225,7 +225,7 @@ function main(hpcg_args)
     t7 = time_ns()
     optimize_problem(A, data, b, x, xexact)
     t7 = time_ns() - t7
-    times[7] = t7
+    times[8] = t7
 
         if rank==0
             @debug("Total problem setup time in main (sec) = $(time_ns()-t1)") 

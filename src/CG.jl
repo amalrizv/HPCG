@@ -39,9 +39,9 @@ function cg!(A, data, b, x, max_iter, tolerance, times, doPreconditioning)
   t4 = 0.0
   t5 = 0.0
 
-##ifndef HPCG_NO_MPI
-# t6 = 0.0
-##endif
+  if MPI.Initialized() == true
+	t6 = 0.0
+  end
   nrow = A.localNumberOfRows
 
   r = data.r # Residual vector
