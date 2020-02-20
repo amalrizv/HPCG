@@ -66,7 +66,7 @@ function cg!(A, data, b, x, max_iter, tolerance, times, doPreconditioning)
 
 
   p[1:length(x)] = x
-  t3t 		+= time_ns() 
+  t3t 		= time_ns() 
   ierr = compute_spmv!(Ap, A, p) 
   t3 		+= time_ns()-t3t 
 
