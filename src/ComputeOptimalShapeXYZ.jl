@@ -103,10 +103,10 @@ function compute_optimal_shape_xyz(xyz, x, y, z)
 
     next(c1) 
 
-	while  is_zero(c1)==0
+	while  is_zero(c1)==1
      	   c2 = MBCounter_lr(c_main, c1) # "c2" gets the factors remaining in "c_main" that "c1" doesn't have
            next(c2) 
-	   while  is_zero(c2)==0
+	   while  is_zero(c2)==1
 
         	tf1 = Int64(product(c1,distinct_factors))
         	tf2 = Int64(product(c2,distinct_factors))
