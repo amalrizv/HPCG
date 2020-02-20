@@ -101,9 +101,9 @@ function compute_optimal_shape_xyz(xyz, x, y, z)
     area = 2.0 *xyz +1.0 
     min_area = 2.0 * xyz + 1.0
 
-    next(c1) 
 
 	while  is_zero(c1)==1
+    	   next(c1) 
      	   c2 = MBCounter_lr(c_main, c1) # "c2" gets the factors remaining in "c_main" that "c1" doesn't have
            next(c2) 
 	   while  is_zero(c2)==1
