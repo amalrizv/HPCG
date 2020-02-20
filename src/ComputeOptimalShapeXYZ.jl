@@ -102,12 +102,12 @@ function compute_optimal_shape_xyz(xyz, x, y, z)
     min_area = 2.0 * xyz + 1.0
 
 
-	while  is_zero(c1)==1
+	while  is_zero(c1)==0
     	   next(c1) 
      	   c2 = MBCounter_lr(c_main, c1) # "c2" gets the factors remaining in "c_main" that "c1" doesn't have
-           next(c2) 
-	   while  is_zero(c2)==1
+	   while  is_zero(c2)==0
 
+           	next(c2) 
         	tf1 = Int64(product(c1,distinct_factors))
         	tf2 = Int64(product(c2,distinct_factors))
         	tf3 = Int64(xyz / tf1/ tf2) # we derive the third dimension, we don't keep track of the factors it has
