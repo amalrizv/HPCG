@@ -66,22 +66,22 @@ function cg!(A, data, b, x, max_iter, tolerance, times, doPreconditioning)
 
 
   p[1:length(x)] = x
-  t3t 		= time_ns() 
+  t3t 		+= time_ns() 
   ierr = compute_spmv!(Ap, A, p) 
-  t3 		= time_ns()-t3t 
+  t3 		+= time_ns()-t3t 
 
   #Ap 	= A*p
 
   t2t 	= time_ns()
    ierr, A.is_waxpby_optimized  = compute_waxpby!(r, nrow, 1.0, b, -1.0, Ap)
 
-  t2 	= time_ns()-t2t 
+  t2 	+= time_ns()-t2t 
 
   # r = b - Ax (x stored in p)
 
   t1t 	= time_ns()
   normr, t4, ierr = compute_dot_product!(nrow, r, r)
-  t1 	= time_ns()-t1t
+  t1 	+= time_ns()-t1t
 
   normr = sqrt(normr)
 #ifdef HPCG_DEBUG
@@ -104,7 +104,7 @@ function cg!(A, data, b, x, max_iter, tolerance, times, doPreconditioning)
     		else
       			z[1:length(r)] = r # copy r to z (no preconditioning)
     		end
-    		t5 	= time_ns()- t5t # Preconditioner apply time
+    		t5 	+= time_ns()- t5t # Preconditioner apply time
 
     		if k == 1
       			t2t   	= time_ns()
@@ -112,25 +112,25 @@ function cg!(A, data, b, x, max_iter, tolerance, times, doPreconditioning)
       			t2 	= t2+time_ns()-t2t # Copy Mr to p
       			t1t 	= time_ns()
       			rtz, t4, ierr  = compute_dot_product!(nrow, r, z)
-      			t1 	= t1+time_ns()- t1t # rtz = r'*z
+      			t1 	+= time_ns()- t1t # rtz = r'*z
    			else 
       			oldrtz 	= rtz
       			t1t 	= time_ns()
       		    rtz, t4, ierr  = compute_dot_product!( nrow, r, z) 
-      			t1 	= t1+time_ns()-t1t # rtz = r'*z
+      			t1 	+= time_ns()-t1t # rtz = r'*z
       			beta 	= rtz/oldrtz
       			t2t 	= time_ns()
       			ierr, A.is_waxpby_optimized 	=compute_waxpby!(p, nrow, 1.0, z, beta, p)  
-      			t2 	= time_ns()-t2t+t2 # p = beta*p + z
+      			t2 	+= time_ns()-t2t # p = beta*p + z
   	 		end
 			
     		t3t 	= time_ns()
     		ierr = compute_spmv!(Ap, A, p) 
-    		t3	= t3+time_ns()- t3t # Ap = A*p
+    		t3	+= time_ns()- t3t # Ap = A*p
 
     		t1t 	= time_ns()
     		pAp, t4, ierr  = compute_dot_product!(nrow, p, Ap) 
-    		t1 	= time_ns()-t1t+t1 # alpha = p'*Ap
+    		t1 	+= time_ns()-t1t # alpha = p'*Ap
   		
 			if pAp == 0
 				alpha = 1
@@ -144,11 +144,11 @@ function cg!(A, data, b, x, max_iter, tolerance, times, doPreconditioning)
     		ierr, A.is_waxpby_optimized, = compute_waxpby!(x, nrow, 1.0, x, alpha, p)# x = x + alpha*p
   
     		ierr, A.is_waxpby_optimized  = compute_waxpby!(r, nrow, 1.0, r, -alpha, Ap)
-    		t2 	= time_ns()- t2t +t2# r = r - alpha*Ap
+    		t2 	+= time_ns()- t2t # r = r - alpha*Ap
 	
     		t1t 	= time_ns()
             normr, t4, ierr  = compute_dot_product!(nrow, r, r)
-    		t1 = t1+time_ns()- t1t
+    		t1 += time_ns()- t1t
 	
     		normr = sqrt(normr)
 
@@ -168,6 +168,11 @@ function cg!(A, data, b, x, max_iter, tolerance, times, doPreconditioning)
   times[4] += t3
   times[5] += t4
   times[6] += t5
+  if MPI.Initialized() ==true
+	times[7] += t6
+  else
+	times[7] += 0.0
+  end
 ##ifndef HPCG_NO_MPI
 ## times[7] = t6
 ##else

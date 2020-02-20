@@ -70,16 +70,16 @@ function cg_ref!(A , data , b , x , max_iter , tolerance , times, doPrecondition
     ierr = compute_spmv_ref!(Ap, A , p)  
 
 
-    t3  = time_ns()-t3t # Ap = A*p
+    t3  += time_ns()-t3t # Ap = A*p
 	t2t = time_ns()
 
     ierr =    compute_waxpby_ref!(r, nrow, 1.0, b, -1.0, Ap) 
-    t2  = time_ns()- t2t # r = b - Ax (x stored in p)
+    t2  += time_ns()- t2t # r = b - Ax (x stored in p)
     t1t = time_ns()
 
     normr, t4, ierr = compute_dot_product_ref!(nrow, r, r)
 
-    t1    = time_ns()- t1t
+    t1    += time_ns()- t1t
     normr = sqrt(normr)
 
     @debug("Initial Residual = $normr") 
@@ -98,7 +98,7 @@ function cg_ref!(A , data , b , x , max_iter , tolerance , times, doPrecondition
                 ierr = compute_waxpby_ref!(z, nrow, 1.0, r, 0.0, r) # copy r to z (no preconditioning)
             end
 		
-            t5 = time_ns()- t5t # Preconditioner apply time
+            t5 += time_ns()- t5t # Preconditioner apply time
 
             if k == 1
 
@@ -116,25 +116,25 @@ function cg_ref!(A , data , b , x , max_iter , tolerance , times, doPrecondition
 				# rtz = r'*z
                 t1t 			= time_ns() 
                 rtz , t4, ierr 	= compute_dot_product_ref!(nrow, r, z) 
-                t1 				= t1+time_ns()- t1t 
+                t1 				+= time_ns()- t1t 
 
                 beta 	= rtz/oldrtz
 				# p = beta*p + z
                 t2t 	= time_ns() 
                 ierr 	= compute_waxpby_ref!(p, nrow, 1.0, z, beta, p)  
-                t2 		= t2+time_ns()- t2t 
+                t2 		+= time_ns()- t2t 
             end
 
 
 			# Ap = A*p
             t3t   	= time_ns() 
             ierr 	= compute_spmv_ref!(Ap,  A, p) 
-            t3   	= time_ns()- t3t+t3 
+            t3   	+= time_ns()- t3t 
 
 			# alpha = p'*Ap
 			t1t   			= time_ns()
             pAp, t4, ierr 	= compute_dot_product_ref!(nrow, p, Ap) 
-            t1    			= time_ns()- t1t+t1
+            t1    			+= time_ns()- t1t
 
 			if pAp == 0 
 				alpha = 1
@@ -147,11 +147,11 @@ function cg_ref!(A , data , b , x , max_iter , tolerance , times, doPrecondition
 			            ierr 	= compute_waxpby_ref!(x, nrow, 1.0, x, alpha, p)# x = x + alpha*p
 			
             ierr 	= compute_waxpby_ref!(r, nrow, 1.0, r, -alpha, Ap)  
-            t2    	= time_ns()- t2t+t2
+            t2    	+= time_ns()- t2t
 
             t1t   			=	 time_ns()
             normr, t4, ierr = compute_dot_product_ref!(nrow, r,r) 
-            t1    			= time_ns()- t1t+t1
+            t1    			+= time_ns()- t1t
 
             normr 	= sqrt(normr)
 
@@ -175,6 +175,11 @@ function cg_ref!(A , data , b , x , max_iter , tolerance , times, doPrecondition
 	times_add[3] = t2+times[3]
 	times_add[4] = t3+times[4]
 	times_add[5] = t4+times[5]
+	if MPI.Initialized == true 
+		times_add[6] = t5
+	else
+		times_add[6] = 0
+	end
 	times = times_add
     # for MPi version only
     #times_add[6] = t5
