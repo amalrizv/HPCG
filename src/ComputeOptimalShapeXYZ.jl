@@ -94,7 +94,7 @@ function compute_optimal_shape_xyz(xyz, x, y, z)
     c1     = MBCounter(count_factors, length(factors))
 
     # at the beginning, minimum area is the maximum area
-    area = Float64 
+    area = 2.0 *xyz +1.0 
     min_area = 2.0 * xyz + 1.0
 
     next(c1) 
@@ -114,10 +114,10 @@ function compute_optimal_shape_xyz(xyz, x, y, z)
           		y = tf2
           		z = tf3
         	end
-            next(c2)
-      	 end
-    	 next(c1)
-      end
+            	next(c2)
+      	   end
+    	   next(c1)
+         end
   end
 
   return x, y, z 

@@ -4,12 +4,11 @@
 function MBCounter(counts::Array{Int64,1}, length::Int64) 
   cur_counts = zeros(33)
   this = MixedBaseCounter(length, counts,cur_counts) 
-  #=
   this.length = length
 
   i=Int64
 
-  for i = 1:33
+  for i = 1:32
     this.max_counts[i] = counts[i]
     this.cur_counts[i] = 0
   end
@@ -17,7 +16,7 @@ function MBCounter(counts::Array{Int64,1}, length::Int64)
   this.max_counts[i]      = this.cur_counts[i]
   this.cur_counts[length] = 0
   this.max_counts[length] = this.cur_counts[length] 
-  =#
+  return this
 end
 
 function MBCounter_lr(left::MixedBaseCounter , right::MixedBaseCounter) 
