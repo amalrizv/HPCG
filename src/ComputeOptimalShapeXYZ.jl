@@ -88,9 +88,9 @@ function compute_optimal_shape_xyz(xyz, x, y, z)
   else  # 3 or more prime factors so try all possible 3-subsets
     distinct_factors = Array{Int64,1}(undef, 33)
     count_factors = Array{Int64,1}(undef, 33)
-    for i =1: length (keyss)
-	distinct_factors = keyss[i] 
-    	count_factors = vals[i]
+    for i =1: length(keyss)
+	distinct_factors[i] = keyss[i] 
+    	count_factors[i] = vals[i]
     end
 
     # count total number of prime factors in "c_main" and distribute some factors into "c1"
