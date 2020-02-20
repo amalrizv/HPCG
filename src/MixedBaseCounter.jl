@@ -12,6 +12,7 @@ function MBCounter(counts, length)
     this.max_counts[i] = counts[i]
     this.cur_counts[i] = 0
   end
+  i = 33
   this.cur_counts[i]   = 0
   this.max_counts[i]      = this.cur_counts[i]
   this.cur_counts[length] = 0
