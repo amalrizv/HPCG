@@ -60,5 +60,6 @@ Distributed.@everywhere includet("ReportResults.jl")
 Distributed.@everywhere includet("main.jl")
 
 hpcg_args = header_calling_hpcg()
-ENV["JULIA_DEBUG"] = "all"
+# KCH: DEBUGGING SHOULD NOT BE ON FOR PERFORMANCE TESTING
+#ENV["JULIA_DEBUG"] = "all" 
 main(hpcg_args)
