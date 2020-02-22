@@ -1,14 +1,14 @@
 #!/bin/bash
-MPI:=mpirun
-MAPBY:=host
-HOSTFILE:=/home/arizvi/HPCG/src/myhosts
-JULIA_SCRIPT:=/home/arizvi/julia-1.3.1/bin/julia
-JULIA_DRIVER:=/home/arizvi/HPCG/src/interim_driver.jl
+MPI=mpirun
+MAPBY=host
+HOSTFILE=/home/arizvi/HPCG/src/myhosts
+JULIA_SCRIPT=/home/arizvi/julia-1.3.1/bin/julia
+JULIA_DRIVER=/home/arizvi/HPCG/src/interim_driver.jl
 
 for i in 14 28 56 112 224
 do
 	$MPI -map-by $HOST \
-	     --hostfile $HOSTFILE \
+	       -hostfile $HOSTFILE \
 		-np $i \
 		$JULIA_SCRIPT $JULIA_DRIVER \
 		--np 14 \
