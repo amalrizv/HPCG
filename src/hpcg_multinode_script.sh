@@ -7,8 +7,8 @@ JULIA_DRIVER=/home/arizvi/HPCG/src/interim_driver.jl
 
 for i in 14 28 56 112 224
 do
-	$MPI -map-by $HOST \
-	       -hostfile $HOSTFILE \
+	$MPI -map-by $MAPBY \
+		-hostfile $HOSTFILE \
 		-np $i \
 		$JULIA_SCRIPT $JULIA_DRIVER \
 		--np 14 \
@@ -22,5 +22,10 @@ do
 		--zl 0 \
 		--zu 0 \
 		--pz 0 
-	echo "$i processes per node"
+	if [[ "$?" -eq 0 ]]; then
+		echo "OK: $i processes per node"
+	else
+		echo "FAIL: Could not run $i proc experiment"
+		exit 2
+	fi
 done
