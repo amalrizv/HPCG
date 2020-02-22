@@ -336,9 +336,6 @@ function main(hpcg_args)
     ## The variable total_runtime is the target benchmark execution time in seconds
 
     total_runtime  = 200
-     if A.geom.rank ==0
-		@show opt_worst_time
-     end
     numberOfCgSets = floor(total_runtime / (opt_worst_time * 1.0E-9) ) + 1 # Run at least once, account for rounding
     
     if rank == 0 
@@ -353,16 +350,10 @@ function main(hpcg_args)
     optTolerance   = 0.0  # Force optMaxIters iterations
     vals           = Array{Float64, 1}(undef, Int(numberOfCgSets))
     testnorms_data = TestNormsData(vals, 0.0, 0.0, numberOfCgSets, true)
-	if A.geom.rank ==0
-	@show numberOfCgSets
- 	end
     for i=1: Int(numberOfCgSets)
 
         x = zero_fill!(x) # Zero out x
         niters, normr, normr0, ierr = cg!(A, data, b, x, optMaxIters, optTolerance, times, true)
-	if A.geom.rank ==0
-	@show times
-	end
 		#@show normr
         if ierr != 0
             @error("Error in call to CG: $ierr.\n") 
