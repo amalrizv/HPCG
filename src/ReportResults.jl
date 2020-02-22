@@ -188,48 +188,49 @@ function report_results(A, numberOfMgLevels, numberOfCgSets, refMaxIters, optMax
 		date=  now()
 		report_result_filename  ="HPCG-Benchmark-Julia_"*string(date)*".exp"
 	  	report_result = open(report_result_filename, "w")
-		hpcg_specs  = "HPCG-Benchmark\n HPCG-Benchmark, 3.1\n Release date\n"
+		hpcg_specs  = "HPCG-Benchmark\version=3.1\n Release date\n"
+		lang_str = "LANG=julia\n"
 		
 
-    	machine_summary = "Machine Summary\n\tDistributed Processes $(A.geom.size)\n\tThreads per processes,$(A.geom.numThreads)\n"
+    	machine_summary = "Machine Summary=\n\tDistributed Processes $(A.geom.size)\n\tThreads per processes=$(A.geom.numThreads)\n"
 
-	    global_problem_dimensions= "Global Problem Dimensions \n \tGlobal nx,$(A.geom.gnx)\n\tGlobal ny, $(A.geom.gny)\n\tGlobal nz, $(A.geom.gnz)\n"
+	    global_problem_dimensions= "Global Problem Dimensions=\nGlobal nx=$(A.geom.gnx)\nGlobal ny=$(A.geom.gny)\nGlobal nz=$(A.geom.gnz)\n"
 
-    	processor_dimensions = "Processor Dimensions \n\tnpx $(A.geom.npx)\n\tnpy, $(A.geom.npy)\n\tnpz, $(A.geom.npz)\n"
+    	processor_dimensions = "Processor Dimensions=\nnpx=$(A.geom.npx)\nnpy=$(A.geom.npy)\nnpz=$(A.geom.npz)\n"
 
-    	local_domain_dimensions = "Local Domain Dimensions\n\tnx ,$(A.geom.nx) \n\tny ,$(A.geom.ny)\n"
-		println(report_result, hpcg_specs, machine_summary, global_problem_dimensions, processor_dimensions, local_domain_dimensions)
+    	local_domain_dimensions = "Local Domain Dimensions=\nnx=$(A.geom.nx)\nny=$(A.geom.ny)\n"
+		println(report_result, hpcg_specs, lang_str, machine_summary, global_problem_dimensions, processor_dimensions, local_domain_dimensions)
     	ipartz_ids = 1
 
     for i=1:A.geom.npartz
-      println(report_result, "Lower ipz", ipartz_ids)
-      println(report_result, "Upper ipz", A.geom.partz_ids[i]-1)
-      println(report_result, "\tnz ",A.geom.partz_nz[i])
+      println(report_result, "Lower ipz=", ipartz_ids)
+      println(report_result, "Upper ipz=", A.geom.partz_ids[i]-1)
+      println(report_result, "nz=",A.geom.partz_nz[i])
       ipartz_ids = A.geom.partz_ids[i]
     end
 
     	title_problem_summary = "########## Problem Summary  ##########\n"
 
-    	setup_info = "Setup Information\n\tSetup Time $(times[10])\n"
+    	setup_info = "Setup Information=\nSetup Information::Setup Time=$(times[10])\n"
 
-    	linear_system_information = "Linear System Information\n\tNumber of Equations $(A.totalNumberOfRows) \n\tNumber of Nonzero Terms , $(A.totalNumberOfNonzeros)\n"
+    	linear_system_information = "Linear System Information=\nLinear System Information::Number of Equations=$(A.totalNumberOfRows)\nLinear System Information::Number of Nonzero Terms=$(A.totalNumberOfNonzeros)\n"
     	Af = A
 
-    	mg_info  = "Multigrid Information\n\tNumber of coarse grid levels, $(numberOfMgLevels-1) \n Coarse Grids\n"
+    	mg_info  = "Multigrid Information=\nMultigrid Information::Number of coarse grid levels=$(numberOfMgLevels-1)\nMultigrid Information::Coarse Grids=\n"
 		println(report_result, title_problem_summary, setup_info, linear_system_information, mg_info)
 	
     for i=1:numberOfMgLevels-1
-      println(report_result, "\tGrid Level $i")
-	  println(report_result, "\tNumber of Equations $(Af.Ac.totalNumberOfRows)")
-	  println(report_result, "\tNumber of Nonzero Terms $(Af.Ac.totalNumberOfNonzeros)")
-	  println(report_result, "\tNumber of Presmoother Steps $(Af.mgData.numberOfPresmootherSteps)")
-	  println(report_result, "\tNumber of Postsmoother Steps $(Af.mgData.numberOfPostsmootherSteps)")
+      println(report_result, "Multigrid Information::Coarse Grids::Grid Level=$i")
+	  println(report_result, "Multigrid Information::Coarse Grids::Number of Equations=$(Af.Ac.totalNumberOfRows)")
+	  println(report_result, "Multigrid Information::Coarse Grids::Number of Nonzero Terms=$(Af.Ac.totalNumberOfNonzeros)")
+	  println(report_result, "Multigrid Information::Coarse Grids::Number of Presmoother Steps=$(Af.mgData.numberOfPresmootherSteps)")
+	  println(report_result, "Multigrid Information::Coarse Grids::Number of Postsmoother Steps=$(Af.mgData.numberOfPostsmootherSteps)")
       Af = Af.Ac
     end
-    	title_memory_use = "########## Memory Use Summary  ##########\n"
+    	total_memory_use = "########## Memory Use Summary  ##########\n"
 
-    	mem_use_info = "Memory Use Information\n\tTotal memory used for data (Gbytes),$(fnbytes/1000000000.0)\n\tMemory used for OptimizeProblem data (Gbytes), $(fnbytes_OptimizedProblem/1000000000.0)\n\tBytes per equation (Total memory / Number of Equations),$(fnbytesPerEquation) Memory used for linear system and CG (Gbytes), $(fnbytesPerLevel[1]/1000000000.0)\n\tCoarse Grids\n"
-		println(report_result, title_memory_use, mem_use_info)
+    	mem_use_info = "Memory Use Information=\nTotal memory used for data (Gbytes),$(fnbytes/1000000000.0)\n\tMemory used for OptimizeProblem data (Gbytes), $(fnbytes_OptimizedProblem/1000000000.0)\n\tBytes per equation (Total memory / Number of Equations),$(fnbytesPerEquation) Memory used for linear system and CG (Gbytes), $(fnbytesPerLevel[1]/1000000000.0)\n\tCoarse Grids\n"
+		println(report_result, total_memory_use, mem_use_info)
 
     for i=1:numberOfMgLevels-1
       println(report_result, "\tGrid Level $i")
@@ -275,12 +276,12 @@ function report_results(A, numberOfMgLevels, numberOfCgSets, refMaxIters, optMax
 
     	title_performance_summary = "########## Performance Summary (times in sec) ##########\n"
 
-    	benchmark_time_summary = " Benchmark Time Summary\n\tOptimization phase $(times[8]) \n\tDDOT $(times[2])\n\tWAXPBY $(times[3])\n\tSpMV $(times[4])\n\tMG $(times[6])\n\tTotal $(times[1])\n"
+    	benchmark_time_summary = " Benchmark Time Summary=\nBenchmark Time Summary::Optimization phase=$(times[8])\nBenchmark Time Summary::DDOT=$(times[2])\nBenchmark Time Summary::WAXPBY=$(times[3])\nBenchmark Time Summary::SpMV=$(times[4])\nBenchmark Time Summary::MG=$(times[6])\nBenchmark Time Summary::Total=$(times[1])\n"
 
     	floating_point_ops_summary = " Floating Point Operations Summary \n\tRaw DDOT $(fnops_ddot)\n\tRaw WAXPBY$(fnops_waxpby)\n\tRaw SpMV $(fnops_sparsemv)\n\tRaw MG $(fnops_precond)\n\tTotal $(fnops)\n\tTotal with convergence overhead $(frefnops)\n"
 
 	    total = (frefnreads+frefnwrites)/(times[1]+fNumberOfCgSets*(times[7]/10.0+times[9]/10.0))/1.0e9
-		gb_s_summary = "GB/s Summary \n\tRaw Read B/W $(fnreads/times[1]/1.0E9)\n\tRaw Write B/W $(fnwrites/times[1]/1.0e9)\n\tRaw Total B/W $((fnreads+fnwrites)/(times[1])/1.0E9))\n\tTotal with convergence and optimization phase overhead $total \n"
+		gb_s_summary = "GB/s Summary=\nGB/s Summary::Raw Read B/W=$(fnreads/times[1]/1.0E9)\nGB/s Summary::Raw Write B/W=$(fnwrites/times[1]/1.0e9)\nGB/s Summary::Raw Total B/W=$((fnreads+fnwrites)/(times[1])/1.0E9))\nGB/s Summary::Total with convergence and optimization phase overhead=$total \n"
 
  # This final GFLOP/s rating includes the overhead of
  # problem setup and optimizing the data structures 
@@ -290,7 +291,7 @@ function report_results(A, numberOfMgLevels, numberOfCgSets, refMaxIters, optMax
    		totalGflops24 = frefnops/(times[1]+fNumberOfCgSets*times[8]/10.0)/1.0E9
 
 
-		g_flops_summary = "GFLOP/s Summary\n\tRaw DDOT $(fnops_ddot/times[2]/1.0E9)\n\tRaw WAXPBY $(fnops_waxpby/times[3]/1.0E9)\n\tRaw SpMV $(fnops_sparsemv/(times[4])/1.0E9)\n\tRaw MG $(fnops_precond/(times[6])/1.0E9)\n\tRaw Total $(fnops/times[1]/1.0E9)\n\tTotal with convergence overhead $(frefnops/times[1]/1.0E9)\n\tTotal with convergence and optimization phase overhead $(totalGflops)\n"
+		g_flops_summary = "GFLOP/s Summary=\nGFLOP/s Summary::Raw DDOT=$(fnops_ddot/times[2]/1.0E9)\nGFLOP/s Summary::Raw WAXPBY=$(fnops_waxpby/times[3]/1.0E9)\nGFLOP/s Summary::Raw SpMV=$(fnops_sparsemv/(times[4])/1.0E9)\nGFLOP/s Summary::Raw MG=$(fnops_precond/(times[6])/1.0E9)\nGFLOP/s Summary::Raw Total=$(fnops/times[1]/1.0E9)\nGFLOP/s Summary::Total with convergence overhead=$(frefnops/times[1]/1.0E9)\nGFLOP/s Summary::Total with convergence and optimization phase overhead=$(totalGflops)\n"
 
     	user_opt_info = "User Optimization Overheads\n\tOptimization phase time (sec)$(times[7])\n\tOptimization phase time vs reference SpMV+MG time $(times[7]/times[8])\n"
 		 println(report_result, title_v_v_testing,  spectral_convergence,  departure_from_symmetry, title_iteration_summary, iteration_count_information, title_reproducibility,  reproducibility_information, title_performance_summary, benchmark_time_summary, floating_point_ops_summary ,gb_s_summary, g_flops_summary,  user_opt_info)
