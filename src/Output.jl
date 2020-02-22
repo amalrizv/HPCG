@@ -74,6 +74,8 @@ end
 function generate(of) 
   result = of.name * "\nversion=" * version * eol
 
+  result = result * "LANG=julia" * eol
+
   for kv in of.descendents 
     result = result * generateRecursive(of, "")
   end
@@ -83,7 +85,7 @@ function generate(of)
   sdate =string(date)
 
   filename = name *"_" *version * "_"
-  filename += string(sdate) + ".txt"
+  filename += string(sdate) + ".exp"
 
   ofstream myfile(filename.c_str())
   myfile = fopen(filename, "w")
