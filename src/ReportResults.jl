@@ -186,7 +186,7 @@ function report_results(A, numberOfMgLevels, numberOfCgSets, refMaxIters, optMax
 
     # Instantiate YAML document
 		date=  now()
-		report_result_filename  ="HPCG-Benchmark-Julia_"*string(date)*".txt"
+		report_result_filename  ="HPCG-Benchmark-Julia_"*string(date)*".exp"
 	  	report_result = open(report_result_filename, "w")
 		hpcg_specs  = "HPCG-Benchmark\n HPCG-Benchmark, 3.1\n Release date\n"
 		
