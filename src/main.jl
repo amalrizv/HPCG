@@ -335,7 +335,7 @@ function main(hpcg_args)
     ## Here we finally run the benchmark phase
     ## The variable total_runtime is the target benchmark execution time in seconds
 
-    total_runtime  = 200
+    total_runtime  = params.runningTime 
     numberOfCgSets = floor(total_runtime / (opt_worst_time * 1.0E-9) ) + 1 # Run at least once, account for rounding
     
     if rank == 0 
