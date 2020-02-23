@@ -188,24 +188,24 @@ function report_results(A, numberOfMgLevels, numberOfCgSets, refMaxIters, optMax
 		date=  now()
 		report_result_filename  ="HPCG-Benchmark-Julia_"*string(date)*".exp"
 	  	report_result = open(report_result_filename, "w")
-		hpcg_specs  = "HPCG-Benchmark\version=3.1\n Release date\n"
+		hpcg_specs  = "HPCG-Benchmark\nversion=3.1\nRelease date\n"
 		lang_str = "LANG=julia\n"
 		
 
-    	machine_summary = "Machine Summary=\n\tDistributed Processes $(A.geom.size)\n\tThreads per processes=$(A.geom.numThreads)\n"
+    	machine_summary = "Machine Summary=\nMachine Summary::Distributed Processes=$(A.geom.size)\nMachine Summary::Threads per processes=$(A.geom.numThreads)\n"
 
-	    global_problem_dimensions= "Global Problem Dimensions=\nGlobal nx=$(A.geom.gnx)\nGlobal ny=$(A.geom.gny)\nGlobal nz=$(A.geom.gnz)\n"
+	    global_problem_dimensions= "Global Problem Dimensions=\nGlobal Problem Dimensions::Global nx=$(A.geom.gnx)\nGlobal Problem Dimensions::Global ny=$(A.geom.gny)\nGlobal Problem Dimensions::Global nz=$(A.geom.gnz)\n"
 
     	processor_dimensions = "Processor Dimensions=\nnpx=$(A.geom.npx)\nnpy=$(A.geom.npy)\nnpz=$(A.geom.npz)\n"
 
-    	local_domain_dimensions = "Local Domain Dimensions=\nnx=$(A.geom.nx)\nny=$(A.geom.ny)\n"
+    	local_domain_dimensions = "Local Domain Dimensions=\nLocal Domain Dimensions::nx=$(A.geom.nx)\nLocal Domain Dimensions::ny=$(A.geom.ny)"
 		println(report_result, hpcg_specs, lang_str, machine_summary, global_problem_dimensions, processor_dimensions, local_domain_dimensions)
     	ipartz_ids = 1
 
     for i=1:A.geom.npartz
-      println(report_result, "Lower ipz=", ipartz_ids)
-      println(report_result, "Upper ipz=", A.geom.partz_ids[i]-1)
-      println(report_result, "nz=",A.geom.partz_nz[i])
+      println(report_result, "Local Domain Dimensions::Lower ipz=", ipartz_ids)
+      println(report_result, "Local Domain Dimensions::Upper ipz=", A.geom.partz_ids[i]-1)
+      println(report_result, "Local Domain Dimensions::nz=", A.geom.partz_nz[i])
       ipartz_ids = A.geom.partz_ids[i]
     end
 
@@ -216,7 +216,7 @@ function report_results(A, numberOfMgLevels, numberOfCgSets, refMaxIters, optMax
     	linear_system_information = "Linear System Information=\nLinear System Information::Number of Equations=$(A.totalNumberOfRows)\nLinear System Information::Number of Nonzero Terms=$(A.totalNumberOfNonzeros)\n"
     	Af = A
 
-    	mg_info  = "Multigrid Information=\nMultigrid Information::Number of coarse grid levels=$(numberOfMgLevels-1)\nMultigrid Information::Coarse Grids=\n"
+    	mg_info  = "Multigrid Information=\nMultigrid Information::Number of coarse grid levels=$(numberOfMgLevels-1)\nMultigrid Information::Coarse Grids="
 		println(report_result, title_problem_summary, setup_info, linear_system_information, mg_info)
 	
     for i=1:numberOfMgLevels-1
