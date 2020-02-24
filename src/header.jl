@@ -56,7 +56,6 @@ function header_calling_hpcg()
         		default  = 10
 	end
 	#@info "Arguments" parsed_args
-	disable_logging(LogLevel(-100000))
 
 	return parse_args(s)
 end

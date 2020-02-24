@@ -71,6 +71,7 @@ function hpcg_init!(params , arg_hpcg)
     io        = open(fname, "w+")
     hpcg_fout = SimpleLogger(io, Logging.Debug)
     hpcg_fout = global_logger(hpcg_fout)
+    disable_logging(LogLevel(-100000))
 
     iparams  = nothing
 
