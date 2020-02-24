@@ -23,10 +23,11 @@ using Dates
   @see YAML_Doc
 =#
 function report_results(A, numberOfMgLevels, numberOfCgSets, refMaxIters, optMaxIters, times, testcg_data, testsymmetry_data, testnorms_data, global_failure, quickPath) 
-	  
+	  # times[] is passed with all entries in nanoseconds. 
+	  # For each rank convert times[] in ns to times[] in sec 
+	times = times .*1.0E9
 
   minOfficialTime = 1800 # Any official benchmark result must run at least this many seconds
-
   if MPI.Initialized() == true
  		t4 = times[5]
  		t4min = 0.0
