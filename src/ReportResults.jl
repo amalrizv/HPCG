@@ -25,7 +25,7 @@ using Dates
 function report_results(A, numberOfMgLevels, numberOfCgSets, refMaxIters, optMaxIters, times, testcg_data, testsymmetry_data, testnorms_data, global_failure, quickPath) 
 	  # times[] is passed with all entries in nanoseconds. 
 	  # For each rank convert times[] in ns to times[] in sec 
-	times = times .*1.0E9
+	times = times .*1.0E-9
 
   minOfficialTime = 1800 # Any official benchmark result must run at least this many seconds
   if MPI.Initialized() == true
@@ -45,32 +45,32 @@ function report_results(A, numberOfMgLevels, numberOfCgSets, refMaxIters, optMax
 	#		 ======================== FLOP count model =======================================
 
     	fNumberOfCgSets 	= numberOfCgSets
-    	fniters 			= fNumberOfCgSets *  optMaxIters
+    	fniters 		= fNumberOfCgSets *  optMaxIters
     	fnrow 			= A.totalNumberOfRows
     	fnnz 			= A.totalNumberOfNonzeros
 
    # Op counts come from implementation of CG in CG.cpp (include 1 extra for the CG preamble ops)
 
-    	fnops_ddot 		= (3.0*fniters+fNumberOfCgSets)*2.0*fnrow # 3 ddots with nrow adds and nrow mults
+    	fnops_ddot 	= (3.0*fniters+fNumberOfCgSets)*2.0*fnrow # 3 ddots with nrow adds and nrow mults
     	fnops_waxpby 	= (3.0*fniters+fNumberOfCgSets)*2.0*fnrow # 3 WAXPBYs with nrow adds and nrow mults
     	fnops_sparsemv 	= (fniters+fNumberOfCgSets)*2.0*fnnz # # SpMV with nnz adds and nnz mults
 
    # Op counts from the multigrid preconditioners
 
-    	fnops_precond = 0.0
+    	fnops_precond 	= 0.0
     	Af = A
 
     	for i=1:numberOfMgLevels-1
-      		fnnz_Af 					= Af.totalNumberOfNonzeros
+      		fnnz_Af 			= Af.totalNumberOfNonzeros
       		fnumberOfPresmootherSteps 	= Af.mgData.numberOfPresmootherSteps
-      		fnumberOfPostsmootherSteps = Af.mgData.numberOfPostsmootherSteps
+      		fnumberOfPostsmootherSteps 	= Af.mgData.numberOfPostsmootherSteps
       		fnops_precond += fnumberOfPresmootherSteps*fniters*4.0*fnnz_Af # number of presmoother flops
       		fnops_precond += fniters*2.0*fnnz_Af # cost of fine grid residual calculation
       		fnops_precond += fnumberOfPostsmootherSteps*fniters*4.0*fnnz_Af  # number of postsmoother flops
       		Af = Af.Ac 	# Go to next coarse level
     	end
 
-    	fnops_precond 	+= fniters*4.0*( Af.totalNumberOfNonzeros) # One symmetric GS sweep at the coarsest level
+    	fnops_precond 		+= fniters*4.0*( Af.totalNumberOfNonzeros) # One symmetric GS sweep at the coarsest level
     	fnops 			 = fnops_ddot+fnops_waxpby+fnops_sparsemv+fnops_precond
     	frefnops 		 = fnops * ( refMaxIters)/( optMaxIters)
 
@@ -78,14 +78,14 @@ function report_results(A, numberOfMgLevels, numberOfCgSets, refMaxIters, optMax
 
     # Read/Write counts come from implementation of CG in CG.cpp (include 1 extra for the CG preamble ops)
 	
-    	fnreads_ddot 	= (3.0*fniters+fNumberOfCgSets)*2.0*fnrow*sizeof(Float64) # 3 ddots with 2 nrow reads
-    	fnwrites_ddot 	= (3.0*fniters+fNumberOfCgSets)*sizeof(Float64) # 3 ddots with 1 write
-    	fnreads_waxpby 	= (3.0*fniters+fNumberOfCgSets)*2.0*fnrow*sizeof(Float64) # 3 WAXPBYs with nrow adds and nrow mults
+    	fnreads_ddot 		= (3.0*fniters+fNumberOfCgSets)*2.0*fnrow*sizeof(Float64) # 3 ddots with 2 nrow reads
+    	fnwrites_ddot 		= (3.0*fniters+fNumberOfCgSets)*sizeof(Float64) # 3 ddots with 1 write
+    	fnreads_waxpby 		= (3.0*fniters+fNumberOfCgSets)*2.0*fnrow*sizeof(Float64) # 3 WAXPBYs with nrow adds and nrow mults
     	fnwrites_waxpby 	= (3.0*fniters+fNumberOfCgSets)*fnrow*sizeof(Float64)# 3 WAXPBYs with nrow adds and nrow mults
     	fnreads_sparsemv = (fniters+fNumberOfCgSets)*(fnnz*(sizeof(Float64)+sizeof(Int64)) + fnrow*sizeof(Float64))# 1 SpMV with nnz reads of values, nnz reads indices,
 
     	# plus nrow reads of x
-    	fnwrites_sparsemv = (fniters+fNumberOfCgSets)*fnrow*sizeof(Float64) # 1 SpMV nrow writes
+    	fnwrites_sparsemv 	= (fniters+fNumberOfCgSets)*fnrow*sizeof(Float64) # 1 SpMV nrow writes
     	# Op counts from the multigrid preconditioners
     	fnreads_precond 	= 0.0
     	fnwrites_precond	= 0.0
