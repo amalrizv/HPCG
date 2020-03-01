@@ -20,11 +20,9 @@
 
   @return returns 0 upon success and non-zero otherwise
 
-  @see ComputeWAXPBY_ref
-=#
-function compute_waxpby!(w::Array{Float64,1} , n::Int64, alpha::Float64, x::Array{Float64,1} , beta::Float64, y::Array{Float64,1} ) 
+  @see ComputeWAXPBY_reffunction compute_waxpby!(w::Array{Float64,1} , n::Int64, alpha::Float64, x::Array{Float64,1} , beta::Float64, y::Array{Float64,1} ) 
 
-  # This line and the next two lines should be removed and your version of ComputeWAXPBY should be used.
+function compute_waxpby!(w::Array{Float64,1} , n::Int64, alpha::Float64, x::Array{Float64,1} , beta, y::Array{Float64,1} ) 
   isOptimized = false
   return compute_waxpby_ref!(w, n, alpha, x, beta, y), isOptimized
 end

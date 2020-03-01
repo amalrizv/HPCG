@@ -21,7 +21,7 @@
   @see compute_waxpby
 =#
 
-function compute_waxpby_ref!(w::Array{Float64,1} , n::Int64, alpha::Float64, x::Array{Float64,1} , beta::Float64, y::Array{Float64,1} )
+function compute_waxpby_ref!(w::Array{Float64,1} , n::Int64, alpha::Float64, x::Array{Float64,1} , beta, y::Array{Float64,1} )
 
   @assert(length(x)>=n) # Test vector length 
   @assert(length(y)>=n)
