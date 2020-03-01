@@ -21,7 +21,7 @@ using MPI
 
   @see compute_dot_product
 =#
-function compute_dot_product_ref!(n, x, y) 
+function compute_dot_product_ref!(n::Int64, x::Array{Float64,1}, y::Array{Float64,1}) 
 
   @assert(length(x)>=n) # Test vector lengths
   @assert(length(y)>=n)

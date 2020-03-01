@@ -18,7 +18,7 @@ using MPI
   @see GenerateGeometry
 =#
 
-function check_problem(A::HPCGSparseMatrix, b, x, xexact) 
+function check_problem(A::HPCGSparseMatrix, b::Array{Float64,1}, x::Array{Float64,1}, xexact::Array{Float64,1}) 
   # Make local copies of geometry information.  Use global_int_t since the RHS products in the calculations
   # below may result in global range values.
   nx = A.geom.nx

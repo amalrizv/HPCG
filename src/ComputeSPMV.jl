@@ -22,7 +22,7 @@
 
   @see ComputeSPMV_ref
 =#
-function compute_spmv!(y, A, x) 
+function compute_spmv!(y::Array{Float64,1} , A::HPCGSparseMatrix, x::Array{Float64,1} ) 
 
   # This line and the next two lines should be removed and your version of ComputeSPMV should be used.
   A.is_spmv_optimized = false

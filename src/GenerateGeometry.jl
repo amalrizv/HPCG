@@ -19,8 +19,8 @@
   @param[in]  pz z-dimension processor ID where second zone of nz values start
   @param[in]  nx, ny, nz number of grid points for each local block in the x, y, and z dimensions, respectively
 =#
-function generate_geometry!(size, rank, numThreads,pz, zl, zu,
-  			nx, ny, nz, npx, npy, npz)
+function generate_geometry!(size::Int64, rank::Int64, numThreads::Int64, pz::Int64, zl::Int64, zu::Int64,
+  			nx::Int64, ny::Int64, nz::Int64, npx::Int64, npy::Int64, npz::Int64)
   if npx * npy * npz <= 0 || npx * npy * npz > size
     if MPI.Initialized == false
 	size = 1

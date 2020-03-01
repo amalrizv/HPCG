@@ -8,7 +8,7 @@
   Note that the matrix A is considered const because the attributes we are modifying are declared as mutable.
 =#
 
-function generate_coarse_problem!(A)
+function generate_coarse_problem!(A::HPCGSparseMatrix)
 
     # Make local copies of geometry information.  Use global_int_t since the RHS products in the calculations
     # below may result in global range values.

@@ -32,6 +32,6 @@ end
  @param[in] f2cOperator -
  @param[out] data the data structure for CG vectors that will be allocated to get it ready for use in CG iterations
  =#
-function init_mg_data(f2c_op, rc, xc, axf) 
+function init_mg_data(f2c_op::Array{Int64,1}, rc::Vector{Float64}, xc::Vector{Float64}, axf::Vector{Float64}) 
   return MGData(1, 1, f2c_op, rc, xc, axf, true)
 end

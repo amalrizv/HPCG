@@ -16,7 +16,7 @@
   @see ComputeMG
 =#
 
-function compute_mg_ref!(x, A, r) #sp_coarse passed 
+function compute_mg_ref!(x::Array{Float64,1}, A::HPCGSparseMatrix, r::Array{Float64,1}) #sp_coarse passed 
   @assert(length(x)==A.localNumberOfColumns) #Make sure x contain space for halo values
   zero_fill!(x)
   #initialize x to zero

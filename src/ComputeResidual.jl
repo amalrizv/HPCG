@@ -16,7 +16,7 @@ using MPI
 
   @return Returns zero on success and a non-zero value otherwise.
 =#
-function compute_residual!(n, v1, v2) 
+function compute_residual!(n::Int64, v1::Array{Float64,1}, v2::Array{Float64,1}) 
 
   local_residual = 0.0
       

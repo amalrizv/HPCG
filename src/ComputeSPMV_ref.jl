@@ -14,7 +14,7 @@ using MPI
 
   @see ComputeSPMV
 =#
-function compute_spmv_ref!(y, A, x) 
+function compute_spmv_ref!(y::Array{Float64,1} , A::HPCGSparseMatrix, x::Array{Float64,1} ) 
   @assert(length(x)>=A.localNumberOfColumns) # Test vector lengths
   @assert(length(y)>=A.localNumberOfRows)
 

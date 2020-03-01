@@ -19,7 +19,7 @@
   @return Returns zero on success and a non-zero value otherwise.
   @see CG_ref()
 =#
-function cg!(A, data, b, x, max_iter, tolerance, times, doPreconditioning) 
+function cg!(A::HPCGSparseMatrix, data::CGData, b::Array{Float64,1}, x::Array{Float64, 1}, max_iter::Int64, tolerance::Float64, times::Array{Float64,1}, doPreconditioning::Bool) 
 
   t_begin = time_ns()  # Start timing right away
   normr = 0.0

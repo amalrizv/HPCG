@@ -32,7 +32,7 @@ Computes one step of symmetric Gauss-Seidel:
 
   @see ComputeSYMGS
 =#
-function compute_symgs_ref!(xv, A, rv) 
+function compute_symgs_ref!(xv::Array{Float64,1} , A::HPCGSparseMatrix, rv::Array{Float64,1} ) 
  # xv = x
   @assert(length(xv)==A.localNumberOfColumns) # Make sure x contain space for halo values
     if MPI.Initialized()== true

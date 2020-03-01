@@ -6,7 +6,7 @@ using MPI
 using Statistics
 
 
-function check_aspect_ratio(smallest_ratio, x, y, z, what, do_io) 
+function check_aspect_ratio(smallest_ratio::Float64, x::Int64, y::Int64, z::Int64, what, do_io::Bool) 
 
   current_ratio = Statistics.min(Statistics.min(x, y), z) / (Statistics.max(Statistics.max(x, y), z))
 

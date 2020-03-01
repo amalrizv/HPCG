@@ -15,7 +15,7 @@
 
   @return Returns zero on success and a non-zero value otherwise.
 =#
-function compute_restriction_ref!(A, rfv) 
+function compute_restriction_ref!(A::HPCGSparseMatrix, rfv::Array{Float64,1} ) 
   Axfv = A.mgData.Axf   #float64 array
   rcv = A.mgData.rc     #float64 array
   f2c = A.mgData.f2cOperator #int array

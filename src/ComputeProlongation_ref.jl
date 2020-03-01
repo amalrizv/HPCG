@@ -16,7 +16,7 @@
 
   @return Returns zero on success and a non-zero value otherwise.
 =#
-function compute_prolongation_ref!(xf, Af) 
+function compute_prolongation_ref!(xf::Array{Float64,1}, Af::HPCGSparseMatrix) 
 
   xcv = Af.mgData.xc
   f2c = Af.mgData.f2cOperator

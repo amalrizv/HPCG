@@ -22,7 +22,7 @@
 
   @see ComputeWAXPBY_ref
 =#
-function compute_waxpby!(w, n, alpha, x, beta, y) 
+function compute_waxpby!(w::Array{Float64,1} , n::Int64, alpha::Float64, x::Array{Float64,1} , beta::Float64, y::Array{Float64,1} ) 
 
   # This line and the next two lines should be removed and your version of ComputeWAXPBY should be used.
   isOptimized = false

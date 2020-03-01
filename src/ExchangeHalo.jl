@@ -17,7 +17,7 @@ using MPI
   @param[inout] x On entry: the local vector entries followed by entries to be communicated on exit: the vector with non-local entries updated by other processors
 =#
 #fix call
-function exchange_halo!(x, A) 
+function exchange_halo!(x::Array{Float64,1} , A::HPCGSparseMatrix) 
   # Extract Matrix pieces
  if MPI.Initialized()== true
   localNumberOfRows = A.localNumberOfRows

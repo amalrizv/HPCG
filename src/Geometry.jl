@@ -41,7 +41,7 @@ end
 
   @return Returns the MPI rank of the process assigned the row
 =#
-function compute_rank_of_matrix_row(geom, index) 
+function compute_rank_of_matrix_row(geom::Geometry, index::Int64) 
     gnx = geom.gnx
     gny = geom.gny
     iz = (index-1)÷(gny*gnx)
