@@ -42,7 +42,7 @@ function compute_dot_product_ref!(n::Int64, x::Array{Float64,1}, y::Array{Float6
   	t0 = time_ns()
   	global_result = 0.0
   
-  	global_result = MPI.Allreduce(local_result, MPI.SUM, MPI.COMM_WORLD)
+  	MPI.Allreduce!(local_result, global_result, 1, MPI.SUM, MPI.COMM_WORLD)
   	result = global_result
   	time_allreduce += time_ns() - t0
   else 
