@@ -1,7 +1,7 @@
 
 
 
-function MBCounter_fill(counts::Array{Float64}, length::Int64) 
+function MBCounter_fill(counts::Array{Int64}, length::Int64) 
   cur_counts = zeros(33)
   this = MixedBaseCounter(length, counts,cur_counts) 
   this.length = length
