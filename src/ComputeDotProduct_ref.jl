@@ -40,7 +40,7 @@ function compute_dot_product_ref!(n::Int64, x::Array{Float64,1}, y::Array{Float6
   if MPI.Initialized()
  	#Use MPI's reduce function to collect all partial sums
   	t0 = time_ns()
-  	global_result = [0.]0
+  	global_result = [0.0]
   
   	MPI.Allreduce!(local_result, global_result, 1, MPI.SUM, MPI.COMM_WORLD)
   	result = global_result[1]
