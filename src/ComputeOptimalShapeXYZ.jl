@@ -94,8 +94,8 @@ function compute_optimal_shape_xyz(xyz, x, y, z)
     end
     len::Int64 = length(keyss)
     # count total number of prime factors in "c_main" and distribute some factors into "c1"
-    c_main = MBCounter(count_factors, len)
-    c1     = MBCounter(count_factors, len)
+    c_main = MBCounter_fill(count_factors, len)
+    c1     = MBCounter_fill(count_factors, len)
 
     # at the beginning, minimum area is the maximum area
     area = 2.0 *xyz +1.0 
