@@ -5,7 +5,8 @@
 =#
 
 using MPI
-
+using BenchmarkTools
+using DelimitedFiles
 #=
   Routine to compute the dot product of two vectors where:
 
@@ -22,7 +23,6 @@ using MPI
   @see compute_dot_product
 =#
 function compute_dot_product_ref!(n::Int64, x::Array{Float64,1}, y::Array{Float64,1}) 
-
   @assert(length(x)>=n) # Test vector lengths
   @assert(length(y)>=n)
 
@@ -47,7 +47,7 @@ function compute_dot_product_ref!(n::Int64, x::Array{Float64,1}, y::Array{Float6
   	time_allreduce += time_ns() - t0
   else 
   	time_allreduce += 0.0
-   	result = local_result
+   	result = local_result[1]
   end
 
   return result, time_allreduce, 0
