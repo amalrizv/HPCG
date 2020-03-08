@@ -281,7 +281,7 @@ function report_results(A::HPCGSparseMatrix, numberOfMgLevels::Int64, numberOfCg
 
     	floating_point_ops_summary = " Floating Point Operations Summary \n\tRaw DDOT $(fnops_ddot)\n\tRaw WAXPBY$(fnops_waxpby)\n\tRaw SpMV $(fnops_sparsemv)\n\tRaw MG $(fnops_precond)\n\tTotal $(fnops)\n\tTotal with convergence overhead $(frefnops)\n"
 
-	    total = (frefnreads+frefnwrites)/(times[1]+fNumberOfCgSets*(times[7]/10.0+times[9]/10.0))/1.0e9
+	    total = (frefnreads+frefnwrites)/(times[1]+fNumberOfCgSets*(times[8]/10.0+times[10]/10.0))/1.0e9
 		gb_s_summary = "GB/s Summary=\nGB/s Summary::Raw Read B/W=$(fnreads/times[1]/1.0E9)\nGB/s Summary::Raw Write B/W=$(fnwrites/times[1]/1.0e9)\nGB/s Summary::Raw Total B/W=$((fnreads+fnwrites)/(times[1])/1.0E9))\nGB/s Summary::Total with convergence and optimization phase overhead=$total \n"
 
  # This final GFLOP/s rating includes the overhead of
@@ -294,7 +294,7 @@ function report_results(A::HPCGSparseMatrix, numberOfMgLevels::Int64, numberOfCg
 
 		g_flops_summary = "GFLOP/s Summary=\nGFLOP/s Summary::Raw DDOT=$(fnops_ddot/times[2]/1.0E9)\nGFLOP/s Summary::Raw WAXPBY=$(fnops_waxpby/times[3]/1.0E9)\nGFLOP/s Summary::Raw SpMV=$(fnops_sparsemv/(times[4])/1.0E9)\nGFLOP/s Summary::Raw MG=$(fnops_precond/(times[6])/1.0E9)\nGFLOP/s Summary::Raw Total=$(fnops/times[1]/1.0E9)\nGFLOP/s Summary::Total with convergence overhead=$(frefnops/times[1]/1.0E9)\nGFLOP/s Summary::Total with convergence and optimization phase overhead=$(totalGflops)\n"
 
-    	user_opt_info = "User Optimization Overheads\n\tOptimization phase time (sec)$(times[7])\n\tOptimization phase time vs reference SpMV+MG time $(times[7]/times[8])\n"
+    	user_opt_info = "User Optimization Overheads\n\tOptimization phase time (sec)$(times[8])\n\tOptimization phase time vs reference SpMV+MG time $(times[8]/times[9])\n"
 		 println(report_result, title_v_v_testing,  spectral_convergence,  departure_from_symmetry, title_iteration_summary, iteration_count_information, title_reproducibility,  reproducibility_information, title_performance_summary, benchmark_time_summary, floating_point_ops_summary ,gb_s_summary, g_flops_summary,  user_opt_info)
 		if MPI.Initialized() == true
 			ddot_timing_variations = "DDOT Timing Variations\n\tMin DDOT MPI_Allreduce time $(t4min)\n\tMax DDOT MPI_Allreduce time $(t4max) \n\tAvg DDOT MPI_Allreduce time $(t4avg)\n\t"
