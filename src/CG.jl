@@ -80,7 +80,8 @@ function cg!(A::HPCGSparseMatrix, data::CGData, b::Array{Float64,1}, x::Array{Fl
   # r = b - Ax (x stored in p)
 
   t1t 	= time_ns()
-  normr, t4, ierr = compute_dot_product!(nrow, r, r)
+  A.is_dot_prod_optimized == false
+  normr, t4, ierr = compute_dot_product_ref!(nrow, r, r, normr, t4)
   t1 	+= time_ns()-t1t
 
   normr = sqrt(normr)
@@ -100,6 +101,7 @@ function cg!(A::HPCGSparseMatrix, data::CGData, b::Array{Float64,1}, x::Array{Fl
 		       		t5t = time_ns()
     		if doPreconditioning == true
     #symgs->exchnagehalo
+			
       			ierr = compute_mg!(z,A, r) # Apply preconditioner
     		else
       			z[1:length(r)] = r # copy r to z (no preconditioning)
@@ -111,12 +113,14 @@ function cg!(A::HPCGSparseMatrix, data::CGData, b::Array{Float64,1}, x::Array{Fl
       			ierr, A.is_waxpby_optimized  =  compute_waxpby!(p, nrow, 1.0, z, 0.0, z)
       			t2 	+= time_ns()-t2t # Copy Mr to p
       			t1t 	= time_ns()
-      			rtz, t4, ierr  = compute_dot_product!(nrow, r, z)
+				A.is_dot_prod_optimized = false
+      			rtz, t4, ierr  = compute_dot_product_ref!(nrow, r, z, rtz, t4)
       			t1 	+= time_ns()- t1t # rtz = r'*z
    			else 
       			oldrtz 	= rtz
       			t1t 	= time_ns()
-      		    rtz, t4, ierr  = compute_dot_product!( nrow, r, z) 
+				A.is_dot_prod_optimized = false
+      		    rtz, t4, ierr  = compute_dot_product_ref!( nrow, r, z, rtz, t4) 
       			t1 	+= time_ns()-t1t # rtz = r'*z
       			beta 	= rtz/oldrtz
       			t2t 	= time_ns()
@@ -129,7 +133,8 @@ function cg!(A::HPCGSparseMatrix, data::CGData, b::Array{Float64,1}, x::Array{Fl
     		t3	+= time_ns()- t3t # Ap = A*p
 
     		t1t 	= time_ns()
-    		pAp, t4, ierr  = compute_dot_product!(nrow, p, Ap) 
+			A.is_dot_prod_optimized = false
+    		pAp, t4, ierr  = compute_dot_product_ref!(nrow, p, Ap, pAp, t4) 
     		t1 	+= time_ns()-t1t # alpha = p'*Ap
   		
 			if pAp == 0
@@ -147,7 +152,8 @@ function cg!(A::HPCGSparseMatrix, data::CGData, b::Array{Float64,1}, x::Array{Fl
     		t2 	+= time_ns()- t2t # r = r - alpha*Ap
 	
     		t1t 	= time_ns()
-            normr, t4, ierr  = compute_dot_product!(nrow, r, r)
+			A.is_dot_prod_optimized = false
+            normr, t4, ierr  = compute_dot_product_ref!(nrow, r, r, normr, t4)
     		t1 += time_ns()- t1t
 	
     		normr = sqrt(normr)
@@ -187,6 +193,5 @@ function cg!(A::HPCGSparseMatrix, data::CGData, b::Array{Float64,1}, x::Array{Fl
 	=#
 	#@show "About to exit CG"
 	#@show normr 
-	A.is_dot_prod_optimized = false
  return niters, normr, normr0, ierr
 end

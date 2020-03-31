@@ -27,7 +27,7 @@ function compute_mg_ref!(x::Array{Float64,1}, A::HPCGSparseMatrix, r::Array{Floa
       numberOfPresmootherSteps = A.mgData.numberOfPresmootherSteps
       for i = 1:numberOfPresmootherSteps
 
-      	ierr = compute_symgs_ref!(x, A, r )
+      	@inbounds ierr = compute_symgs_ref!(x, A, r )
       	if ierr!=0
           return ierr
       	end
@@ -37,7 +37,6 @@ function compute_mg_ref!(x::Array{Float64,1}, A::HPCGSparseMatrix, r::Array{Floa
 	  # x vector in the first call of line 56 should be 0
 	  # instead it is NaN. This is the first instance 
 	  # of ExchangeHalo discrepancy
-	  
       ierr = compute_spmv_ref!(A.mgData.Axf, A, x) 
       if ierr!=0
           return ierr
@@ -64,7 +63,7 @@ function compute_mg_ref!(x::Array{Float64,1}, A::HPCGSparseMatrix, r::Array{Floa
 
       for i= 1: numberOfPostsmootherSteps
 
-    		ierr = compute_symgs_ref!(x,A, r)
+    		@inbounds ierr = compute_symgs_ref!(x,A, r)
       	if ierr!=0 
         	  return ierr
       	end

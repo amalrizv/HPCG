@@ -36,7 +36,7 @@ function MBCounter_lr(left::MixedBaseCounter , right::MixedBaseCounter)
 end
 
 
-function next(this) 
+function next(this::MixedBaseCounter) 
   for  i =1:this.length
     this.cur_counts[i]+=1
     if this.cur_counts[i] > this.max_counts[i] 

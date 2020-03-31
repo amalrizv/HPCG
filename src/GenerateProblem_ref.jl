@@ -43,9 +43,9 @@ function generate_problem_ref!(A::HPCGSparseMatrix)
     # Allocate arrays that are of length localNumberOfRows
     nonzerosInRow  = Array{Any}(undef,localNumberOfRows)
 
-    b       = Vector{Float64}(undef,localNumberOfRows)
-    x       = Vector{Float64}(undef,localNumberOfRows)
-    xexact  = Vector{Float64}(undef,localNumberOfRows)
+    b       = Array{Float64,1}(undef,localNumberOfRows)
+    x       = Array{Float64,1}(undef,localNumberOfRows)
+    xexact  = Array{Float64,1}(undef,localNumberOfRows)
 	zero_fill!(b)
 	zero_fill!(x)
 	zero_fill!(xexact)
@@ -69,9 +69,9 @@ function generate_problem_ref!(A::HPCGSparseMatrix)
 
     # for ith row and jth processor.
 
-    mtxIndG = Array{Int64, 2}(undef,localNumberOfRows, numberOfNonzerosPerRow) 
-    mtxIndL = Array{Int64, 2}(undef,localNumberOfRows, numberOfNonzerosPerRow) 
-    matrixValues = Array{Float64, 2}(undef,localNumberOfRows, numberOfNonzerosPerRow) 
+    mtxIndG = Array{Int64, 2}(undef,numberOfNonzerosPerRow, localNumberOfRows) 
+    mtxIndL = Array{Int64, 2}(undef,numberOfNonzerosPerRow, localNumberOfRows) 
+    matrixValues = Array{Float64, 2}(undef,numberOfNonzerosPerRow, localNumberOfRows) 
     curcols = Array{Float64,1}(undef, localNumberOfRows)
 
     #initali values in c version are all zero but julia has no array index 0
@@ -107,12 +107,12 @@ function generate_problem_ref!(A::HPCGSparseMatrix)
                                         curcol = (currentGlobalRow-1)+sz*gnx*gny+sy*gnx+sx+1 
 					# Julia way
 							if curcol == currentGlobalRow
-								matrixValues[currentLocalRow, currentValuePointer]   = 26.0
+								matrixValues[currentValuePointer, currentLocalRow]   = 26.0
 								curcols[currentLocalRow] = currentValuePointer 
 							else
-								matrixValues[currentLocalRow, currentValuePointer]  = -1.0
+								matrixValues[currentValuePointer, currentLocalRow]  = -1.0
 							end
-					mtxIndG[currentLocalRow,currentIndexPointer] = curcol 
+					mtxIndG[currentIndexPointer, currentLocalRow] = curcol 
 					currentValuePointer += 1
 					currentIndexPointer += 1
                                         numberOfNonzerosInRow = numberOfNonzerosInRow +1

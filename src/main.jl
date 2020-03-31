@@ -127,9 +127,9 @@ function main(hpcg_args)
 
     nrow = A.localNumberOfRows
     ncol = A.localNumberOfColumns
-    x_overlap  = Vector{Float64}(undef, ncol) #  Overlapped copy of x vector
-    b_computed = Vector{Float64}(undef, nrow) #  Computed RHS vector
-    b_computed = zeros(nrow)
+    x_overlap  = Array{Float64,1}(undef, ncol) #  Overlapped copy of x vector
+    b_computed = Array{Float64,1}(undef, nrow) #  Computed RHS vector
+    zero_fill!(b_computed)
     # Record execution time of reference SpMV and MG kernels for reporting times
     # First load vector with random values
     fill!(x_overlap, 1.0)
@@ -141,20 +141,18 @@ function main(hpcg_args)
     end
 
     t_begin = time_ns()
+	if MPI.Initialized()==true
     MPI.Barrier(MPI.COMM_WORLD)
-
+    end
 
 
 	for i = 1:num_calls
-        ierr = compute_spmv_ref!(b_computed,A, x_overlap) # b_computed = A*x_overlap
+
+        ierr = compute_spmv_ref!(b_computed, A, x_overlap) # b_computed = A*x_overlap
         if ierr != 0
             @error("Error in call to SpMV: $ierr .\n")
         end
-		# b_computed is same as C version, x_overlap is changed by SPMV
-		# and MG>>SYMGS 
-	#	@show b_computed[1]
 		ierr = compute_mg!(x_overlap, A, b_computed) # b_computed = Minv*y_overlap
-	#	@show x_overlap[1]
         if ierr != 0
             @error("Error in call to MG: $ierr .\n") 
         end
@@ -190,10 +188,10 @@ function main(hpcg_args)
     nrow = A.localNumberOfRows
     ncol = A.localNumberOfColumns
 
-    r	= Vector{Float64}(undef,nrow)
-	z  	= Vector{Float64}(undef,ncol)
-  	p  	= Vector{Float64}(undef,ncol)
-  	Ap 	= Vector{Float64}(undef,nrow)
+    r	= Array{Float64,1}(undef,nrow)
+	z  	= Array{Float64,1}(undef,ncol)
+  	p  	= Array{Float64,1}(undef,ncol)
+  	Ap 	= Array{Float64,1}(undef,nrow)
 	zero_fill!(r)
 	zero_fill!(z)
 	zero_fill!(p)
@@ -209,13 +207,6 @@ function main(hpcg_args)
 
         totalNiters_ref += niters
     end
-	if A.geom.rank==0 
-			# not concurrent 
-			#@show "Reference CG Timing Phase"
-			#@show normr, normr0
-		end
-
-
 	    if rank == 0 
     	        @debug("$err_count error(s) in call(s) to reference CG.")
         end
@@ -247,10 +238,8 @@ function main(hpcg_args)
 
 	@debug "Length of solution vector: $(length(x))"
 	# Only and only one call to test_cg!
-	# count_pass = 0
-	# count_fail = 0
 	#RZV :TODO : b uses a const variable in function call in C
-	b_copy = Vector{Float64}(undef, A.localNumberOfRows)
+	b_copy = Array{Float64,1}(undef, A.localNumberOfRows)
 	for i= 1:A.localNumberOfRows
 		b_copy[i] = b[i]
 	end

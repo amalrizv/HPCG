@@ -23,9 +23,9 @@ testsymmetry_data = TestSymmetryData
  nrow = A.localNumberOfRows
  ncol = A.localNumberOfColumns
 
- x_ncol = Vector{Float64}(undef, ncol)
- y_ncol = Vector{Float64}(undef, ncol)
- z_ncol = Vector{Float64}(undef, ncol)
+ x_ncol = Array{Float64,1}(undef, ncol)
+ y_ncol = Array{Float64,1}(undef, ncol)
+ z_ncol = Array{Float64,1}(undef, ncol)
 
  t4 = 0.0 # Needed for dot-product call, otherwise unused
  count_fail = 0
@@ -37,29 +37,35 @@ testsymmetry_data = TestSymmetryData
  fill!(y_ncol, 1.0)
 
  ANorm = 2 * 26.0
+ yNorm2 = 0.0
+ xNorm2 = 0.0
+ xtAy   = 0.0
+ ytAx   = 0.0
 
  # Next, compute x'*A*y
- yNorm2, t4, ierr	= compute_dot_product!(nrow, y_ncol, y_ncol,)
+ yNorm2, t4, ierr	= compute_dot_product_ref!(nrow, y_ncol, y_ncol, yNorm2, t4)
  ierr	= compute_spmv!(z_ncol, A, y_ncol) # z_nrow = A*y_overlap
  if ierr == 1 
 	@debug("Error in call to SpMV: $ierr.\n")
  end
-
- xtAy, t4, ierr	= compute_dot_product!(nrow, x_ncol, z_ncol) # x'*A*y
+ A.is_dot_prod_optimized = false
+ xtAy, t4, ierr	= compute_dot_product_ref!(nrow, x_ncol, z_ncol, xtAy, t4) # x'*A*y
 
  if ierr == 1
 	@debug("Error in call to dot: $ierr .\n")
  end
 
  # Next, compute y'*A*x
- xNorm2, t4, ierr 	= compute_dot_product!(nrow, x_ncol, x_ncol)
+ A.is_dot_prod_optimized = false
+ xNorm2, t4, ierr 	= compute_dot_product_ref!(nrow, x_ncol, x_ncol, xNorm2, t4)
  ierr	= compute_spmv!(z_ncol, A, x_ncol) # b_computed = A*x_overlap
 
  if ierr == 1 
 	@debug("Error in call to SpMV: $ierr .\n")
  end
 
- ytAx, t4, ierr,  	= compute_dot_product!(nrow, y_ncol, z_ncol) # y'*A*x
+ A.is_dot_prod_optimized = false
+ ytAx, t4, ierr,  	= compute_dot_product_ref!(nrow, y_ncol, z_ncol, ytAx, t4) # y'*A*x
 
  if ierr == 1
 	@debug("Error in call to dot: $err .\n")
@@ -83,8 +89,10 @@ testsymmetry_data = TestSymmetryData
  if ierr == 1
 	@debug("Error in call to MG: $ierr .\n")
  end
-
- xtMinvy, t4, ierr  	= compute_dot_product!(nrow, x_ncol, z_ncol) # x'*Minv*y
+ xtMinvy = 0.0
+ ytMinvx = 0.0
+A.is_dot_prod_optimized = false
+ xtMinvy, t4, ierr  	= compute_dot_product_ref!(nrow, x_ncol, z_ncol, xtMinvy, t4) # x'*Minv*y
 
  if ierr == 1
 	@debug("Error in call to dot: $ierr .\n")
@@ -97,7 +105,8 @@ testsymmetry_data = TestSymmetryData
   @debug("Error in call to MG: $ierr .\n")
  end
 
- ytMinvx, t4, ierr,  	= compute_dot_product!(nrow, y_ncol, z_ncol) # y'*Minv*x
+A.is_dot_prod_optimized = false
+ ytMinvx, t4, ierr,  	= compute_dot_product_ref!(nrow, y_ncol, z_ncol, ytMinvx, t4) # y'*Minv*x
 
  if ierr == 1 
     @debug("Error in call to dot: $ierr .\n")
@@ -141,7 +150,6 @@ testsymmetry_data = TestSymmetryData
  x_ncol = nothing
  y_ncol = nothing
  z_ncol = nothing
- A.is_dot_prod_optimized = false 
  return testsymmetry_data
 end
 

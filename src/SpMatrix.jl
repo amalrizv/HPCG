@@ -8,45 +8,45 @@
 
 mutable struct HPCGSparseMatrix
 
-    is_dot_prod_optimized::Bool
-    is_spmv_optimized::Bool
-    is_mg_optimized::Bool
-    is_waxpby_optimized::Bool
+    is_dot_prod_optimized	::Bool
+    is_spmv_optimized		::Bool
+    is_mg_optimized			::Bool
+    is_waxpby_optimized		::Bool
 
-    geom::Geometry                            # geometry associated with this matrix
+    geom	::Geometry                            	# geometry associated with this matrix
 
-    title::String                             # name of the sparse matrix
-    totalNumberOfRows::Int64                  # total number of matrix rows across all processes
-    totalNumberOfNonzeros::Int64              # total number of matrix nonzeros across all processes
-    localNumberOfRows::Int64                  # number of rows local to this process
-    localNumberOfColumns::Int64               # number of columns local to this process
-    localNumberOfNonzeros::Int64              # number of nonzeros local to this process
-    nonzerosInRow::Array{Any}                             # The number of nonzeros in a row will always be 27 or fewer
-    mtxIndG ::Array{Int64,2}           # matrix indices as global values
-    mtxIndL ::Array{Int64,2}           # matrix indices as local value
-    matrixValues :: Array{Float64,2}   # values of matrix entries
-    curcols ::Array{Int64,1}	       # column indices of matrixValues where diagonal elements are stored 
-#    matrixDiagonal :: Array{Float64,2} # values of matrix diagonal entries
-    localToGlobalMap::Dict    # local-to-global mapping
-    globalToLocalMap::Dict    # global-to-local mapping
+    title	::String                             	# name of the sparse matrix
+    totalNumberOfRows		::Int64                 # total number of matrix rows across all processes
+    totalNumberOfNonzeros	::Int64              	# total number of matrix nonzeros across all processes
+    localNumberOfRows		::Int64                 # number of rows local to this process
+    localNumberOfColumns	::Int64               	# number of columns local to this process
+    localNumberOfNonzeros	::Int64              	# number of nonzeros local to this process
+    nonzerosInRow			::Array{Int64,1}        # The number of nonzeros in a row will always be 27 or fewer
+    mtxIndG 				::Array{Int64,2}        # matrix indices as global values
+    mtxIndL 				::Array{Int64,2}        # matrix indices as local value
+    matrixValues 			::Array{Float64,2}   	# values of matrix entries
+    curcols 				::Array{Int64,1}	    # column indices of matrixValues where diagonal elements are stored 
+#    matrixDiagonal :: Array{Float64,2} 			# values of matrix diagonal entries
+localToGlobalMap			::Dict{Int64, Int64}    # local-to-global mapping
+globalToLocalMap			::Dict{Int64, Int64}    # global-to-local mapping
 
 
-    numberOfExternalValues::Int64
-    numberOfSendNeighbors::Int64 # number of neighboring processes that will be send local data
-    totalToBeSent::Int64         # total number of entries to be sent
-    elementsToSend::Array{Int64} # elements to send to neighboring processes
-    neighbors::Array{Int64}      # neighboring processes
-    receiveLength::Array{Int64}  # lenghts of messages received from neighboring processes
-    sendLength::Array{Int64}     # lenghts of messages sent to neighboring processes
-    sendBuffer::Array{Float64}    # send buffer for non-blocking sends
+    numberOfExternalValues	::Int64
+    numberOfSendNeighbors	::Int64 				# number of neighboring processes that will be send local data
+    totalToBeSent			::Int64         		# total number of entries to be sent
+    elementsToSend			::Array{Int64,1} 		# elements to send to neighboring processes
+    neighbors				::Array{Int64,1}      	# neighboring processes
+    receiveLength			::Array{Int64,1}  		# lenghts of messages received from neighboring processes
+    sendLength				::Array{Int64,1}     	# lenghts of messages sent to neighboring processes
+    sendBuffer				::Array{Float64,1}    	# send buffer for non-blocking sends
 
     #=
     This is for storing optimized data structres created in OptimizeProblem and
     used inside optimized compute_spmv().
     =#
 
-    Ac::HPCGSparseMatrix  # Coarse grid matrix
-    mgData::MGData       # Pointer to the coarse level data for this fine matrix
+    Ac						::HPCGSparseMatrix  	# Coarse grid matrix
+    mgData					::MGData       			# Pointer to the coarse level data for this fine matrix
 
 
     function HPCGSparseMatrix(dpopt, spmvopt, mgopt, waxpbyopt, g,
@@ -122,8 +122,8 @@ end
   @param[in] A the known system matrix.
   @param[inout] diagonal  Vector of diagonal values (must be allocated before call to this function).
 
-@inline function copy_matrix_diagonal(A) 
-    dv         = Vector{Int64}(undef, A.localNumberOfRows)
+@inline function copy_matrix_diagonal(A::HPCGSparseMatrix) 
+    dv         = Array{Int64,1}(undef, A.localNumberOfRows)
     @assert(A.localNumberOfRows == length(dv))
     dv         = cur_diag_a
     return dv
@@ -135,7 +135,7 @@ end
   @param[inout] A The system matrix.
   @param[in] diagonal  Vector of diagonal values that will replace existing matrix diagonal values.
 =#
-@inline function replace_matrix_diagonal!(A, diag) 
+@inline function replace_matrix_diagonal!(A::HPCGSparseMatrix, diag::Array{Int64,1}) 
     @assert(A.localNumberOfRows==first(size(diag)))
 	for i= 1:A.localNumberOfRows
 		A.matrixDiagonal[i] = diag[i]
@@ -147,7 +147,7 @@ end
 # It might be different for another system!
 
 
-function fill_random_vector!(x)
+function fill_random_vector!(x::Array{Float64,1})
     for i = 1:length(x)
         # KCH NOTE: this is to try to get the same pseudo-random number sequence that the libc prng generates
         # (which is what C++ HPCG uses), once things are validated, we should use the commented out version below,

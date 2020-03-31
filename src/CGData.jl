@@ -5,10 +5,10 @@
 
 
 mutable struct CGData 
-  r::Vector #< pointer to residual vector
-  z::Vector #< pointer to preconditioned residual vector
-  p::Vector #< pointer to direction vector
-  Ap::Vector #< pointer to Krylov vector
+	r::Array{Float64,1} #< pointer to residual vector
+	z::Array{Float64,1} #< pointer to preconditioned residual vector
+	p::Array{Float64,1} #< pointer to direction vector
+	Ap::Array{Float64,1} #< pointer to Krylov vector
 end
 
 #=
@@ -16,13 +16,13 @@ end
  @param[in]  A    the data structure that describes the problem matrix and its structure
  @param[out] data the data structure for CG vectors that will be allocated to get it ready for use in CG iterations
 =#
-function InitializeSparseCGData(A) 
+@inline function InitializeSparseCGData(A) 
   nrow = A.localNumberOfRows
   ncol = A.localNumberOfColumns
-  r    = Vector{Float64}(undef,nrow)
-  z    = Vector{Float64}(undef,ncol)
-  p    = Vector{Float64}(undef,ncol)
-  Ap   = Vector{Float64}(undef,nrow)
+  r    = Array{Float64,1}(undef,nrow)
+  z    = Array{Float64,1}(undef,ncol)
+  p    = Array{Float64,1}(undef,ncol)
+  Ap   = Array{Float64,1}(undef,nrow)
   r 	= zero_fill!(r)
   z 	= zero_fill!(z)
   p 	= zero_fill!(p)

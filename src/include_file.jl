@@ -1,3 +1,4 @@
+
 using Distributed
 using MPI
 using Revise 
@@ -61,12 +62,3 @@ Distributed.@everywhere includet("ReportResults.jl")
 #main
 
 Distributed.@everywhere includet("main.jl")
-
-hpcg_args = header_calling_hpcg()
-precompile(compute_dot_product_ref!, (Int64, Array{Float64,1}, Array{Float64,1}, Float64, Float64))
-precompile(compute_spmv_ref!, (Array{Float64,1}, HPCGSparseMatrix, Array{Float64,1}))
-precompile(compute_mg_ref!, (Array{Float64,1}, HPCGSparseMatrix, Array{Float64,1})) 
-# KCH: DEBUGGING SHOULD NOT BE ON FOR PERFORMANCE TESTING
-#ENV["JULIA_DEBUG"] = "all" 
-main(hpcg_args)
-

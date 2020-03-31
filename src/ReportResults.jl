@@ -140,7 +140,7 @@ function report_results(A::HPCGSparseMatrix, numberOfMgLevels::Int64, numberOfCg
     	fnbytes += fnrow*( 2*sizeof(Float64)) # r, Ap
     	fnbytes += fncol*( 2*sizeof(Float64)) # z, p
 
-		fnbytesPerLevel  	= Vector{Float64}(undef, numberOfMgLevels) # Count byte usage per level (level 0 is main CG level)
+		fnbytesPerLevel  	= Array{Float64,1}(undef, numberOfMgLevels) # Count byte usage per level (level 0 is main CG level)
     	fnbytesPerLevel[1] 	= fnbytes
 
     # Benchmarker-provided model for OptimizeProblem.cpp

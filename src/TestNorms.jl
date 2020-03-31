@@ -12,7 +12,7 @@
 
   @return Returns 0 upon success or non-zero otherwise
 =#
-function test_norms(testnorms_data) 
+function test_norms(testnorms_data::TestNormsData) 
 
  mean_delta = 0.0
 
