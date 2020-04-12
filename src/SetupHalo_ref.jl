@@ -28,9 +28,9 @@ function setup_halo_ref!(A)
     else
 
         # Scan global IDs of the nonzeros in the matrix.  Determine if the column ID matches a row ID.  If not:
-        # 1) We call the compute_rank_of_matrix_row function, which tells us the rank of the processor owning the row ID.
+        # 1 We call the compute_rank_of_matrix_row function, which tells us the rank of the processor owning the row ID.
         #  We need to receive this value of the x vector during the halo exchange.
-        # 2) We record our row ID since we know that the other processor will need this value from us, due to symmetry.
+        # 2 We record our row ID since we know that the other processor will need this value from us, due to symmetry.
 
 		sendList           = Dict{Int64, OrderedSet{Int64}}()
 		receiveList        = Dict{Int64, OrderedSet{Int64}}()
