@@ -40,9 +40,9 @@ function setup_halo_ref!(A::HPCGSparseMatrix)
         #  TODO: With proper critical and atomic regions, this loop could be threaded, but not attempting it at this time
 		#
         for i = 1:localNumberOfRows 
-            currentGlobalRow = A.localToGlobalMap[i] 
+            @inbounds currentGlobalRow = A.localToGlobalMap[i] 
             for j = 1:nonzerosInRow[i]
-		curIndex            = mtxIndG[j,i]
+		@inbounds curIndex            = mtxIndG[j,i]
                 rankIdOfColumnEntry = compute_rank_of_matrix_row(A.geom, curIndex)
             	if  A.geom.rank != rankIdOfColumnEntry # If column index is not a row index, then it comes from another processor
 					
@@ -109,12 +109,12 @@ function setup_halo_ref!(A::HPCGSparseMatrix)
         # Convert matrix indices to local IDs
         for i = 1:localNumberOfRows
             for j = 1:nonzerosInRow[i]
-                curIndex = mtxIndG[j,i]
+               @inbounds  curIndex = mtxIndG[j,i]
                 rankIdOfColumnEntry = compute_rank_of_matrix_row(A.geom, curIndex)
                 if A.geom.rank == rankIdOfColumnEntry # My column index, so convert to local index
-                    mtxIndL[j,i] = A.globalToLocalMap[curIndex]
+                    @inbounds mtxIndL[j,i] = A.globalToLocalMap[curIndex]
                 else # If column index is not a row index, then it comes from another processor
-                    mtxIndL[j,i] = externalToLocalMap[curIndex]
+                    @inbounds mtxIndL[j,i] = externalToLocalMap[curIndex]
 
 				end
 
