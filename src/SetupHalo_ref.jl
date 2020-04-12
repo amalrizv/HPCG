@@ -31,7 +31,7 @@ function setup_halo_ref!(A::HPCGSparseMatrix)
 
 		sendList           = Dict{Int64, OrderedSet{Int64}}()
 		receiveList        = Dict{Int64, OrderedSet{Int64}}()
-        externalToLocalMap = Dict{Int64, Int64}()
+        	externalToLocalMap = Dict{Int64, Int64}()
 		for ranks = 0: A.geom.size-1
 			receiveList[ranks] = OrderedSet{Int64}()
 			sendList[ranks]     = OrderedSet{Int64}()
@@ -42,7 +42,7 @@ function setup_halo_ref!(A::HPCGSparseMatrix)
         for i = 1:localNumberOfRows 
             currentGlobalRow = A.localToGlobalMap[i] 
             for j = 1:nonzerosInRow[i]
-				curIndex            = mtxIndG[i,j]
+		curIndex            = mtxIndG[j,i]
                 rankIdOfColumnEntry = compute_rank_of_matrix_row(A.geom, curIndex)
             	if  A.geom.rank != rankIdOfColumnEntry # If column index is not a row index, then it comes from another processor
 					
@@ -109,12 +109,12 @@ function setup_halo_ref!(A::HPCGSparseMatrix)
         # Convert matrix indices to local IDs
         for i = 1:localNumberOfRows
             for j = 1:nonzerosInRow[i]
-                curIndex = mtxIndG[i,j]
+                curIndex = mtxIndG[j,i]
                 rankIdOfColumnEntry = compute_rank_of_matrix_row(A.geom, curIndex)
                 if A.geom.rank == rankIdOfColumnEntry # My column index, so convert to local index
-                    mtxIndL[i,j] = A.globalToLocalMap[curIndex]
+                    mtxIndL[j,i] = A.globalToLocalMap[curIndex]
                 else # If column index is not a row index, then it comes from another processor
-                    mtxIndL[i,j] = externalToLocalMap[curIndex]
+                    mtxIndL[j,i] = externalToLocalMap[curIndex]
 
 				end
 
