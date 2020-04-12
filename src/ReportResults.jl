@@ -140,7 +140,7 @@ function report_results(A::HPCGSparseMatrix, numberOfMgLevels::Int64, numberOfCg
     	fnbytes += fnrow*( 2*sizeof(Float64)) # r, Ap
     	fnbytes += fncol*( 2*sizeof(Float64)) # z, p
 
-		fnbytesPerLevel  	= Vector{Float64}(undef, numberOfMgLevels) # Count byte usage per level (level 0 is main CG level)
+		fnbytesPerLevel  	= Array{Float64,1}(undef, numberOfMgLevels) # Count byte usage per level (level 0 is main CG level)
     	fnbytesPerLevel[1] 	= fnbytes
 
     # Benchmarker-provided model for OptimizeProblem.cpp
@@ -268,7 +268,7 @@ function report_results(A::HPCGSparseMatrix, numberOfMgLevels::Int64, numberOfCg
      	iteration_count_information = "Iteration Count Information\t" *iterations_result* "\n\tReference CG iterations per set$( refMaxIters) \n \tOptimized CG iterations per set $(optMaxIters)\n \t Total number of reference iterations $(refMaxIters*numberOfCgSets)\n\tTotal number of optimized iterations $( optMaxIters*numberOfCgSets)\n"
 
     	title_reproducibility = "########## Reproducibility Summary  ##########\n"
-	 	if testnorms_data.pass ==1
+	 	if testnorms_data.pass == true 
       		testnorms_result =  "PASSED"
     	else
      	 	testnorms_result =  "FAILED"
@@ -281,7 +281,7 @@ function report_results(A::HPCGSparseMatrix, numberOfMgLevels::Int64, numberOfCg
 
     	floating_point_ops_summary = " Floating Point Operations Summary \n\tRaw DDOT $(fnops_ddot)\n\tRaw WAXPBY$(fnops_waxpby)\n\tRaw SpMV $(fnops_sparsemv)\n\tRaw MG $(fnops_precond)\n\tTotal $(fnops)\n\tTotal with convergence overhead $(frefnops)\n"
 
-	    total = (frefnreads+frefnwrites)/(times[1]+fNumberOfCgSets*(times[7]/10.0+times[9]/10.0))/1.0e9
+	    total = (frefnreads+frefnwrites)/(times[1]+fNumberOfCgSets*(times[8]/10.0+times[10]/10.0))/1.0e9
 		gb_s_summary = "GB/s Summary=\nGB/s Summary::Raw Read B/W=$(fnreads/times[1]/1.0E9)\nGB/s Summary::Raw Write B/W=$(fnwrites/times[1]/1.0e9)\nGB/s Summary::Raw Total B/W=$((fnreads+fnwrites)/(times[1])/1.0E9))\nGB/s Summary::Total with convergence and optimization phase overhead=$total \n"
 
  # This final GFLOP/s rating includes the overhead of
@@ -294,7 +294,7 @@ function report_results(A::HPCGSparseMatrix, numberOfMgLevels::Int64, numberOfCg
 
 		g_flops_summary = "GFLOP/s Summary=\nGFLOP/s Summary::Raw DDOT=$(fnops_ddot/times[2]/1.0E9)\nGFLOP/s Summary::Raw WAXPBY=$(fnops_waxpby/times[3]/1.0E9)\nGFLOP/s Summary::Raw SpMV=$(fnops_sparsemv/(times[4])/1.0E9)\nGFLOP/s Summary::Raw MG=$(fnops_precond/(times[6])/1.0E9)\nGFLOP/s Summary::Raw Total=$(fnops/times[1]/1.0E9)\nGFLOP/s Summary::Total with convergence overhead=$(frefnops/times[1]/1.0E9)\nGFLOP/s Summary::Total with convergence and optimization phase overhead=$(totalGflops)\n"
 
-    	user_opt_info = "User Optimization Overheads\n\tOptimization phase time (sec)$(times[7])\n\tOptimization phase time vs reference SpMV+MG time $(times[7]/times[8])\n"
+    	user_opt_info = "User Optimization Overheads\n\tOptimization phase time (sec)$(times[8])\n\tOptimization phase time vs reference SpMV+MG time $(times[8]/times[9])\n"
 		 println(report_result, title_v_v_testing,  spectral_convergence,  departure_from_symmetry, title_iteration_summary, iteration_count_information, title_reproducibility,  reproducibility_information, title_performance_summary, benchmark_time_summary, floating_point_ops_summary ,gb_s_summary, g_flops_summary,  user_opt_info)
 		if MPI.Initialized() == true
 			ddot_timing_variations = "DDOT Timing Variations\n\tMin DDOT MPI_Allreduce time $(t4min)\n\tMax DDOT MPI_Allreduce time $(t4max) \n\tAvg DDOT MPI_Allreduce time $(t4avg)\n\t"
@@ -307,7 +307,7 @@ function report_results(A::HPCGSparseMatrix, numberOfMgLevels::Int64, numberOfCg
 		end
      	final_summary_title = "Final Summary\n"
 
-    	isValidRun = (testcg_data.count_fail==0) && (testsymmetry_data.count_fail==0) && (testnorms_data.pass ==1) && (global_failure ==0)
+    	isValidRun = (testcg_data.count_fail==0) && (testsymmetry_data.count_fail==0) && (testnorms_data.pass ==true) && (global_failure ==0)
     	if isValidRun == true 
 			fin_dot_prod_opt 	= String
 			fin_spmv_opt 		= String
@@ -354,8 +354,10 @@ function report_results(A::HPCGSparseMatrix, numberOfMgLevels::Int64, numberOfCg
 			println(report_result, final_summary_title, fin_hpcg_validity, fin_dot_prod_opt, fin_spmv_opt, fin_mg_opt_nt, fin_waxpby_opt, fin_action)
 
      	else 
-			
-      		fin_hpcg_validity = "HPCG result is","INVALID.\n"
+		    	
+      		fin_hpcg_validity = "HPCG result is","INVALID.\n
+								global_failure = $global_failure\n
+								testnorms_data.pass = $(testnorms_data.pass)"
       		fin_action = "Please review the YAML file contents You may NOT submit these results for consideration.\n"
 			println(report_result, final_summary_title, fin_hpcg_validity, fin_action)
 	  	end

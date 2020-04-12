@@ -1,5 +1,4 @@
 
-using MPI
 #=
   Precondition: First call exchange_externals to get off-processor values of x
 
@@ -13,33 +12,29 @@ using MPI
   @return returns 0 upon success and non-zero otherwise
 
   @see ComputeSPMV
-=#
-function compute_spmv_ref!(y::Array{Float64,1} , A::HPCGSparseMatrix, x::Array{Float64,1} ) 
+  =#
+ 
+
+  function compute_spmv_ref!(y::Array{Float64,1} , A::HPCGSparseMatrix, x::Array{Float64,1} ) 
+
   @assert(length(x)>=A.localNumberOfColumns) # Test vector lengths
   @assert(length(y)>=A.localNumberOfRows)
 
-    if MPI.Initialized()== true
+  if MPI.Initialized()== true
       exchange_halo!(x,A)
   end
-
-  nrow = A.localNumberOfRows
   
-
-  for i = 1:nrow
-      sum      = 0
-      cur_vals = A.matrixValues[i, :]
-      cur_inds = A.mtxIndL[i, :]
-
-      cur_nnz  = A.nonzerosInRow[i]
-	  # print output of both ranks 
-
-
-      for j= 1:cur_nnz
-
-          sum = sum + (cur_vals[j]*x[cur_inds[j]])
-
+#	  mv = Array{Float64,1}
+#	  mIl  =Array{Int64,1}
+  
+  for i::Int64 = 1:A.localNumberOfRows
+	  @inbounds mv = view(A.matrixValues, :, i)
+	  @inbounds mIl = view(A.mtxIndL, :, i)
+#	  nnz = Int64
+@inbounds	  nnz   = A.nonzerosInRow[i]
+	 for j::Int64= 1:nnz
+		 @fastmath @inbounds y[i] +=  mv[j]*x[mIl[j]]
       end
-      y[i] = sum
   end
   return 0
 

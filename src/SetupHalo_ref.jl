@@ -3,9 +3,6 @@
 
  HPCG routine
 =#
-using DataStructures
-using MPI
-using DelimitedFiles
 #=
   Reference version of SetupHalo that prepares system matrix data structure and creates data necessary
   for communication of boundary values of this process.
@@ -14,7 +11,7 @@ using DelimitedFiles
 
   @see ExchangeHalo
 =#
-function setup_halo_ref!(A)
+function setup_halo_ref!(A::HPCGSparseMatrix)
 
     # Extract Matrix pieces
 

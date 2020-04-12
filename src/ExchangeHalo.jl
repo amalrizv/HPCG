@@ -3,7 +3,6 @@
 
  HPCG routine
 =#
-using MPI
 # Compile this routine only if running with MPI
 
 

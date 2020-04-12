@@ -83,7 +83,7 @@ end
 
  @param[inout] data the geometry data structure whose storage is deallocated
 =#
-@inline function DeleteGeometry(geom) 
+@inline function DeleteGeometry(geom::Geometry) 
 
   geom.partz_nz = nothing
   geom.partz_ids = nothing

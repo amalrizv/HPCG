@@ -15,15 +15,15 @@
 
   @return Returns zero on success and a non-zero value otherwise.
 =#
-function compute_restriction_ref!(A::HPCGSparseMatrix, rfv::Array{Float64,1} ) 
-  Axfv = A.mgData.Axf   #float64 array
-  rcv = A.mgData.rc     #float64 array
-  f2c = A.mgData.f2cOperator #int array
-  nc = length(A.mgData.rc)   #int
-  #KCH Performance Issues because of rcv copy
-  for i  = 1:nc
-	rcv[i] = rfv[Int(f2c[i])] - Axfv[Int(f2c[i])]
+@inline function compute_restriction_ref!(A::HPCGSparseMatrix, rfv::Array{Float64,1} ) 
+#  Axfv = A.mgData.Axf   #float64 array
+#  rcv = A.mgData.rc     #float64 array
+#  f2c = A.mgData.f2cOperator #int array
+#  #KCH Performance Issues because of rcv copy
+  mgd  =A.mgData
+  for i::Int64  = 1:length(mgd.rc)
+	@fastmath @inbounds mgd.rc[i] = rfv[(mgd.f2cOperator[i])] - mgd.Axf[(mgd.f2cOperator[i])]
   end
-  A.mgData.rc = rcv
+  A.mgData = mgd
   return 0
 end

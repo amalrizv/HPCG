@@ -34,9 +34,9 @@ function check_problem(A::HPCGSparseMatrix, b, x, xexact)
   localNumberOfRows = nx*ny*nz  #This is the size of our subblock
   totalNumberOfRows = gnx*gny*gnz # Total number of grid points in mesh
 
-  bv = Vector{Float64}
-  xv = Vector{Float64}
-  xexactv = Vector{Float64}
+  bv = Array{Float64,1}(undef, length(b))
+  xv = Array{Float64,1}(undef, length(x))
+  xexactv = Array{Float64}(undef, length(xexact))
   if b!=0 
 	bv = b # Only compute exact solution if requested
   end
@@ -70,11 +70,11 @@ function check_problem(A::HPCGSparseMatrix, b, x, xexact)
                   if gix+sx>-1 && gix+sx<gnx 
                      curcol = (currentGlobalRow-1)+sz*gnx*gny+sy*gnx+sx+1
                     if curcol==currentGlobalRow 
-                      @assert(A.matrixValues[currentLocalRow, currentValuePointer] == 26.0)
+                      @assert(A.matrixValues[currentValuePointer, currentLocalRow] == 26.0)
                      else 
-		      @assert(A.matrixValues[currentLocalRow, currentValuePointer] == -1.0)
+		      @assert(A.matrixValues[currentValuePointer, currentLocalRow] == -1.0)
                     end
-		    @assert(A.mtxIndG[currentLocalRow, currentIndexPointerG] == curcol)
+		    @assert(A.mtxIndG[currentIndexPointerG, currentLocalRow] == curcol)
                     currentValuePointer +=1
 		    currentIndexPointerG +=1
                     numberOfNonzerosInRow+=1

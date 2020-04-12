@@ -39,25 +39,25 @@ function compute_symgs_ref!(xv::Array{Float64,1} , A::HPCGSparseMatrix, rv::Arra
 	  exchange_halo!(xv,A)
   end
 
-  nrow = A.localNumberOfRows
-  #matrixDiagonal = A.matrixDiagonal  # An array of pointers to the diagonal entries A.matrixValues
-  matrixValues = A.matrixValues
-  mtxIndL = A.mtxIndL
+  nrow 				= A.localNumberOfRows
+  #matrixDiagonal 	= A.matrixDiagonal  # An array of pointers to the diagonal entries A.matrixValues
+  matrixValues 		= A.matrixValues
+  mtxIndL 			= A.mtxIndL
+  curcols 			= A.curcols
 
-  for i=1:nrow
-    currentValues = matrixValues[i, :]
-    currentColIndices = mtxIndL[i, :]
-    currentNumberOfNonzeros = A.nonzerosInRow[i]
-    curcols = A.curcols
-    currentDiagonal = matrixValues[i,curcols[i] ] # Current diagonal value
-    sum = rv[i] # RHS value
+  for i::Int64 = 1:nrow
+	@inbounds currentValues 			= view(matrixValues, :, i)
+	@inbounds currentColIndices 		= view(mtxIndL, :, i)
+    @inbounds currentNumberOfNonzeros = A.nonzerosInRow[i]
+    @inbounds currentDiagonal 		= matrixValues[curcols[i],i ] # Current diagonal value
+    @inbounds sum 					= rv[i] # RHS value
     for j=1:currentNumberOfNonzeros 
-      curCol = currentColIndices[j]
+      @inbounds curCol 	= currentColIndices[j]
 	  # RZV First iteration of this loop has a different value 
-      sum = sum - currentValues[j] * xv[curCol]
+      @fastmath @inbounds sum       -= currentValues[j] * xv[curCol]
     end
-    sum =sum + xv[i]*currentDiagonal # Remove diagonal contribution from previous loop
-    xv[i] = sum/currentDiagonal
+   @fastmath @inbounds sum    += xv[i]*currentDiagonal # Remove diagonal contribution from previous loop
+   @inbounds xv[i] 	= sum/currentDiagonal
 
   end
 #RZV
@@ -65,20 +65,19 @@ function compute_symgs_ref!(xv::Array{Float64,1} , A::HPCGSparseMatrix, rv::Arra
 		
   # Now the back sweep.
 
-  for i=Iterators.reverse(1:nrow)
-    currentValues = matrixValues[i, :]
-    currentColIndices = mtxIndL[i,:]
-    currentNumberOfNonzeros = A.nonzerosInRow[i]
-    curcols = A.curcols
-    currentDiagonal = matrixValues[i,curcols[i] ] # Current diagonal value
-    sum = rv[i] # RHS value
+  for i::Int64 = Iterators.reverse(1:nrow)
+	@inbounds currentValues 			= view(matrixValues, :, i)
+	@inbounds currentColIndices 		= view(mtxIndL, :, i)
+    @inbounds currentNumberOfNonzeros = A.nonzerosInRow[i]
+    @inbounds currentDiagonal 		= matrixValues[curcols[i], i ] # Current diagonal value
+    @inbounds sum 					= rv[i] # RHS value
 
     for j = 1:currentNumberOfNonzeros
-      curCol = currentColIndices[j]
-      sum = sum - currentValues[j]*xv[curCol]
+      @inbounds curCol = currentColIndices[j]
+      @fastmath @inbounds sum   -= currentValues[j]*xv[curCol]
     end
-    sum =sum + xv[i]*currentDiagonal # Remove diagonal contribution from previous loop
-    xv[i] = sum/currentDiagonal
+    @fastmath @inbounds sum += xv[i]*currentDiagonal # Remove diagonal contribution from previous loop
+    @inbounds xv[i] = sum/currentDiagonal
 
   end
   return 0

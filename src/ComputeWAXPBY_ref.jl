@@ -30,14 +30,14 @@ function compute_waxpby_ref!(w::Array{Float64,1} , n::Int64, alpha::Float64, x::
   	if alpha == 1.0
 	#	@show "alpha = 1.0"	  
 	#	@show x[i], y[i]
-    	w[i] =  x[i] + beta * y[i]
+    @fastmath @inbounds	w[i] =  x[i] + beta * y[i]
 
   	elseif beta == 1.0
 
-	    w[i] = alpha * x[i] + y[i]
+	@fastmath @inbounds    w[i] = alpha * x[i] + y[i]
   	else  
 
-	    w[i] = alpha * x[i] + beta * y[i]
+	@fastmath @inbounds    w[i] = alpha * x[i] + beta * y[i]
     end
 
   end

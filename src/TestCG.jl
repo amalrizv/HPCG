@@ -21,14 +21,14 @@
 
   @see CG()
 =#
-function test_cg!(A, data, b, x,testcg_data ) 
+function test_cg!(A::HPCGSparseMatrix, data::CGData, b::Array{Float64, 1}, x::Array{Float64, 1},testcg_data::TestCGData ) 
     #testcg_data = TestCGData 
     # Use this array for collecting timing information
     times =  zeros(8)
 
     # Temporary storage for holding original diagonal and RHS
-    exaggeratedDiagA = Vector{Float64}(undef, A.localNumberOfRows)
-    origB            = Vector{Float64}(undef,A.localNumberOfRows)
+    exaggeratedDiagA = Array{Float64,1}(undef, A.localNumberOfRows)
+    origB            = Array{Float64,1}(undef,A.localNumberOfRows)
     origDiagA        = Array{Float64,1}(undef, A.localNumberOfRows)
     fill!(origDiagA, 26.0)
     exaggeratedDiagA[1:length(origDiagA)] = origDiagA
@@ -48,7 +48,7 @@ function test_cg!(A, data, b, x,testcg_data )
     end
 
     for i = 1: A.localNumberOfRows 
-	A.matrixValues[i, A.curcols[i]] = exaggeratedDiagA[i]
+	A.matrixValues[A.curcols[i], i] = exaggeratedDiagA[i]
     end
 
     niters          = 0
@@ -95,7 +95,7 @@ function test_cg!(A, data, b, x,testcg_data )
 
     # Restore matrix diagonal and RHS
     for i = 1: A.localNumberOfRows 
-	A.matrixValues[i, A.curcols[i]] = exaggeratedDiagA[i]
+	A.matrixValues[A.curcols[i], i] = exaggeratedDiagA[i]
     end
 
 	b[1:length(origB)] = origB

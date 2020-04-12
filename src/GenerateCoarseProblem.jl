@@ -76,14 +76,15 @@ function generate_coarse_problem!(A::HPCGSparseMatrix)
 
     setup_halo!(Ac)
 
-    rc          = zeros(Ac.localNumberOfRows)
-    xc          = zeros(Ac.localNumberOfColumns)
+	rc          = Array{Float64,1}(undef, Ac.localNumberOfRows)
+	xc			= Array{Float64,1}(undef, Ac.localNumberOfColumns)
+	Axf			= Array{Float64,1}(undef, A.localNumberOfColumns)
     
-	Axf         = zeros(A.localNumberOfColumns)
-    #rc          = Vector{Float64}(undef, Ac.localNumberOfRows)
-    #xc          = Vector{Float64}(undef, Ac.localNumberOfColumns)
-    #Axf         = Vector{Float64}(undef, A.localNumberOfColumns)
-    
+	zero_fill!(rc)
+	zero_fill!(xc)
+	zero_fill!(Axf)
+
+
     mgd::MGData = init_mg_data(f2c_operator, rc, xc, Axf)
 
     A.Ac        = Ac

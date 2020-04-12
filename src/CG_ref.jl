@@ -76,8 +76,9 @@ function cg_ref!(A::HPCGSparseMatrix , data::CGData , b::Array{Float64,1} , x::A
     ierr =    compute_waxpby_ref!(r, nrow, 1.0, b, -1.0, Ap) 
     t2  += time_ns()- t2t # r = b - Ax (x stored in p)
     t1t = time_ns()
-
-    normr, t4, ierr = compute_dot_product_ref!(nrow, r, r)
+    #Profile.clear()
+	normr, t4, ierr = compute_dot_product_ref!(nrow, r, r, normr, t4)
+	#pprof(web=false)
 
     t1    += time_ns()- t1t
     normr = sqrt(normr)
@@ -105,7 +106,7 @@ function cg_ref!(A::HPCGSparseMatrix , data::CGData , b::Array{Float64,1} , x::A
                 p[1:length(z)] 	= z 
                 t2	+= time_ns()-t5t # Copy Mr to p
                 t1t 	= time_ns() 
-		rtz, t4, ierr 	= compute_dot_product_ref!(nrow, r, z) 
+		rtz, t4, ierr 	= compute_dot_product_ref!(nrow, r, z, rtz, t4) 
 		t1 	+= time_ns()- t1t # rtz = r'*z
 
             else 
@@ -114,7 +115,7 @@ function cg_ref!(A::HPCGSparseMatrix , data::CGData , b::Array{Float64,1} , x::A
 
 				# rtz = r'*z
                 t1t 	= time_ns() 
-                rtz , t4, ierr 	= compute_dot_product_ref!(nrow, r, z) 
+                rtz , t4, ierr 	= compute_dot_product_ref!(nrow, r, z, rtz, t4) 
                 t1 	+= time_ns()- t1t 
 
                 beta 	= rtz/oldrtz
@@ -132,7 +133,7 @@ function cg_ref!(A::HPCGSparseMatrix , data::CGData , b::Array{Float64,1} , x::A
 
 			# alpha = p'*Ap
 			t1t   			= time_ns()
-            pAp, t4, ierr 	= compute_dot_product_ref!(nrow, p, Ap) 
+            pAp, t4, ierr 	= compute_dot_product_ref!(nrow, p, Ap, pAp, t4) 
             t1    			+= time_ns()- t1t
 
 			if pAp == 0 
@@ -143,13 +144,13 @@ function cg_ref!(A::HPCGSparseMatrix , data::CGData , b::Array{Float64,1} , x::A
 			
 			# x = x + alpha*p ; r = r - alpha*Ap
             t2t   	= time_ns()
-			            ierr 	= compute_waxpby_ref!(x, nrow, 1.0, x, alpha, p)# x = x + alpha*p
+			ierr 	= compute_waxpby_ref!(x, nrow, 1.0, x, alpha, p)# x = x + alpha*p
 			
             ierr 	= compute_waxpby_ref!(r, nrow, 1.0, r, -alpha, Ap)  
             t2    	+= time_ns()- t2t
 
             t1t   			=	 time_ns()
-            normr, t4, ierr = compute_dot_product_ref!(nrow, r,r) 
+            normr, t4, ierr = compute_dot_product_ref!(nrow, r,r, normr, t4) 
             t1    			+= time_ns()- t1t
 
             normr 	= sqrt(normr)

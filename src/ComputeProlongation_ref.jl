@@ -18,13 +18,15 @@
 =#
 function compute_prolongation_ref!(xf::Array{Float64,1}, Af::HPCGSparseMatrix) 
 
-  xcv = Af.mgData.xc
-  f2c = Af.mgData.f2cOperator
-  nc = length(Af.mgData.rc)
+	mgd = Af.mgData
+#  xcv = Af.mgData.xc
+#  f2c = Af.mgData.f2cOperator
+#  nc = length(Af.mgData.rc)
 
 # TODO: Somehow note that this loop can be safely vectorized since f2c has no repeated indices
-  for i=1:nc
-	xf[f2c[i]] += xcv[i] # This loop is safe to vectorize
+for i=1:length(mgd.rc)
+	@fastmath @inbounds	xf[mgd.f2cOperator[i]] += mgd.xc[i] # This loop is safe to vectorize
   end
+  
   return 0 
 end

@@ -28,7 +28,7 @@ function optimize_problem(A, data, b, x, xexact)
 
 #if defined(HPCG_USE_MULTICOLORING)
   nrow = A.localNumberOfRows
-  colors = Vector{Float64}(undef, nrow) # value `nrow' means `uninitialized' initialized colors go from 0 to nrow-1
+  colors = Array{Float64,1}(undef, nrow) # value `nrow' means `uninitialized' initialized colors go from 0 to nrow-1
   totalColors = 1
   colors[1] = 0 # first point gets color 0
 
@@ -36,7 +36,7 @@ function optimize_problem(A, data, b, x, xexact)
 
   for i=1:nrow 
 	if colors[i] == nrow # if color not assigned
-      		assigned = Vector{Float64}(undef, totalColors)
+      		assigned = Array{Float64,1}(undef, totalColors)
       		currentlyAssigned = 0
               	#A.mtxIndL = permutedims(reshape(hcat(A.mtxIndL...), (length(A.mtxIndL[1]), length(A.mtxIndL))))	
       		currentColIndices = A.mtxIndL[i, :]
@@ -66,7 +66,7 @@ function optimize_problem(A, data, b, x, xexact)
       	end # no more color left to use
     end #if loop for if color not assigned 
 
-    counters = Vector{Float64}(undef,totalColors)
+    counters = Array{Float64,1}(undef,totalColors)
     for i=1:nrow
 #      counters[colors[i]+1]+=1
     end
