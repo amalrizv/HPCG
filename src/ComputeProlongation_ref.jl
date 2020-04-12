@@ -25,7 +25,7 @@ function compute_prolongation_ref!(xf::Array{Float64,1}, Af::HPCGSparseMatrix)
 
 # TODO: Somehow note that this loop can be safely vectorized since f2c has no repeated indices
 for i=1:length(mgd.rc)
-	@inbounds	xf[mgd.f2cOperator[i]] += mgd.xc[i] # This loop is safe to vectorize
+	@fastmath @inbounds	xf[mgd.f2cOperator[i]] += mgd.xc[i] # This loop is safe to vectorize
   end
   
   return 0 

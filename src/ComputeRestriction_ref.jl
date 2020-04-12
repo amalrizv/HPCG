@@ -22,7 +22,7 @@
 #  #KCH Performance Issues because of rcv copy
   mgd  =A.mgData
   for i::Int64  = 1:length(mgd.rc)
-	@inbounds mgd.rc[i] = rfv[(mgd.f2cOperator[i])] - mgd.Axf[(mgd.f2cOperator[i])]
+	@fastmath @inbounds mgd.rc[i] = rfv[(mgd.f2cOperator[i])] - mgd.Axf[(mgd.f2cOperator[i])]
   end
   A.mgData = mgd
   return 0

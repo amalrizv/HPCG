@@ -24,16 +24,16 @@
       exchange_halo!(x,A)
   end
   
+#	  mv = Array{Float64,1}
+#	  mIl  =Array{Int64,1}
   
   for i::Int64 = 1:A.localNumberOfRows
-	  mv = Array{Float64,1}
-	  mIl  =Array{Int64,1}
 	  @inbounds mv = view(A.matrixValues, :, i)
 	  @inbounds mIl = view(A.mtxIndL, :, i)
-	  nnz = Int64
-	  nnz   = A.nonzerosInRow[i]
+#	  nnz = Int64
+@inbounds	  nnz   = A.nonzerosInRow[i]
 	 for j::Int64= 1:nnz
-		 @inbounds y[i] +=  mv[j]*x[mIl[j]]
+		 @fastmath @inbounds y[i] +=  mv[j]*x[mIl[j]]
       end
   end
   return 0

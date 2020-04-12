@@ -268,7 +268,7 @@ function report_results(A::HPCGSparseMatrix, numberOfMgLevels::Int64, numberOfCg
      	iteration_count_information = "Iteration Count Information\t" *iterations_result* "\n\tReference CG iterations per set$( refMaxIters) \n \tOptimized CG iterations per set $(optMaxIters)\n \t Total number of reference iterations $(refMaxIters*numberOfCgSets)\n\tTotal number of optimized iterations $( optMaxIters*numberOfCgSets)\n"
 
     	title_reproducibility = "########## Reproducibility Summary  ##########\n"
-	 	if testnorms_data.pass ==1
+	 	if testnorms_data.pass == true 
       		testnorms_result =  "PASSED"
     	else
      	 	testnorms_result =  "FAILED"
@@ -307,7 +307,7 @@ function report_results(A::HPCGSparseMatrix, numberOfMgLevels::Int64, numberOfCg
 		end
      	final_summary_title = "Final Summary\n"
 
-    	isValidRun = (testcg_data.count_fail==0) && (testsymmetry_data.count_fail==0) && (testnorms_data.pass ==1) && (global_failure ==0)
+    	isValidRun = (testcg_data.count_fail==0) && (testsymmetry_data.count_fail==0) && (testnorms_data.pass ==true) && (global_failure ==0)
     	if isValidRun == true 
 			fin_dot_prod_opt 	= String
 			fin_spmv_opt 		= String
@@ -354,8 +354,10 @@ function report_results(A::HPCGSparseMatrix, numberOfMgLevels::Int64, numberOfCg
 			println(report_result, final_summary_title, fin_hpcg_validity, fin_dot_prod_opt, fin_spmv_opt, fin_mg_opt_nt, fin_waxpby_opt, fin_action)
 
      	else 
-			
-      		fin_hpcg_validity = "HPCG result is","INVALID.\n"
+		    	
+      		fin_hpcg_validity = "HPCG result is","INVALID.\n
+								global_failure = $global_failure\n
+								testnorms_data.pass = $(testnorms_data.pass)"
       		fin_action = "Please review the YAML file contents You may NOT submit these results for consideration.\n"
 			println(report_result, final_summary_title, fin_hpcg_validity, fin_action)
 	  	end

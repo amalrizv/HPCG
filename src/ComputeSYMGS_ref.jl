@@ -54,10 +54,10 @@ function compute_symgs_ref!(xv::Array{Float64,1} , A::HPCGSparseMatrix, rv::Arra
     for j=1:currentNumberOfNonzeros 
       @inbounds curCol 	= currentColIndices[j]
 	  # RZV First iteration of this loop has a different value 
-      @inbounds sum       -= currentValues[j] * xv[curCol]
+      @fastmath @inbounds sum       -= currentValues[j] * xv[curCol]
     end
-    @inbounds sum    += xv[i]*currentDiagonal # Remove diagonal contribution from previous loop
-    @inbounds xv[i] 	= sum/currentDiagonal
+   @fastmath @inbounds sum    += xv[i]*currentDiagonal # Remove diagonal contribution from previous loop
+   @inbounds xv[i] 	= sum/currentDiagonal
 
   end
 #RZV
@@ -74,9 +74,9 @@ function compute_symgs_ref!(xv::Array{Float64,1} , A::HPCGSparseMatrix, rv::Arra
 
     for j = 1:currentNumberOfNonzeros
       @inbounds curCol = currentColIndices[j]
-      @inbounds sum   -= currentValues[j]*xv[curCol]
+      @fastmath @inbounds sum   -= currentValues[j]*xv[curCol]
     end
-    @inbounds sum += xv[i]*currentDiagonal # Remove diagonal contribution from previous loop
+    @fastmath @inbounds sum += xv[i]*currentDiagonal # Remove diagonal contribution from previous loop
     @inbounds xv[i] = sum/currentDiagonal
 
   end
