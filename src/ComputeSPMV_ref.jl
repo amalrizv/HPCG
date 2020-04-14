@@ -28,6 +28,7 @@
 #	  mIl  =Array{Int64,1}
   
   for i::Int64 = 1:A.localNumberOfRows
+	  @inbounds y[i] = 0.0
 	  @inbounds mv = view(A.matrixValues, :, i)
 	  @inbounds mIl = view(A.mtxIndL, :, i)
 #	  nnz = Int64
