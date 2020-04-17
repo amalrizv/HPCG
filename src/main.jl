@@ -381,7 +381,7 @@ function main(hpcg_args)
     ## Report Results ##
     ####################
     # Report results to YAML file
-   report_results(A, num_mg_levels, numberOfCgSets, refMaxIters, optMaxIters, times, testcg_data, testsymmetry_data, testnorms_data, global_failure, quickPath)
+   report_results(A, num_mg_levels, 200, refMaxIters, optMaxIters, times, testcg_data, testsymmetry_data, testnorms_data, global_failure, quickPath)
     # Clean up
     A              = nothing # This delete will recursively delete all coarse grid data
     data           = nothing

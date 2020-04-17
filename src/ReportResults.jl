@@ -22,7 +22,7 @@ using Dates
 
   @see YAML_Doc
 =#
-function report_results(A::HPCGSparseMatrix, numberOfMgLevels::Int64, numberOfCgSets::Float64, refMaxIters::Int64, optMaxIters::Int64, times::Array{Float64,1} , testcg_data, testsymmetry_data, testnorms_data, global_failure, quickPath) 
+function report_results(A::HPCGSparseMatrix, numberOfMgLevels::Int64, numberOfCgSets::Int64, refMaxIters::Int64, optMaxIters::Int64, times::Array{Float64,1} , testcg_data, testsymmetry_data, testnorms_data, global_failure, quickPath) 
 	  # times[] is passed with all entries in nanoseconds. 
 	  # For each rank convert times[] in ns to times[] in sec 
 	times = times .*1.0E-9
