@@ -324,12 +324,12 @@ function main(hpcg_args)
     ## Here we finally run the benchmark phase
     ## The variable total_runtime is the target benchmark execution time in seconds
 
-    #total_runtime  = params.runningTime 
+    #total_runtime  = 200
     #numberOfCgSets = floor(total_runtime / (opt_worst_time * 1.0E-9) ) + 1 # Run at least once, account for rounding
     
     numberOfCgSets = 200
     if rank == 0 
-        @debug("Projected running time: $total_runtime seconds") 
+       # @debug("Projected running time: $total_runtime seconds") 
         @debug("Number of CG sets: $numberOfCgSets") 
 		#@show("Number of CG sets: $numberOfCgSets") 
  
