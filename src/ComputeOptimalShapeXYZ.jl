@@ -4,7 +4,7 @@ function cubic_radical_search(n, x, y, z)
 	while f1 > 0
     		if n % f1 == 0 
       			n1::Int64 = n/f1;
-      			f2::int64 = floor((n1^0.5)+0.5)
+      			f2::Int64 = floor((n1^0.5)+0.5)
 			while f2 > 0
         			if n1 % f2 == 0
           				f3::Int64 = n1 / f2
