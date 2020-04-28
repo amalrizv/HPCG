@@ -1,3 +1,28 @@
+function cubic_radical_search(n, x, y, z)
+	best::Float64 = 0.0
+	f1::Int64 = (Int)(pow(n,1.0/3.0)+0.5)
+	while f1 > 0
+    		if n % f1 == 0 
+      			n1::Int64 = n/f1;
+      			f2::int64 = (Int)(pow(n1,0.5)+0.5)
+			while f2 > 0
+        			if n1 % f2 == 0
+          				f3::Int64 = n1 / f2
+          				current::Float64 = min(f1, f2, f3)/max(f1, f2, f3)
+          				if current > best
+            					best = current
+            					x = f1
+            					y = f2
+            					z = f3
+          				end
+				end
+			f2 = f2-1
+			end
+        	end
+	f1 = f1-1
+	end
+   return x, y, z
+end
 
 function compute_prime_factors(n)
   factors = Dict()
@@ -60,6 +85,8 @@ function pow_i(x,p)
 end
 
 function compute_optimal_shape_xyz(xyz, x, y, z) 
+  x,y,z = cubic_radical_search(xyz, x, y, z)
+#=
   factors = compute_prime_factors(xyz) # factors are sorted: ascending order
   if xyz == 1
 	factors[1] = 1
@@ -133,6 +160,6 @@ function compute_optimal_shape_xyz(xyz, x, y, z)
     	   next(c1)
          end
   end
-
+=#
   return x, y, z 
 end
