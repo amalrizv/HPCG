@@ -2,7 +2,7 @@ function cubic_radical_search(n, x, y, z)
 	best::Float64 = 0.0
 	f11::Int64 = floor((n^(1.0/3.0))+0.5)
 	for f1 = Iterators.reverse(1:f11)
-	if f1 > 0
+#	if f1 > 0
     		if n % f1 == 0 
       			n1::Int64 = n/f1;
       			f22::Int64 = floor((n1^0.5)+0.5)
