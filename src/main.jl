@@ -324,7 +324,7 @@ function main(hpcg_args)
     ## Here we finally run the benchmark phase
     ## The variable total_runtime is the target benchmark execution time in seconds
 
-    #total_runtime  = 200
+    #total_runtime  = 100
     #numberOfCgSets = floor(total_runtime / (opt_worst_time * 1.0E-9) ) + 1 # Run at least once, account for rounding
     
     numberOfCgSets = 200
@@ -381,7 +381,7 @@ function main(hpcg_args)
     ## Report Results ##
     ####################
     # Report results to YAML file
-   report_results(A, num_mg_levels, 200, refMaxIters, optMaxIters, times, testcg_data, testsymmetry_data, testnorms_data, global_failure, quickPath)
+   report_results(A, num_mg_levels, 100, refMaxIters, optMaxIters, times, testcg_data, testsymmetry_data, testnorms_data, global_failure, quickPath)
     # Clean up
     A              = nothing # This delete will recursively delete all coarse grid data
     data           = nothing
